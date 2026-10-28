@@ -1,0 +1,63 @@
+{
+  "from_site_source": "a29745dabfdeaec16a86746e52edcec71fc2c0cc",
+  "current_site_source": "1c09876742e750bc5bd99a9a4db3e7b6094078fa",
+  "current_confirmed_site_version": 330,
+  "failed_saved_site_version": 331,
+  "failed_source_included": false,
+  "changes": [
+    {
+      "path": "production/unified-runtime/concat-video.mjs",
+      "bytes": 7305,
+      "git_blob": "ededd945c301e1509bdee4cb27b563b1db237dd5",
+      "sha256": "d52db3c36419e9abd3ab3cb12588b7d8b92ffcf8e2e5b4bfd56a47e639b31466"
+    },
+    {
+      "path": "scripts/content-motion-qa.mjs",
+      "bytes": 34781,
+      "git_blob": "42cc9d855d2ee3bd3aa4302026d38b294833c64a",
+      "sha256": "a6f23b5bb6e11ac258b8dfacf09754bd7252d48089af9fe69c2ee578960f0baa"
+    },
+    {
+      "path": "scripts/finalize-brand-video.mjs",
+      "bytes": 6121,
+      "git_blob": "926b667a010f616d72a0be34a4ae1c08c95486a6",
+      "sha256": "efaf0a38b6fc0e061cd38626a7acfb8a33940e59e9f24d686820f3f2e150b86f"
+    },
+    {
+      "path": "scripts/private-review-continuation.mjs",
+      "bytes": 78945,
+      "git_blob": "08a9244dc77542bbf6c9d7dc72476391bfc14646",
+      "sha256": "a3a281de0a34a4c69624e59b78518bab99ee547944023f67743221e66842fc26"
+    },
+    {
+      "path": "scripts/private-review-finalization-recovery.mjs",
+      "bytes": 26002,
+      "git_blob": "75d4a8f706233079dfe391801dc73b09bf1246ce",
+      "sha256": "42b927e7b6a97aa02804b7b50c6dfbda5a2dfec94085235a39045389c3410e5d"
+    },
+    {
+      "path": "scripts/private-review-producer.mjs",
+      "bytes": 127652,
+      "git_blob": "359fc5064f3ff381629c6be2725abd360d286a0c",
+      "sha256": "ba3f101a95f184f534093bd5480492e66791daeb09ea12765160b81c7f9f6799"
+    },
+    {
+      "path": "tests/content-motion-small-change.test.mjs",
+      "bytes": 4284,
+      "git_blob": "3aa7095cc90e7a85fbd477781ee36f6d30d3a667",
+      "sha256": "515d067e29cb7a5b438235171488a31560be16f7779606d94bac57e74b747aa5"
+    },
+    {
+      "path": "tests/private-review-finalization-recovery.test.mjs",
+      "bytes": 14937,
+      "git_blob": "c4e9b2e0372202f3bd739437673222e5dbc136e7",
+      "sha256": "81e85c69d21175f736d3be84251c5cf1a90f775cbe185fe48a4c98184a633432"
+    },
+    {
+      "path": "tests/video-concat-timebase.test.mjs",
+      "bytes": 6444,
+      "git_blob": "cbb0106b0fe9877f527ce942dcec8b3bcb3d942c",
+      "sha256": "fbd661b6ddf63aa2cf5cdf4c794f554772bf578bffc018d35c989777a5e80a01"
+    }
+  ]
+}

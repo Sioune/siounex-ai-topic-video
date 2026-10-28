@@ -1,11 +1,11 @@
 {
   "schema": "siounex-github-source-snapshot-v1",
-  "site_version": 328,
-  "site_source_commit": "a29745dabfdeaec16a86746e52edcec71fc2c0cc",
-  "site_deployment_id": "appgdep_6ae1c5c3fd908191a814428b87b53511",
-  "progress_as_of": "2026-10-28T20:05:00+08:00",
-  "source_files_included": 1598,
-  "source_bytes_included": 67855050,
+  "site_version": 330,
+  "site_source_commit": "1c09876742e750bc5bd99a9a4db3e7b6094078fa",
+  "site_deployment_id": "appgdep_6ae1f5a6e6dc8191be90939095a81df7",
+  "progress_as_of": "2026-10-28T21:45:00+08:00",
+  "source_files_included": 1599,
+  "source_bytes_included": 67870641,
   "source_files_excluded": [
     ".takeover/caption-final-tests.log",
     "tsconfig.tsbuildinfo"
@@ -4974,8 +4974,8 @@
     },
     {
       "path": "production/unified-runtime/concat-video.mjs",
-      "bytes": 6911,
-      "sha256": "4016bb70080f56dfe15060b5c5ea3741ca9e5dbc62e9cadb1602f4536a1b8079"
+      "bytes": 7305,
+      "sha256": "d52db3c36419e9abd3ab3cb12588b7d8b92ffcf8e2e5b4bfd56a47e639b31466"
     },
     {
       "path": "production/unified-runtime/font-profile-windows.json",
@@ -5259,8 +5259,8 @@
     },
     {
       "path": "scripts/content-motion-qa.mjs",
-      "bytes": 29769,
-      "sha256": "17c96d913a3525bd410a9f21b22a44cb4b4ce3ae0ef1f9e44c3578ffe952d65c"
+      "bytes": 34781,
+      "sha256": "a6f23b5bb6e11ac258b8dfacf09754bd7252d48089af9fe69c2ee578960f0baa"
     },
     {
       "path": "scripts/content-motion-repeat-review.mjs",
@@ -5304,8 +5304,8 @@
     },
     {
       "path": "scripts/finalize-brand-video.mjs",
-      "bytes": 6047,
-      "sha256": "cae9890c15c5ea99b86a74214fc508921ec6cf58df963b1d007e07f22dd86b9f"
+      "bytes": 6121,
+      "sha256": "efaf0a38b6fc0e061cd38626a7acfb8a33940e59e9f24d686820f3f2e150b86f"
     },
     {
       "path": "scripts/flow-executor-call.mjs",
@@ -5644,8 +5644,8 @@
     },
     {
       "path": "scripts/private-review-continuation.mjs",
-      "bytes": 78390,
-      "sha256": "e1e363e1afeb4e4a712c670e565771cc81740ffada8c63481331a21d8e832ae1"
+      "bytes": 78945,
+      "sha256": "a3a281de0a34a4c69624e59b78518bab99ee547944023f67743221e66842fc26"
     },
     {
       "path": "scripts/private-review-expired-rework.mjs",
@@ -5654,8 +5654,8 @@
     },
     {
       "path": "scripts/private-review-finalization-recovery.mjs",
-      "bytes": 23159,
-      "sha256": "114073e792253102c3cfd683eeedcc6558cc28e1ffa7af8fc7dfa2e43c18101a"
+      "bytes": 26002,
+      "sha256": "42b927e7b6a97aa02804b7b50c6dfbda5a2dfec94085235a39045389c3410e5d"
     },
     {
       "path": "scripts/private-review-frozen-inputs.mjs",
@@ -5689,8 +5689,8 @@
     },
     {
       "path": "scripts/private-review-producer.mjs",
-      "bytes": 127760,
-      "sha256": "8cd785671cd5900378678cad07078395ca88f35cf93f81338f79a5f55df48d8d"
+      "bytes": 127652,
+      "sha256": "ba3f101a95f184f534093bd5480492e66791daeb09ea12765160b81c7f9f6799"
     },
     {
       "path": "scripts/private-review-recovery.mjs",
@@ -6331,6 +6331,11 @@
       "path": "tests/content-motion-repeat-review.test.mjs",
       "bytes": 5752,
       "sha256": "c04f365d93d8dc0a490b62e7e6d3218338ef8ba7755445a707f29e68723e0e12"
+    },
+    {
+      "path": "tests/content-motion-small-change.test.mjs",
+      "bytes": 4284,
+      "sha256": "515d067e29cb7a5b438235171488a31560be16f7779606d94bac57e74b747aa5"
     },
     {
       "path": "tests/content-motion.test.mjs",
@@ -7244,8 +7249,8 @@
     },
     {
       "path": "tests/private-review-finalization-recovery.test.mjs",
-      "bytes": 13284,
-      "sha256": "f67cf19285549501e1a8fc065b5f6dcc470e5d8d6702a547da3a9fb857051259"
+      "bytes": 14937,
+      "sha256": "81e85c69d21175f736d3be84251c5cf1a90f775cbe185fe48a4c98184a633432"
     },
     {
       "path": "tests/private-review-frozen-inputs.test.mjs",
@@ -7959,8 +7964,8 @@
     },
     {
       "path": "tests/video-concat-timebase.test.mjs",
-      "bytes": 5560,
-      "sha256": "d402a84d80bc0efd4437ad0502e327981f175112adfc270fe837c2eb4a14c727"
+      "bytes": 6444,
+      "sha256": "fbd661b6ddf63aa2cf5cdf4c794f554772bf578bffc018d35c989777a5e80a01"
     },
     {
       "path": "tests/voice-payment-boundary.test.mjs",
@@ -8014,5 +8019,6 @@
     "production/assets/outro-v6/outro_v6_dark.mp4"
   ],
   "github_asset_manifest": ".snapshot-assets/manifest.json",
-  "github_restore_command": "node scripts/restore-snapshot-assets.mjs"
+  "github_restore_command": "node scripts/restore-snapshot-assets.mjs",
+  "historical_source_commit": "a29745dabfdeaec16a86746e52edcec71fc2c0cc"
 }

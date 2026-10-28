@@ -33,3 +33,8 @@ V327 原发布记录：8 项定向、独立相关组 30 项、类型与正式构
 其余源码正常保存。GitHub 当前文件清单及 SHA256 见 `github-manifest.json`；`source-manifest.json` 保留 V328 源文件身份及分块映射。`package-manifest.json` 对应本机最初完整 ZIP 的内容，GitHub 的分块与新增还原说明以 GitHub 清单为准。
 
 最终 GitHub tree 应与本地隔离构造的交接目录完全一致；该比对验证当前 GitHub 存储集合。运行还原脚本后，三份媒体原字节与 V328 保持一致。此适配没有变更原网站源码或制作运行端。
+
+
+## 21:45 增补
+
+V329/V330 九文件已按正式提交原字节纳入，source-manifest 与 latest-source-delta 同步更新；相关测试结果仅引用原发布记录，本次打包没有重新运行其测试或制作。CLI/同步变化与失败的 V331 已记入当前进展，旧 20:05 观察按历史截点保留。最终 GitHub tree 比对覆盖此次增补。

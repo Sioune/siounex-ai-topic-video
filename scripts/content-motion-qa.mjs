@@ -1,6 +1,7 @@
 import {reviewMotionFeedback} from './content-motion-feedback-review.mjs';
 import {reviewMotionRepeats} from './content-motion-repeat-review.mjs';
 import fs from 'node:fs';import path from 'node:path';
+import sharp from 'sharp';
 import {CONTENT_MOTION_POLICY as policy,MOTION_REPORT_SCHEMA,MOTION_REPEAT_REVIEW_CONTRACT,motionSha as sha,motionCanonical as canonical,motionShotIssues,motionReportIssues,observationIntervals} from '../lib/content-motion-contract.mts';
 import {nodeStageLayout} from '../production/unified-runtime/node-stage-profiles.mjs';
 import {projectMotionShots} from './content-motion-media.mjs';
@@ -36,6 +37,25 @@ export function pixelMotion(a,b,{mechanism=false}={}){
  for(let y=0;y<90;y++)for(let x=0;x<160;x++){if(x<5||x>=155||y<3||y>=87)continue;const i=y*160+x,t=Math.floor(y/30)*4+Math.floor(x/40);counts[t]++;if(Math.abs(a[i]-b[i])>12){changed++;tiles[t]++;}}
  const active=tiles.filter((n,i)=>n/counts[i]>(mechanism?.0005:.003)).length,fraction=changed/a.length;
  return {changed_fraction:fraction,active_tiles:active,measured_motion:fraction>=(mechanism ? 0.0001 : 0.001)&&active>=1};
+}
+// A coarse 160x90 sample can erase genuine UI text changes. Only reconsider
+// contradictory observations; the focused review must independently identify
+// the changed subject and explicitly reject clocks, cursors, logos and effects.
+export function smallContentChange(a,b){
+ if(a.length!==640*360||b.length!==a.length)fail('MOTION_DETAIL_SAMPLE_INVALID');let count=0;
+ for(let y=43;y<324;y++)for(let x=64;x<576;x++){const i=y*640+x;if(Math.abs(a[i]-b[i])>20)count++;}
+ return count>=50;
+}
+export function smallMotionCandidate(shot,observation,inspection){return ['video','recording'].includes(shot.kind)&&inspection.measured_motion!==true&&inspection.samples.length>=2&&observation?.classification==='moving-content'&&observation.meaningful_change===true&&observation.text_only===false&&['direct','supporting'].includes(observation.relevance);}
+export function acceptSmallContentReview(row){return row?.content_changed===true&&row.change_kind==='subject-content'&&typeof row.explanation==='string'&&row.explanation.trim().length>0;}
+const smallReviewSchema=obj({shots:{type:'array',items:obj({index:{type:'integer'},content_changed:{type:'boolean'},change_kind:{type:'string',enum:['subject-content','clock','logo','cursor','decoration','still','unknown']},explanation:{type:'string'}})}});
+export async function refineSmallContentMotion(shots,inspection,observations,{dir,parent,binding,runCli,reviewBatch}={}){
+ const candidates=[];for(const shot of shots){const o=observations.find(v=>v.index===shot.index),sample=inspection[shot.index];if(!smallMotionCandidate(shot,o,sample))continue;const first=await sharp(fs.readFileSync(sample.samples[0].file)).greyscale().raw().toBuffer(),last=await sharp(fs.readFileSync(sample.samples.at(-1).file)).greyscale().raw().toBuffer();if(smallContentChange(first,last))candidates.push(shot);}
+ for(let i=0;i<candidates.length;i+=policy.actual_review_batch){const batch=candidates.slice(i,i+policy.actual_review_batch),images=[],order=[];for(const shot of batch){for(const sample of inspection[shot.index].samples){images.push(sample.file);order.push({shot:shot.index,frame:sample.frame});}for(const neighbor of [shot.index-1,shot.index+1]){const context=inspection[neighbor];if(context){const sample=context.samples[Math.floor(context.samples.length/2)];images.push(sample.file);order.push({shot:shot.index,context_index:neighbor,frame:sample.frame});}}}
+ const prompt='逐组比较实际视频原图帧，严格只判断当前区间主体内容是否产生新的回答、操作状态或执行结果。前后区间帧仅用于理解上下文，不能把邻段变化计入当前区间。时钟数字、进度计时、录制标识、角标、水印、光效、鼠标和光标闪烁、装饰效果以及压缩噪声不算主体变化；静止截图、无法辨认或有疑问返回 false。具体描述当前首尾可见的主体变化，不猜测文字内容。每个 index 恰返回一次。'+canonical({scope:'focused-small-content-change',image_order:order,shots:batch.map(s=>({index:s.index}))});
+ let value;if(reviewBatch)value=await reviewBatch({batch,images,prompt});else {const inputHash=sha({prompt,images:images.map(f=>sha(fs.readFileSync(f)))});let part=path.join(dir,'small-content-'+inputHash);if(binding)part=materialSelectionAttempt({parent,baseDir:path.join(parent,inputHash),binding,prompt});fs.mkdirSync(part,{recursive:true});const output=path.join(part,'selection.json'),receipt=path.join(part,'selection-receipt.json'),intent=path.join(part,'selection-started.json'),schemaPath=path.join(part,'schema.json');if(!fs.existsSync(receipt)){if(fs.existsSync(intent))fail('MOTION_EXPORTED_REVIEW_RESULT_RECONCILIATION_REQUIRED');put(schemaPath,smallReviewSchema);put(path.join(part,'prompt.txt'),prompt);put(intent,{input_hash:inputHash,...(binding?{binding}:{}),started_at:new Date().toISOString()});const actual=await motionVisionCall({schemaPath,output,images,prompt,metadataDir:path.join(part,'process')},runCli);if(actual.error_code!=='CLI_COMPLETED'||actual.exit_code!==0||!fs.existsSync(output)){if(binding)inspectMaterialSelectionHistory(parent,binding);fail('MOTION_EXPORTED_REVIEW_RESULT_RECONCILIATION_REQUIRED');}put(receipt,{input_hash:inputHash,...(binding?{binding}:{}),prompt_sha256:sha(prompt),finished_at:new Date().toISOString(),output_sha256:sha(fs.readFileSync(output)),process:actual});}const r=JSON.parse(fs.readFileSync(receipt));if(r.input_hash!==inputHash||r.output_sha256!==sha(fs.readFileSync(output)))fail('MOTION_QA_REVIEW_CHANGED');value=JSON.parse(fs.readFileSync(output));}
+ if(!Array.isArray(value?.shots)||value.shots.length!==batch.length||batch.some(s=>value.shots.filter(v=>v.index===s.index).length!==1))fail('MOTION_ACTUAL_FRAME_REVIEW_REQUIRED');for(const shot of batch){const result=value.shots.find(v=>v.index===shot.index);if(acceptSmallContentReview(result)){inspection[shot.index].measured_motion=true;inspection[shot.index].small_content_review={...result,schema:'focused-small-content-change-v1'};}}
+ }
 }
 export function legacyMotionShots(p){
  const shots=[];for(const s of p.source_to_timeline||[]){const items=s.media?.kind==='image-sequence'?s.media.items:[s.media];for(const [i,m]of items.entries()){
@@ -133,6 +153,7 @@ async function inspectExport({job,project,video,project_sha256,output_dir},{comm
   });
   for(const result of results){if(result.status==='rejected')throw result.reason;observations.push(...result.value);const textGaps=knownTextCardGaps(observations,shots);if(textGaps.length){put(path.join(dir,"partial-inspection-failure.json"),{schema:"actual-partial-motion-review-failure-v1",...context,reviewed_intervals:observations.map(o=>o.index),unreviewed_intervals:shots.slice(observations.length).map(s=>s.index),actual_frame_review_sha256:sha(observations),whole_video_review_complete:observations.length===shots.length,quality_approved:false,publication_authorized:false,missing:textGaps});fail("MOTION_EXPORTED_TEXT_CARD",textGaps);}}
  }
+ await refineSmallContentMotion(shots,inspection,observations,{dir,parent:requestParent,binding:requestBinding,runCli});
  const observedRaw=shots.map(s=>({...s,measured_motion:inspection[s.index].measured_motion,observation:{...observations.find(o=>o.index===s.index),frame_sha256:inspection[s.index].samples.map(f=>f.sha256)}}));
  const result=motionShotIssues(observedRaw,project.body_frames,{observed:true,checkRepeats:false});if(result.metrics){result.metrics.hook_replays=pre.metrics.hook_replays;result.metrics.replayed_frames=pre.metrics.replayed_frames;result.metrics.shot_count=sourceShots.length;}
  if(job.review_note?.trim()&&!result.issues.length)revisionChecks.push(...await reviewMotionFeedback({feedback:job.review_note,script:project.script,observed:observedRaw,inspection,dir,parent:requestParent,binding:requestBinding,runCli}));
