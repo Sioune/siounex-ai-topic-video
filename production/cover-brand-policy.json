@@ -1,0 +1,25 @@
+{
+  "schema": "siounex-cover-brand-v1",
+  "version": "bottom-lockup-20261023",
+  "required_brand_text": "怎么用好AI",
+  "scope": "every delivered cover ratio",
+  "logo": {
+    "path": "production/assets/brand/logo-g-glasses.jpg",
+    "package_path": "assets/brand/logo-g-glasses.jpg",
+    "sha256": "f5febc8fbbab8dcff5642f11d7ef1bf7ca1f598f2c6dceac556b560e29437258"
+  },
+  "reference": {
+    "path": "production/assets/brand/approved-bottom-lockup.png",
+    "package_path": "assets/brand/approved-bottom-lockup.png",
+    "sha256": "1525587b5ac88254cfcd400e1512f78b08ce46ebca5de5a8ce7b32bd67941d65"
+  },
+  "layout": "底部融合式一体品牌区：左边“怎么用好AI”（白色字、AI青蓝色），下方青蓝色笔刷弧线；右边紧邻蓝G银眼镜logo的白色圆角方底。沿用户认可原图的关系和质感，所有比例分别排版。",
+  "constraints": [
+    "主标题与故事主体优先",
+    "logo完整、等比、不重新设计",
+    "不得把logo单贴到顶部、标题旁或侧边",
+    "底部和左右保留安全边距；手机缩略图仍可辨",
+    "已有文章/场景图片不得拼作封面；用户品牌logo与排版示范为唯一品牌资产例外",
+    "人工审图同时核验品牌文字、原logo及底部融合形式；不靠提示词宣布通过"
+  ]
+}

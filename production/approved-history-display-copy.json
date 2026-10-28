@@ -1,0 +1,73 @@
+{
+  "schema": "approved-history-display-copy-v1",
+  "scope": "Read-only reuse of exact owner-approved native history-card wording; no new content approval or publication authorization",
+  "approval_source": {
+    "job_id": "job_ed3c8123-59ed-4948-9d99-fdb7067ee522",
+    "revision": 1,
+    "video_milestone_id": "native_draft_a5378b353ce1bce814c2f49d45d25a1705f3451b880924800d29bae95b8e4ffe",
+    "video_artifact_hash": "5c2781510598ca8d5ec163d2e99e104899b90db9980e014523d6d98693fcdc09",
+    "video_sha256": "edad4666ab46211d7d640b68ed2e92b58c5563613dbaee66574a55c090b0b5e6",
+    "history_approval_quote": "三条新版往期区全部通过",
+    "native_project_id": "572a8ac4-4945-4367-b378-e3d679be535a",
+    "native_timeline_id": "54f55fda-4672-4c3f-8c2f-414304a8949c",
+    "native_asset_id": "377d4620-9b34-4345-be3e-08c18e7210b6",
+    "evidence": [
+      {
+        "file": ".takeover/history-redesign-20261019/A-implementation-manifest.json",
+        "sha256": "e218bcc25f193951b7fe3390a423e5ae11a609e49d1d2f6a94716ff42db4cac8"
+      },
+      {
+        "file": ".takeover/history-redesign-20261019/deepseek/native-edit-receipts.json",
+        "sha256": "0bdd8774cbf44eca1ad9efffc01bce984bf52784847df3e470b38a5b9799f6c7"
+      },
+      {
+        "file": ".takeover/media-production-20261020/job_ed3c8123-59ed-4948-9d99-fdb7067ee522.json",
+        "sha256": "ea46dd36e416a12ffd6f654f2918fe816d6b3dacc03a5827462793b3cf894c26"
+      }
+    ]
+  },
+  "entries": [
+    {
+      "publication_id": "dv_pub_4ecf24328ecfd4bdfddaaa47fec9d7e33d547f5bd83a53301ff2d333aabb6449",
+      "job_id": "job_c3adf563-321c-4bac-b807-b1e749681c82",
+      "original_title": "特斯拉新一代 Roadster：会“飞”的原型车，计划2028年投产",
+      "cover_sha256": "ba74127cff6ec7c5cb5704d706ed7090805c0e009e469160ea992e8b7423881e",
+      "published_revision": 3,
+      "published_script_hash": "d9d74b6682cc75f06575925b1b946038fb72ac37dd21225f61b55ba2c023de4a",
+      "published_video_milestone_id": "native_draft_b0ddbbb450446ff21d369a29224b80ba6614d9b24a14e1b218c45f49b7798de8",
+      "published_video_artifact_hash": "297ead6eb9fbadb5e6e812fcaf92d51f464d7d374c70d8989fc46a7efad377ec",
+      "published_video_sha256": "83e4299d3744562a24af1b5029d9f2545a2007f6259f4e89606ade34befcc6ed",
+      "display_title": "这车怎么倒着开？",
+      "description": "原型车腾空，量产还要等",
+      "origin_fields": {
+        "identity": "h1",
+        "display_title": "s1",
+        "description": "d1"
+      },
+      "source_manifest_item": 0,
+      "approval_evidence_file": ".takeover/roadster-recovery-20261018/read.final-completed-20261018.json",
+      "approval_evidence_sha256": "e74a23b0b2fc8affa72fa786a3b0488a981640d0b04316f9640e557807c6f6dd"
+    },
+    {
+      "publication_id": "dv_pub_a6082aae3aec3844f55c112e4fb17654e46af30578737cf2bcf305e9bd09c035",
+      "job_id": "job_1c2556b8-53d5-4dc0-8d7a-faec60fa36ba",
+      "original_title": "给现实世界按下复制键，禾赛做了一台「AI 空间相机」",
+      "cover_sha256": "e69c87397862d05d4a24b2064b118c71a59dc7fd88599059ddd08938182c2370",
+      "published_revision": 1,
+      "published_script_hash": "04e4999c7c18c51d3e85877db77f2ddc9af6be8fc1c6d0bf10bb08a7859be836",
+      "published_video_milestone_id": "approved_native_16a0e0514f75c60dfdc5bd0acce44c4ca2eca7888dfc8d8b7113a0b06e80cd45",
+      "published_video_artifact_hash": "f9a10b8e4a135304f0f7f912fbb22469327116f30eadd6670d1b2e5ca498d18d",
+      "published_video_sha256": "de7a59ca40fc8990d8e71ea0551ae458d34b9c8c5d14e9b3d1ec4ae298939fd1",
+      "display_title": "给现实按下复制键",
+      "description": "空间相机，想复制房间",
+      "origin_fields": {
+        "identity": "h2",
+        "display_title": "s2",
+        "description": "d2"
+      },
+      "source_manifest_item": 1,
+      "approval_evidence_file": ".takeover/two-video-production-20261017/owner-voice-20261018/archive-bgm15-20261018/hesai-v6/final-live-readback.json",
+      "approval_evidence_sha256": "e4b660f2a895055754ccbe7de49e468963ddb89a5b1d59f0c66bc99386e847c7"
+    }
+  ]
+}

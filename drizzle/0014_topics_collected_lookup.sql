@@ -1,0 +1,1 @@
+CREATE INDEX `idx_topics_collected` ON `topics` ("collected_at" DESC);

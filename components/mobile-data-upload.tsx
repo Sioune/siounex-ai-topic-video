@@ -1,0 +1,43 @@
+'use client';
+
+import './publication-data.css';
+import {useCallback,useEffect,useRef,useState} from 'react';
+import {ArrowLeft,ArrowUpRight,CheckCircle2,FileImage,ImagePlus,LoaderCircle,RefreshCw,Trash2} from 'lucide-react';
+import {Button} from './ui/button';
+import {CollectionStatus,collectionSampleHref,formatBeijing,fromBeijingInput} from './data-collections';
+import {PUBLICATION_PLATFORMS,type PublicationCollection,type CollectionResponse} from '@/lib/publication-collection-contract.mts';
+
+type PendingImage={id:string;file:File;preview:string;evidenceId?:string;state:'ready'|'uploading'|'binding'|'saved'|'failed';error?:string};
+type EvidenceResponse={evidence:{id:string};error?:string};
+const maxBytes=10*1024*1024;
+
+export default function MobileDataUpload({collectionId}:{collectionId:string}){
+ const[collection,setCollection]=useState<PublicationCollection|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[message,setMessage]=useState(''),[images,setImages]=useState<PendingImage[]>([]),[captured,setCaptured]=useState(''),[busy,setBusy]=useState(false);
+ const previews=useRef(new Set<string>()),picker=useRef<HTMLInputElement>(null);
+ const load=useCallback(async()=>{if(!collectionId)throw Error('请先从采集任务打开对应的上传入口。');const r=await fetch('/api/data-collections?id='+encodeURIComponent(collectionId),{cache:'no-store'}),d=await r.json() as CollectionResponse&{error?:string};if(!r.ok)throw Error(d.error||'采集任务读取失败');if(!d.collections?.[0])throw Error('未找到这条采集任务，请返回数据中心重新打开。');setCollection(d.collections[0]);return d.collections[0];},[collectionId]);
+ useEffect(()=>{let live=true;setLoading(true);load().catch(e=>{if(live)setError(e.message)}).finally(()=>{if(live)setLoading(false)});return()=>{live=false};},[load]);
+ useEffect(()=>()=>{for(const url of previews.current)URL.revokeObjectURL(url);},[]);
+ function choose(files:FileList|null){if(!files||busy)return;setError('');setMessage('');const chosen=Array.from(files),remaining=5-images.filter(image=>image.state!=='saved').length;if(chosen.length>remaining){setError('一次最多选择 5 张截图，请先上传当前图片。');return;}const invalid=chosen.find(file=>!['image/png','image/jpeg','image/webp'].includes(file.type)||file.size>maxBytes||file.size===0);if(invalid){setError(invalid.name+'：请选择 10MB 以内的 PNG、JPEG 或 WebP 原图。');return;}const additions=chosen.map(file=>{const preview=URL.createObjectURL(file);previews.current.add(preview);return{id:crypto.randomUUID(),file,preview,state:'ready' as const};});setImages(items=>[...items.filter(item=>item.state!=='saved'),...additions]);}
+ function update(id:string,values:Partial<PendingImage>){setImages(items=>items.map(item=>item.id===id?{...item,...values}:item));}
+ function remove(item:PendingImage){URL.revokeObjectURL(item.preview);previews.current.delete(item.preview);setImages(items=>items.filter(image=>image.id!==item.id));}
+ async function upload(){if(busy||!collection)return;const pending=images.filter(item=>item.state!=='saved');if(!pending.length)return;setBusy(true);setError('');setMessage('');let saved=0;for(const item of pending){let evidenceId=item.evidenceId;try{if(!evidenceId){update(item.id,{state:'uploading',error:undefined});const form=new FormData();form.set('file',item.file);const timestamp=fromBeijingInput(captured);if(timestamp)form.set('captured_at',timestamp);const r=await fetch('/api/data-evidence',{method:'POST',body:form}),d=await r.json() as EvidenceResponse;if(!r.ok)throw Error(d.error||'图片未上传，请重试');evidenceId=d.evidence.id;update(item.id,{evidenceId});}update(item.id,{state:'binding',error:undefined});const r=await fetch('/api/data-collections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'attach',collection_id:collection.id,evidence_id:evidenceId,captured_at:fromBeijingInput(captured)})}),d=await r.json() as CollectionResponse&{error?:string};if(!r.ok)throw Error(d.error||'图片已保存，但未绑定到任务');if(d.collections?.[0])setCollection(d.collections[0]);update(item.id,{state:'saved',error:undefined});saved++;}catch(e){update(item.id,{state:'failed',evidenceId,error:(e as Error).message});}}
+  if(saved===pending.length)setMessage(saved+' 张截图已保存并绑定到本次采集。可继续添加，或到数据中心核对指标。');else setError((saved?saved+' 张已绑定。':'')+'还有图片未完成，保留在下方，可重试。');try{await load();}catch{ /* Attachment receipts remain the source of success if a later refresh fails. */ }setBusy(false);
+ }
+ const pendingCount=images.filter(item=>item.state!=='saved').length;
+ return <main className="mobile-data-upload publication-surface">
+  <a className="publication-back" href="/data"><ArrowLeft size={17} aria-hidden="true"/>数据中心</a>
+  <header className="mobile-upload-heading"><span className="publication-eyebrow"><FileImage size={16} aria-hidden="true"/>手机直接上传</span><h1>把真实反馈，留在这里</h1><p>从手机相册选择平台数据截图。</p></header>
+  {loading&&<div className="mobile-upload-state" role="status"><LoaderCircle className="publication-spin" size={23} aria-hidden="true"/>正在读取采集任务…</div>}
+  {error&&<div className="publication-feedback publication-feedback-error" role="alert">{error}{!collection&&collectionId&&<Button variant="outline" onClick={()=>{setError('');setLoading(true);load().catch(e=>setError(e.message)).finally(()=>setLoading(false));}}><RefreshCw size={16} aria-hidden="true"/>重新读取</Button>}</div>}
+  {message&&<div className="publication-feedback mobile-upload-success" role="status"><CheckCircle2 size={20} aria-hidden="true"/><span>{message}</span></div>}
+  {collection&&<><section className="mobile-upload-context"><div><span className="collection-window">T+{collection.target_hours}<small>小时</small></span><CollectionStatus status={collection.status}/></div><h2>{collection.title}</h2><p>{PUBLICATION_PLATFORMS[collection.platform]}<span> · </span>目标 {formatBeijing(collection.due_at)}（北京）</p>{collection.collection_anchor_note&&<p>{collection.collection_anchor_note}</p>}<small>提前或晚采都可以，请保留实际截图时间。</small></section>
+   <section className="mobile-upload-form" aria-label="上传本次数据截图"><label className="mobile-captured-label">实际截图时间（北京，可留空）<input aria-label="截图实际时间" type="datetime-local" value={captured} disabled={busy} onChange={e=>setCaptured(e.target.value)}/><small>不知道就留空；上传时间会另外保存。</small></label>
+    <input ref={picker} className="publication-file-input" aria-label="选择手机数据截图" type="file" accept="image/png,image/jpeg,image/webp" multiple disabled={busy} onChange={e=>{choose(e.target.files);e.target.value='';}}/>
+    <Button className="mobile-choose-images" variant="outline" disabled={busy||pendingCount>=5} onClick={()=>picker.current?.click()}><ImagePlus size={23} aria-hidden="true"/><span>从相册选择截图<small>每批最多 5 张 · 每张 ≤10MB</small></span></Button>
+    {!!images.length&&<div className="mobile-image-queue" aria-label="本次选择的截图">{images.map(item=><article className={'mobile-image-item mobile-image-'+item.state} key={item.id}><img src={item.preview} alt={'待上传截图：'+item.file.name}/><div><strong>{item.file.name}</strong><span>{(item.file.size/1024/1024).toFixed(2)} MB · {item.state==='ready'?'待上传':item.state==='uploading'?'上传原图中…':item.state==='binding'?'正在绑定采集任务…':item.state==='saved'?'已保存并绑定':item.evidenceId?'原图已保存，待重试绑定':'上传未完成'}</span>{item.error&&<p>{item.error}</p>}</div>{!busy&&item.state!=='saved'&&<Button variant="ghost" size="icon" aria-label={'移除 '+item.file.name} onClick={()=>remove(item)}><Trash2 size={17} aria-hidden="true"/></Button>}{item.state==='saved'&&<CheckCircle2 size={21} aria-label="绑定成功"/>}</article>)}</div>}
+    <Button className="mobile-upload-submit" disabled={busy||!pendingCount} onClick={()=>void upload()}>{busy?<LoaderCircle className="publication-spin" size={18} aria-hidden="true"/>:<FileImage size={18} aria-hidden="true"/>}{busy?'正在保存，请稍候…':images.some(item=>item.state==='failed')?'重试未完成的截图':pendingCount?'保存 '+pendingCount+' 张截图':'选择截图后保存'}</Button><p className="mobile-upload-footnote">截图保存后会显示「已上传 · 待核对」，核对并录入指标后才算完成采样。</p>
+   </section>
+   {!!collection.evidence.length&&<section className="mobile-saved-evidence"><div className="publication-section-heading"><div><h2>本次已保存</h2><p>{collection.evidence.length} 张原始截图，刷新或换设备后仍可查看。</p></div><CheckCircle2 size={21} aria-hidden="true"/></div><div className="mobile-saved-grid">{collection.evidence.map(item=><a key={item.id} href={item.url} target="_blank" rel="noopener noreferrer"><img src={item.url} alt={'已绑定截图：'+item.file_name}/><span>{item.file_name}</span><small>截图 {item.captured_at?formatBeijing(item.captured_at):'时间未知'}<br/>上传 {formatBeijing(item.attached_at)}</small></a>)}</div><a className="publication-link-button" href={collectionSampleHref(collection)}>到数据中心核对指标<ArrowUpRight size={16} aria-hidden="true"/></a></section>}
+  </>}
+ </main>;
+}

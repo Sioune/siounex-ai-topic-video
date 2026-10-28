@@ -1,0 +1,31 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {studioTemporaryPageCreation,studioTemporaryPageNavigation,studioPreviewPrompt,HEYGEN_STUDIO_PROJECTS_URL} from '../scripts/heygen-studio-preview-bridge.mjs';
+import {STUDIO_DIRECT_BROWSER_SELECT_CODE,STUDIO_DIRECT_BROWSER_INVENTORY_CODE,STUDIO_DIRECT_CREATE_CODE,STUDIO_DIRECT_PROJECTS_READ_CODE,STUDIO_DIRECT_PENDING_ENTRY_URL,studioDirectNavigationCode,studioDirectInventoryCode} from '../scripts/heygen-studio-direct-bootstrap.mjs';
+
+test('directory search activates before bounded input and never polls the hidden field',()=>{
+ const prompt=studioPreviewPrompt('recover-preparation',{request_id:'acl_original',browser_attempt_id:'browser-original',draft_id:null});
+ assert.match(prompt,/Do not call isVisible\(\), isEnabled\(\)/);assert.match(prompt,/Click the unique actually observed 搜索 button once/);assert.match(prompt,/Never fill a collapsed search box/);assert.match(prompt,/timeoutMs:10000/);assert.match(prompt,/Read actual entered value and completed results through fresh getAXState/);assert.match(prompt,/do not request domSnapshot\(\) when AX already answers/i);assert.doesNotMatch(prompt,/require isVisible\(\)===true/);
+});
+test('ambiguous global creation styles and Orby cannot be used to guess a draft action',()=>{
+ const prompt=studioPreviewPrompt('prepare',{request_id:'acl_original',browser_attempt_id:'browser-original',draft_id:null});assert.match(prompt,/Never use the global selector button\.tw-group/);assert.match(prompt,/current visible label\/role/);assert.match(prompt,/Unknown or ambiguous controls stop without a click/);assert.match(prompt,/does not grant any additional draft or Play permission/);
+});
+for(const kind of ['projects','pending-preparation'])test(kind+' direct entry registers actual blank identity before independent target navigation and AX',async()=>{
+ const input={request_id:'acl_original',browser_attempt_id:'browser-original',draft_id:null,...(kind==='pending-preparation'?{pending_preparation_permit:{evidence:{schema:'heygen-studio-pending-preparation-continuation-v1'}}}:{})},calls=[],writes=[],rows=[{id:'123450001',browserId:'observed-chrome',url:'about:blank'}],target=kind==='projects'?HEYGEN_STUDIO_PROJECTS_URL:STUDIO_DIRECT_PENDING_ENTRY_URL;
+ const tab={id:'123450001',goto:async url=>calls.push(['goto',url]),getAXState:async()=>calls.push(['ax'])},AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+ await new AsyncFunction('cua','nodeRepl',STUDIO_DIRECT_BROWSER_SELECT_CODE+STUDIO_DIRECT_BROWSER_INVENTORY_CODE+STUDIO_DIRECT_CREATE_CODE+studioDirectInventoryCode(input)+studioDirectNavigationCode(kind)+STUDIO_DIRECT_PROJECTS_READ_CODE)({createBrowserTab:async(browser,url)=>{calls.push(['create',browser,url]);return tab;},listBrowsers:async options=>{assert.deepEqual(options,{emit:false});calls.push(['browsers']);return[{id:'observed-chrome',family:'chrome',name:'Chrome',type:'extension'}];},listTabs:async options=>{assert.deepEqual(options,{browser:'observed-chrome',emit:false});calls.push(['list']);return rows;},getBrowser:async options=>{calls.push(['browser',options.url]);return{browserId:'observed-chrome'};}},{write:v=>writes.push(v)});
+ assert.deepEqual(calls,[['browser',HEYGEN_STUDIO_PROJECTS_URL],['browsers'],['create','observed-chrome','about:blank'],['list'],['goto',target],['ax']]);assert.equal(typeof writes[0],'string');assert.equal(JSON.parse(writes[0]).selected_browser_id,'observed-chrome');assert.equal(typeof writes[1],'string');assert.deepEqual(JSON.parse(writes[1]),rows);
+ const registration=JSON.parse(writes[2].slice('STUDIO_TEMP_PAGE_V1:'.length));assert.deepEqual(registration,{schema:'studio-temp-page-v1',request_id:input.request_id,attempt_id:input.browser_attempt_id,browser_id:'observed-chrome',tab_id:'123450001',created_temporary_page:true});
+ const prompt=studioPreviewPrompt(kind==='projects'?'recover-preparation':'prepare',input);for(const code of [STUDIO_DIRECT_BROWSER_SELECT_CODE,STUDIO_DIRECT_BROWSER_INVENTORY_CODE,STUDIO_DIRECT_CREATE_CODE,studioDirectInventoryCode(input),studioDirectNavigationCode(kind),STUDIO_DIRECT_PROJECTS_READ_CODE])assert.ok(prompt.includes(code));assert.match(prompt,/Do not combine navigation and AX in one invocation/);assert.doesNotMatch(prompt,/first cua_repl invocation must execute exactly let studioInitialInventory=await cua\.getState/);
+});
+for(const [phase,draft_id,pending,target]of [
+ ['prepare',null,false,'https://app.heygen.com/'],
+ ['recover-preparation',null,false,HEYGEN_STUDIO_PROJECTS_URL],
+ ['prepare',null,true,STUDIO_DIRECT_PENDING_ENTRY_URL],
+ ...['prepare','preview-readiness','preview','reconcile','provider-editor-continuation'].map(phase=>[phase,'a'.repeat(32),false,'https://app.heygen.com/create-v4/'+'a'.repeat(32)])
+])test('a permitted new '+phase+(pending?' pending':'')+' temporary page registers blank, then preserves its original locked navigation target',async()=>{
+ const input={request_id:'acl_original',browser_attempt_id:'browser-original',draft_id,...(pending?{pending_preparation_permit:{evidence:{schema:'heygen-studio-pending-preparation-continuation-v1'}}}:{})},calls=[],writes=[],create=studioTemporaryPageCreation(input,phase),navigate=studioTemporaryPageNavigation(input,phase),tab={id:'123450001',goto:async url=>calls.push(['goto',url]),getAXState:async()=>calls.push(['ax'])},AsyncFunction=Object.getPrototypeOf(async function(){}).constructor;
+ await new AsyncFunction('cua','nodeRepl','chromeId','let tab;let createdTemporaryPage=false;'+create+navigate+STUDIO_DIRECT_PROJECTS_READ_CODE)({createBrowserTab:async(browser,url)=>{calls.push(['create',browser,url]);return tab;}},{write:v=>writes.push(v)},'observed-chrome');
+ assert.deepEqual(calls,[['create','chrome','about:blank'],['goto',target],['ax']]);assert.match(writes[0],/STUDIO_TEMP_PAGE_V1:/);assert.ok(writes[0].includes('browser-original'));assert.doesNotMatch(create,/goto\(|getAXState\(|https:/);
+ if(draft_id||phase==='prepare'&&!pending){const prompt=studioPreviewPrompt(phase,input);assert.ok(prompt.includes(create));assert.ok(prompt.includes(navigate));assert.match(prompt,/Do not couple provider navigation or AX into creation/);assert.match(prompt,/NEVER apply to an existing reused or provider-locked candidate/);}
+});

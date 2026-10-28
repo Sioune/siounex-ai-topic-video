@@ -1,0 +1,111 @@
+{
+  "schema": "siounex-template-policy-v1",
+  "policy": "morning-light-evening-dark-v1",
+  "effective_date": "2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "selection": {
+    "mode": "owner-serial-alternating",
+    "method": "alternating_approved",
+    "sequence_field": "production_sequence",
+    "cursor_scope": "owner",
+    "sequence_rule": "owner historical maximum production_sequence plus one; choose the opposite tone of the previous saved choice",
+    "idempotent_retry": true,
+    "freeze_at_creation": true,
+    "reserve_specific_publication_date": false
+  },
+  "templates": [
+    {
+      "key": "morning-light@1",
+      "id": "morning-light",
+      "version": 1,
+      "runtime": "morning-light-v1",
+      "tone": "light",
+      "time_slot": "08:00",
+      "outro_variant": "dark",
+      "outro_version": "v5"
+    },
+    {
+      "key": "evening-dark@1",
+      "id": "evening-dark",
+      "version": 1,
+      "runtime": "evening-dark-v2",
+      "tone": "dark",
+      "time_slot": "18:00",
+      "outro_variant": "light",
+      "outro_version": "v5"
+    }
+  ],
+  "layout": {
+    "profile": "approved-node-stage-v2",
+    "identity_path": "production/template-layout-identity.json",
+    "source_rectangle": [
+      28,
+      474,
+      1024,
+      576
+    ],
+    "caption_center": [
+      540,
+      1136
+    ],
+    "caption_normal_size": 76,
+    "chapter_rectangle": [
+      0,
+      1228,
+      1080,
+      62
+    ],
+    "history_rectangle": [
+      64,
+      1304,
+      952,
+      236
+    ],
+    "minimum_bottom_clearance": 380
+  },
+  "classification": {
+    "schema": "template-publishing-slot-v1",
+    "fields": [
+      "timezone",
+      "time",
+      "selection_sequence",
+      "policy"
+    ],
+    "planned_date_required": false,
+    "frozen_from": "actual final video QA and approved complete package"
+  },
+  "warehouse": {
+    "mode": "category-fifo",
+    "classify_after_human_reviews": true,
+    "ordering": [
+      "delivery_approved_at",
+      "id"
+    ],
+    "missing_category": "leave slot empty; do not substitute the other category",
+    "preparation_and_submission": "reuse the same frozen package_id",
+    "recolor_or_rerender_at_publication": false
+  },
+  "human_reviews": {
+    "count": 2,
+    "stages": [
+      "ordinary-narration-first-review",
+      "owner-cloned-voice-final-review"
+    ],
+    "template_approval_replaces_content_review": false
+  },
+  "outro": {
+    "version": "v5",
+    "frames": 119,
+    "fps": 30,
+    "duration_seconds": 3.966667,
+    "audio_duration_seconds": 3.95,
+    "preserve_original_frames_rate_and_audio": true,
+    "body_audio_must_end_before_outro": true
+  },
+  "legacy": {
+    "frozen_projects_and_packages": "preserve exact original selection, bytes, approval and release identity",
+    "rerender_reapprove_republish_or_backfill_classification": false,
+    "historical_random_selection": "readable and recoverable; no longer the default for new production"
+  },
+  "scope": "Policy and source identity record; deployment, actual media acceptance and platform submission require their own real receipts."
+}

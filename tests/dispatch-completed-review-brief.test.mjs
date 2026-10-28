@@ -1,0 +1,21 @@
+import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {createHash} from 'node:crypto';
+import {dispatch} from '../scripts/production-dispatch-executor.mjs';
+const sha=v=>createHash('sha256').update(v).digest('hex');
+function fixture(t){
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'SYNTHETIC-completed-review-brief-'));t.after(()=>fs.rmSync(root,{recursive:true,force:true}));
+ const job={id:'job_44444444-4444-4444-8444-444444444444',is_test:1,status:'paused',review_mode:'auto',revision:3,mode_epoch:0,contract_hash:sha('SYNTHETIC contract'),source_snapshot:JSON.stringify({url:'https://example.org/SYNTHETIC'}),reviews:[],milestones:[{id:'SYNTHETIC-script',node:'script',status:'paused'}]},retry='source_retry_55555555-5555-4555-8555-555555555555';
+ job.reviews.push({id:retry,decision:'source_input_retry',note:JSON.stringify({schema:'source-input-retry-v2',retry_id:retry,binding:{revision:1,mode_epoch:0,contract_hash:job.contract_hash,source_snapshot_hash:sha(job.source_snapshot)}})});
+ const source='SYNTHETIC unchanged complete source',dir=path.join(root,job.id,job.contract_hash),nested=path.join(dir,'source-images','preparation-'+retry,'source-brief.json'),base=path.join(dir,'source-images','source-brief.json');fs.mkdirSync(path.dirname(nested),{recursive:true});
+ fs.writeFileSync(path.join(dir,'source.txt'),source);fs.writeFileSync(path.join(dir,'source-receipt.json'),JSON.stringify({url:JSON.parse(job.source_snapshot).url,sha256:sha(source),source_snapshot_hash:sha(job.source_snapshot),complete_response:true}));
+ fs.writeFileSync(nested,JSON.stringify({evidence:[],images:[{sha256:sha('SYNTHETIC original image')}],fixture:'original retry-bound images'}));fs.writeFileSync(base,JSON.stringify({evidence:[],images:[],fixture:'earlier preparation, never substituted'}));
+ return{root,job,dir,nested,base,retry,selection:{job,kind:'review-output-reconciliation',milestone_id:'SYNTHETIC-script'}};
+}
+async function execute(f,run,config={}){return dispatch({execute:true,materialize_linked_images:true,...config},{root:f.root,selection:f.selection,call:async()=>{throw Error('No source fetch, claim or metadata mutation in synthetic dispatch inspection')},prepareImages:async()=>{throw Error('No new image fetch permitted')},run});}
+test('completed review uses its validated historical retry image brief across script revisions, never the older base brief',async t=>{
+ const f=fixture(t),before=fs.readFileSync(f.nested),base=fs.readFileSync(f.base);let count=0;
+ const result=await execute(f,async c=>{count++;assert.equal(c.production_brief_file,f.nested);assert.equal(c.reconcile_review_output,true);assert.equal(c.materialize_linked_images,false);assert.equal(c.source_file,path.join(f.dir,'source.txt'));return{status:'SYNTHETIC existing-output-only'};});
+ assert.equal(count,1);assert.equal(result.status,'finite-workflow-returned');assert.deepEqual(fs.readFileSync(f.nested),before);assert.deepEqual(fs.readFileSync(f.base),base);
+});
+test('an unbound retry name cannot select its nested image brief',async t=>{const f=fixture(t),note=JSON.parse(f.job.reviews[0].note);note.binding.contract_hash=sha('SYNTHETIC other contract');f.job.reviews[0].note=JSON.stringify(note);await execute(f,async c=>{assert.equal(c.production_brief_file,f.base);assert.equal(c.reconcile_review_output,true);return{};});});
+test('a missing validated retry brief stops through reconciliation without image regeneration or fallback scanning',async t=>{const f=fixture(t);fs.unlinkSync(f.nested);const result=await execute(f,async c=>{assert.equal(c.production_brief_file,undefined);assert.equal(c.materialize_linked_images,false);assert.equal(c.reconcile_review_output,true);throw Error('SYNTHETIC original image-bound proof absent');});assert.equal(result.status,'review-output-reconciliation-required');assert.equal(result.new_model_calls,0);});
+test('changed confirmed source bytes stop before any completed-result child is admitted',async t=>{const f=fixture(t);fs.appendFileSync(path.join(f.dir,'source.txt'),' changed');let called=false;await assert.rejects(()=>execute(f,async()=>{called=true;}),/Frozen material changed/);assert.equal(called,false);});

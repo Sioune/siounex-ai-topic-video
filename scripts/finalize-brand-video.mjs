@@ -1,0 +1,30 @@
+import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';
+import policy from '../production/corner-bug-policy.json' with {type:'json'};
+import {command as run,probe as probeFile} from './media-adapter.mjs';
+import {concatPinnedVideoFrames} from '../production/unified-runtime/concat-video.mjs';
+import {motionSha as sha} from '../lib/content-motion-contract.mts';
+const base=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),json=f=>JSON.parse(fs.readFileSync(f)),fail=c=>{throw Object.assign(Error(c),{code:c})};
+const hash=f=>sha(fs.readFileSync(f)),esc=s=>String(s).replaceAll('\\','/').replaceAll(':','\\:').replaceAll("'","\\'");
+export function cornerFrame(n){return Math.min(n%600,119);}
+export async function finalizeBrandVideo({video,project,outputDir},{command=run,probe=probeFile}={}){
+ const asset=path.join(base,policy.asset.path),font=json(path.join(base,'production/unified-runtime/font-profile-windows.json')).regular.path;
+ if(hash(asset)!==policy.asset.sha256||project.fps!==30||!Number.isSafeInteger(project.body_frames)||project.body_frames<1||project.outro_frames!==119)fail('BRAND_INPUT_CHANGED');
+ const parent=hash(video),outro=path.resolve(path.dirname(project.__file||video),project.outro.path||project.outro.file),identity=sha({implementation:'brand-timescale-v3-clean-brand',parent,policy,body:project.body_frames,outro:project.outro.sha256}),dir=path.join(outputDir,'brand-final-'+identity),receiptFile=path.join(dir,'branding.json');
+ if(fs.existsSync(receiptFile)){const r=json(receiptFile);if(r.presentation_timestamps_continuous!==true||r.parent_video_sha256!==parent||hash(r.video_file)!==r.video_sha256)fail('BRAND_CACHE_CHANGED');return {...r,receipt_file:receiptFile};}
+ const retained=fs.existsSync(dir);if(retained&&!fs.existsSync(path.join(dir,'branded-body.mp4')))fail('BRAND_FINALIZATION_RESULT_UNKNOWN');fs.mkdirSync(dir,{recursive:true});
+ if(hash(outro)!==project.outro.sha256)fail('BRAND_OUTRO_CHANGED');
+ const body=path.join(dir,'branded-body.mp4'),picture=path.join(dir,'picture.mp4'),result=path.join(dir,'full-review.mp4'),label=path.join(dir,'brand.txt');if(!fs.existsSync(label))fs.writeFileSync(label,policy.layout.brand_text.text,{flag:'wx'});
+ const graph=`[0:v]trim=end_frame=${project.body_frames},setpts=N/(30*TB),delogo=x=48:y=74:w=200:h=60,drawtext=fontfile='${esc(font)}':textfile='${esc(label)}':fontsize=30:fontcolor=${project.series_selection?.template?.tone==='dark'?'0xeaf1f5':'0x617b8a'}:x=216:y=68[base];[1:v]trim=end_frame=120,crop=360:304:96:64,scale=144:122,format=rgba,tpad=stop_mode=clone:stop=480,loop=loop=-1:size=600:start=0,setpts=N/(30*TB)[bug];[base][bug]overlay=56:12:shortest=1:format=auto,format=yuv420p[v]`;
+ if(!retained){await command('ffmpeg',['-nostdin','-v','error','-i',video,'-c:v','libvpx-vp9','-i',asset,'-filter_complex',graph,'-map','[v]','-frames:v',String(project.body_frames),'-an','-c:v','libx264','-preset','fast','-crf','18','-pix_fmt','yuv420p','-r','30','-video_track_timescale','30000','-n',body],180000);
+ }
+ if(!fs.existsSync(result))concatPinnedVideoFrames({bodyFile:body,outroFile:outro,audioFile:video,bodyFrames:project.body_frames,outroFrames:119,outputDir:dir,visualName:'picture.mp4',videoName:'full-review.mp4'});
+ const timelineProof=json(path.join(dir,'full-review.remux-proof.json'));if(timelineProof.video.sha256!==hash(result)||timelineProof.qa.presentation_timestamps_continuous!==true)fail('BRAND_TIMELINE_CHANGED');
+ const info=await probe(result),stream=info.streams.find(x=>x.codec_type==='video');if(Number(stream.nb_frames)!==project.body_frames+119||stream.width!==1080||stream.height!==1920||stream.r_frame_rate!=='30/1'||Math.abs(Number(stream.duration)-(project.body_frames+119)/30)>.001)fail('BRAND_FRAME_COUNT_CHANGED');
+ await command('ffmpeg',['-nostdin','-v','error','-xerror','-i',result,'-f','null','-'],180000);
+ const audioHash=async f=>(await command('ffmpeg',['-v','error','-i',f,'-map','0:a:0','-c:a','copy','-f','hash','-hash','sha256','-'])).out.trim();
+ const beforeAudio=await audioHash(video),afterAudio=await audioHash(result);if(beforeAudio!==afterAudio)fail('BRAND_AUDIO_CHANGED');
+ const similarity=await command('ffmpeg',['-nostdin','-hide_banner','-i',video,'-i',result,'-filter_complex',`[0:v]trim=end_frame=${project.body_frames},crop=1080:1784:0:136,setpts=N/(30*TB)[a];[1:v]trim=end_frame=${project.body_frames},crop=1080:1784:0:136,setpts=N/(30*TB)[b];[a][b]ssim`,'-an','-f','null','-'],180000),ssim=Number(similarity.error.match(/All:([\d.]+)/)?.[1]);if(!Number.isFinite(ssim)||ssim<.995)fail('BRAND_CONTENT_CHANGED');
+ const outroHash=async(f,start,count)=>(await command('ffmpeg',['-v','error','-i',f,'-vf',`trim=start_frame=${start}:end_frame=${start+count},setpts=N/(30*TB)`,'-an','-f','framemd5','-'])).out.split('\n').filter(s=>s&&!s.startsWith('#')).map(s=>s.split(',').at(-1).trim()).join('\n');
+ if(await outroHash(result,project.body_frames,119)!==await outroHash(outro,0,119))fail('BRAND_OUTRO_PIXELS_CHANGED');
+ const receipt={presentation_timestamps_continuous:true,video_duration_seconds:Number(stream.duration),timeline_remux_proof_sha256:hash(path.join(dir,'full-review.remux-proof.json')),schema:'siounex-brand-finalization-v1',policy_id:policy.id,policy_sha256:sha(policy),asset_sha256:policy.asset.sha256,parent_video_sha256:parent,video_file:result,video_sha256:hash(result),size_bytes:fs.statSync(result).size,body_frames:project.body_frames,total_frames:project.body_frames+119,fps:30,repeat_frames:600,active_frames:120,hold_frame:119,overlay_region:[0,0,440,136],outside_brand_ssim:ssim,audio_packets_sha256:beforeAudio.split('=').at(-1),audio_unchanged:true,outro_sha256:project.outro.sha256,outro_frames:119,outro_pixels_unchanged:true,new_speech_calls:0,new_paid_calls:0,quality_approved:false,publication_authorized:false,finished_at:new Date().toISOString()};fs.writeFileSync(receiptFile,JSON.stringify(receipt,null,2),{flag:'wx'});return{...receipt,receipt_file:receiptFile};
+}

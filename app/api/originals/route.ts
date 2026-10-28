@@ -1,0 +1,7 @@
+import {identity,json} from '@/lib/api';
+import {createOriginal,editOriginal,getOriginal,listOriginals} from '@/lib/originals';
+import {ProductionError} from '@/lib/production-contract';
+export const dynamic='force-dynamic';
+export async function GET(req:Request){const owner=await identity(req);if(!owner)return json({error:'请登录后查看本人原创资料'},401);try{const id=new URL(req.url).searchParams.get('id');return json(id?{original:await getOriginal(id,owner)}:{originals:await listOriginals(owner)})}catch(e){return failure(e)}}
+export async function POST(req:Request){const owner=await identity(req,true);if(!owner)return json({error:'登录或请求来源无效'},403);try{const raw=await req.text();if(raw.length>350000)throw new ProductionError('原创资料请求过大',400);const b=JSON.parse(raw);if(!b||typeof b!=='object'||Array.isArray(b)||Object.keys(b).some(k=>!['action','request_id','input','id','expected_version'].includes(k)))throw new ProductionError('原创请求字段无效',400);if(b.action==='create')return json(await createOriginal(owner,b));if(b.action==='edit')return json(await editOriginal(b.id,owner,b));throw new ProductionError('不支持的原创操作',400)}catch(e){return failure(e)}}
+function failure(e:unknown){if(e instanceof ProductionError)return json({error:e.message},e.status);if(e instanceof SyntaxError)return json({error:'原创资料JSON无效'},400);console.error('original save failed');return json({error:'保存结果待核对；请先读回，再以同一请求编号重试'},503)}

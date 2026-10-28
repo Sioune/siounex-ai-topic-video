@@ -1,0 +1,175 @@
+{
+  "schema": "platform-publishing-guide-v1",
+  "strategy_version": "20261020-v2",
+  "version": "20261020-v2",
+  "review_status": "pending_owner_review",
+  "review_label": "待本人审核",
+  "purpose": "为同一已审成片分别审核五个平台的宣发文字、封面和发布选项。平台专版需要独立审核，不改变现有正式里程碑批准状态。",
+  "evidence_scope": "沿三份指定原宣发与已完成的公开官方资料检索整理；未重新测试模型、退款、产品功能或平台表单。来源文件头可能保留历史状态文字，当前批准状态以站内正式记录和绑定为准。",
+  "generation_contract": {
+    "draft_schema": "platform-promotion-drafts-v1",
+    "required_platforms": ["wechat_channels", "douyin", "bilibili", "kuaishou", "xiaohongshu"],
+    "required_platform_fields": ["title", "description", "tags", "approach"],
+    "field_labels": {"title": "标题", "description": "简介", "tags": "标签", "approach": "编辑依据"},
+    "markdown_section_titles": {"wechat_channels": "微信视频号", "douyin": "抖音", "bilibili": "哔哩哔哩", "kuaishou": "快手", "xiaohongshu": "小红书"},
+    "markdown_required_labels": ["标题", "简介", "标签", "编辑依据"],
+    "no_generic_fallback": true,
+    "new_copy_review_status": "pending_owner_review",
+    "public_text_fields": ["title", "description", "tags"],
+    "internal_review_field": "approach",
+    "platform_limits": {"kuaishou": {"max_tags": 4}},
+    "rules": ["五个平台均须独立完整输出，不得缺段或退回通用分享稿", "approach写针对性编辑理由，不能混入公开正文", "tags用相关主题字符串数组，发布时按真实平台话题控件分别填入", "快手最多4个有效相关话题，按本条内容取舍，不凑数、不静默截断；其他平台分别遵循本平台策略，不套用快手数量上限", "每条新稿独立等待本人审核，策略文件或历史批准不能代替本条审核"]
+  },
+  "shared_editorial_rules": [
+    "每个平台均独立写标题、正文、标签和针对性理由；同一事实与必要限制可以重复，不能仅替换平台名称。",
+    "正文只对观众解释内容，不写后台策略、标签数量策略、算法猜测或审核流程。",
+    "不得新增亲测、我操作过、真实退款、真实客户效果、稳定复现、速度或收益等未经证实的经历与结果。",
+    "标题、封面和正文应承诺同一件事；必要证据限制放进正文，不只藏在后台备注。",
+    "标签使用实际产品、任务、主题和品牌；不添加与视频无关的热点、人物或活动。",
+    "AI声明、稿件类型、原创或转载、商推、版权、可见范围、下载和定时选项分别核对；不能从一个已勾选项推断其他项正确。",
+    "不承诺推流、上热门、搜索排名、完播率或评论量。平台写法是可检验的编辑选择，不是已证明的推荐机制。"
+  ],
+  "source_fact_boundaries": [
+    {
+      "job_id": "job_79fcd694-545b-4423-971c-984d95b5511c",
+      "source_promotion_sha256": "256e0bae30761d22d948c4aa3a3d345ddb3e06c8f210b5e8502f5c11ad48b6cd",
+      "required_disclosures": ["内测中的抖音AI工坊", "文章作者的日语兴趣卡案例", "现有材料只有静态截图", "不是完整实测，也不代表已向所有用户开放"],
+      "do_not_infer": ["本人实际制作或操作过", "所有用户已经能用", "真实交互速度、稳定性或学习效果已经验证"]
+    },
+    {
+      "job_id": "job_38fd8bfd-2949-4d26-8b67-d07a03e6f0b0",
+      "source_promotion_sha256": "893525cf3f98ba056c3990c0ca664933e4f6873752dace5ff3f18e9f79079314",
+      "required_disclosures": ["六款智能体的模拟测试", "客户、病情和订单为虚构设定", "外发内容被拦截", "六款最终都未追回退款"],
+      "do_not_infer": ["真实客户隐私已经泄露给机构", "本人新运行六款模型或实际追回退款", "该实验等于真实客服成功率或通用模型排名"]
+    },
+    {
+      "job_id": "job_b7dcd6bf-682d-429f-9016-7c9f3df41c16",
+      "source_promotion_sha256": "c688a7356b079ab5ac22c48911a0b053577dd831cc3528e7705698916ecdff6f",
+      "required_disclosures": ["GLM-Legal官方演示与静态案例解读", "不是本人操作实测", "19.2%是特定严格法律任务的全条件通过率", "具体条款仍需专业人员结合实际情况复核"],
+      "do_not_infer": ["真实客户委托或本人连续操作录屏", "19.2%等于一般准确率、合同错误检出率或胜诉概率", "官方剪辑片段证明稳定性、响应耗时或每项细节都连续实演"]
+    }
+  ],
+  "platforms": {
+    "douyin": {
+      "official_facts": [
+        {
+          "fact": "官方视频创建API支持text中的话题和@，该字段总字数不超过1000；文档提醒话题仍需审核，避免强导流。API字段限制不能直接视为网页标题与描述全部限制。",
+          "source": "https://developer.open-douyin.com/docs/resource/zh-CN/dop/develop/openapi/video-management/douyin/create-video/video-create",
+          "verification": "official_public_document_readable"
+        },
+        {
+          "fact": "抖音官方公告要求发布者对AI生成内容显著标识，公告给出的主动打标路径为高级设置、发文助手自主声明、内容由AI生成。当前页面具体名称仍需现场确认。",
+          "source": "https://trust.douyin.com/article/15868",
+          "verification": "official_public_announcement_search_readable",
+          "source_date": "2025-06-13"
+        }
+      ],
+      "editorial_hypotheses": [
+        "先给一个具体疑问、可核实变化或明确结果，再补背景；不用夸张悬念承诺视频没有展示的效果。",
+        "正文保留一个讨论目标，结尾的问题应能用实际场景回答；不把提问写成强制点赞、关注或转发指令。",
+        "封面强调一个信息点，标题补足对象与边界；这是编辑选择，不宣称平台要求固定前三秒或某种句式。"
+      ],
+      "unverified_current_form_details": ["竖封面与横封面的当前比例、裁切安全区、分辨率和文件上限", "网页标题与作品描述的分别计数方式", "当前话题数量上限和是否已实际选中话题", "原创声明的本账号资格、条件及当前选项文字"],
+      "pre_submit_check": ["按真实表单分别回读标题和描述，不只依赖粘贴成功", "回看横竖封面裁切后的文字与主体", "确认话题被识别且与视频相符", "按成片事实选择AI声明，核对原创、商推、可见范围、下载与定时选项"]
+    },
+    "wechat_channels": {
+      "official_facts": [],
+      "official_document_candidates_not_verified": [
+        {
+          "source": "https://developers.weixin.qq.com/doc/channels/",
+          "status": "本轮未能读取；未验证普通非直播视频的发布、创作者单片指标API或个人申请条件。未找到不等于不存在。"
+        }
+      ],
+      "editorial_hypotheses": [
+        "先交代与日常学习、工作或授权选择的关系，再给完整案例背景，降低脱离上下文阅读时的误解。",
+        "用一项具体选择或经验问题收尾；不因社交分享场景而承诺转发或传播效果。"
+      ],
+      "unverified_current_form_details": ["普通视频上传封面、标题、描述和话题的当前规格", "AI声明和原创选项的当前位置与条件", "正式普通视频发布及创作者数据接入渠道"],
+      "execution_boundary": "现有工具安全阻断保持有效；本指南和文案不能解除阻断或授权替代浏览器、脚本、CDP、私有API访问。持续推进正式诊断和官方接入核实，文案可先独立审核。",
+      "pre_submit_check": ["先确认访问已由正式渠道允许，且账号归属与权限可核对", "未取得实际表单和平台回执前，不标记已上传、已发布或已采集", "按届时真实表单核对封面、文案、AI与原创声明、可见范围和定时设置"]
+    },
+    "bilibili": {
+      "official_facts": [
+        {
+          "fact": "官方2025年公告说明投稿时可通过创作声明选择该视频使用人工智能合成技术；平台会对未主动声明的AI内容补充标识，用户不得恶意篡改或隐匿。",
+          "source": "https://www.bilibili.com/opus/1106496554576904197",
+          "verification": "official_account_announcement_readable",
+          "source_date": "2025-08-29"
+        },
+        {
+          "fact": "官方内容标识公告要求转载稿件选择转载并填写来源；涉及原创时事、公共政策、社会事件等内容，应在简介标明拍摄时间和地点。按实际题材适用，不能从自有配音推断全部素材均可声明原创。",
+          "source": "https://www.bilibili.com/opus/840812291428450327",
+          "verification": "official_account_announcement_readable",
+          "source_date": "2023-09-14"
+        },
+        {
+          "fact": "创作中心公开说明投稿可填写标题、分区、tag和合集，并允许自定义封面；这些是应逐项核对的独立字段。",
+          "source": "https://www.bilibili.com/read/cv14762048/",
+          "verification": "official_account_article_search_readable"
+        }
+      ],
+      "historical_not_current_specification": [
+        {
+          "fact": "2018年官方web改版文章曾给出封面建议1146×717、最低960×600。年代较早，本指南不将其作为当前上传比例或尺寸标准。",
+          "source": "https://www.bilibili.com/opus/127210875404901820",
+          "source_date": "2018-06-08"
+        }
+      ],
+      "editorial_hypotheses": [
+        "标题保留准确产品名、具体任务和必要条件，方便观众辨认内容；不宣称这样必然提高搜索排名。",
+        "简介比短视频平台版补充更多证据形式、关键数字口径和推论边界；有步骤才列步骤，有版本或来源才写对应信息。",
+        "分区按成片主要内容选，tag按产品、任务与主题选；不为活动或热度放入不相干分类。"
+      ],
+      "unverified_current_form_details": ["当前封面比例、尺寸、裁切与文件上限", "当前标题、简介、tag数量和单tag字数上限", "当前分区列表与原创或自制声明条件"],
+      "pre_submit_check": ["检查标题、简介、分区与全部tag确实对应同一成片", "预览封面裁切并核对主体和限制说明", "按素材权利与来源实际情况核对自制或转载、来源和AI声明", "检查商业声明、权益、可见范围及定时发布选项"]
+    },
+    "kuaishou": {
+      "observed_current_form_details": [{"fact": "2026年10月20日本次创作者网页发布表单实际最多可选4个话题，后续新生成快手专稿按最多4个相关话题验收。", "verification": "creator_form_observation", "observed_date": "2026-10-20", "scope": "本次已获准访问的快手创作者网页表单；提交时仍需核对当前表单，不将本观察外推为所有API或未来版本的统一规格。"}],
+      "official_facts": [
+        {
+          "fact": "快手官方发布API要求caption标题与cover封面；文档列出封面小于10MB。服务端SDK文档要求封面使用JPG。这不证明网页表单采用同一比例或完整限制。",
+          "source": "https://open.kuaishou.com/platform/openApi?group=GROUP_OPEN_PLATFORM&menu=20",
+          "supporting_source": "https://open.kuaishou.com/platform/openApi?menu=55",
+          "verification": "official_public_document_search_readable"
+        },
+        {
+          "fact": "快手官方业务说明强调差异化垂类运营、与用户的连接，并以泛知识领域的实用信息与陪伴为例。这是内容生态说明，不是特定句式的推荐算法承诺。",
+          "source": "https://ir.kuaishou.com/zh-hans/news-releases/news-release-details-156",
+          "verification": "official_company_release_readable",
+          "source_date": "2025-08-21"
+        }
+      ],
+      "editorial_hypotheses": [
+        "独立围绕一个能理解的使用问题展开，把做法、结果和限制说清；不用抖音文案换几个词充作快手版。",
+        "有真实本人经历才用亲历叙述；本批材料使用案例解读、具体问题和可跟随的思考步骤，不写我试了或我办成了。",
+        "结尾邀请补充一个具体使用场景、授权边界或容易忽略的问题，不承诺互动或流量。"
+      ],
+      "unverified_current_form_details": ["普通创作者网页封面比例与裁切要求", "网页作品描述、标题与单话题长度上限", "普通视频的AI声明、原创选项具体位置、文字与资格条件"],
+      "pre_submit_check": ["确认快手专版标题、正文与话题，不能回退为通用稿", "回看实际封面裁切，确认横竖要求和显示效果", "检查案例身份与限制说明完整，AI声明按真实内容选择", "核对原创、商业推广、公开范围、下载和定时设置"]
+    },
+    "xiaohongshu": {
+      "official_facts": [],
+      "verification_note": "本轮未核验当前小红书普通视频上传规格或推荐机制；不把常见经验数值写成官方要求。",
+      "editorial_hypotheses": [
+        "用一个清楚的小问题作标题，将实际材料里已有的步骤或检查点整理成便于浏览的短段落。",
+        "笔记结构不等于亲测笔记；本批首要任务是保留静态截图、模拟实验或官方演示的真实身份。",
+        "标签对应产品和具体用途，避免堆叠泛热词；不承诺收藏、搜索曝光或种草转化。"
+      ],
+      "unverified_current_form_details": ["当前视频封面比例、尺寸、裁切和文件限制", "标题、正文和话题的当前数量与长度上限", "AI声明、原创和商业合作选项的具体要求"],
+      "pre_submit_check": ["以实际表单核对标题、正文、话题和封面，不用未验证的经验限制自动截断", "确认案例来源和非亲测说明没有因缩写被删掉", "按真实素材选择AI、原创与商业相关选项，并检查公开范围和定时设置"]
+    }
+  },
+  "cross_platform_ai_reference": {
+    "fact": "《人工智能生成合成内容标识办法》第十条要求用户发布生成合成内容时主动声明，并使用服务提供者提供的标识功能；这不能代替对各平台当前表单的逐项核对。",
+    "source": "https://www.cac.gov.cn/2025-03/14/c_1743654684782215.htm",
+    "verification": "official_regulator_document_readable",
+    "effective_date": "2025-09-01"
+  },
+  "review_and_submission": {
+    "new_copy_requires_owner_review": true,
+    "historical_approvals_unchanged": true,
+    "auto_approval": false,
+    "owner_review_subject": ["每个平台的标题、正文、标签与针对性理由", "所用正式封面及裁切预览", "来源限制、AI声明与版权归属", "当前正式成片和该平台稿件的绑定"],
+    "before_external_submission": ["只使用本人已审核的平台稿与正式素材，核对当前工作包和账号", "将实际填入的标题、正文、话题、封面及选项读回，与批准内容逐项比较", "任何被裁掉的文字、未选中的话题、缺失声明、版本或账号不匹配都先保留待处理", "正式提交后须回读真实平台作品ID、公开时间与证据；未知结果保留待核验，不盲目重发"]
+  }
+}

@@ -1,0 +1,7 @@
+production/skill-snapshots/** -text
+production/unified-runtime/** -text
+production/template-assets/** -text
+production/template-layout-identity.json -text
+production/template-policy.json -text
+scripts/private-review-caption-layout.mjs text eol=lf
+production/title-runtime-fix-v3.json -text

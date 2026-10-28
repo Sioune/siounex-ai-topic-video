@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+<defs>
+ <linearGradient id="room" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#f8fafc"/><stop offset=".45" stop-color="#dbe4ec"/><stop offset="1" stop-color="#adbfcc"/></linearGradient>
+ <radialGradient id="light"><stop stop-color="#ffffff" stop-opacity=".98"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+ <linearGradient id="titanium" x1="0" y1="0" x2="1" y2=".76"><stop stop-color="#788f9f"/><stop offset=".11" stop-color="#c9d5de"/><stop offset=".28" stop-color="#f9fcff"/><stop offset=".44" stop-color="#a7bbc9"/><stop offset=".53" stop-color="#f7fbff"/><stop offset=".68" stop-color="#d7e2e9"/><stop offset=".82" stop-color="#829ead"/><stop offset="1" stop-color="#edf4f8"/></linearGradient>
+ <linearGradient id="frame" x1="0" y1="0" x2=".82" y2="1"><stop stop-color="#ffffff"/><stop offset=".16" stop-color="#c8d4de"/><stop offset=".43" stop-color="#f4f8fb"/><stop offset=".63" stop-color="#a1b5c4"/><stop offset=".74" stop-color="#f8fbfe"/><stop offset="1" stop-color="#8aa5b8"/></linearGradient>
+ <linearGradient id="glass" x1="0" y1="0" x2=".95" y2="1"><stop stop-color="#f7fbfe" stop-opacity=".94"/><stop offset=".48" stop-color="#dce8ef" stop-opacity=".86"/><stop offset="1" stop-color="#eaf2f7" stop-opacity=".95"/></linearGradient>
+ <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#fbffff"/><stop offset=".45" stop-color="#c8d7e0"/><stop offset=".8" stop-color="#f7ffff"/><stop offset="1" stop-color="#6e92a8"/></linearGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#eff5f9"/><stop offset=".3" stop-color="#a8bdcc"/><stop offset=".53" stop-color="#f7fbfd"/><stop offset=".8" stop-color="#b1c5d3"/><stop offset="1" stop-color="#6f8ba0"/></linearGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="46"/></filter>
+ <filter id="shadow" x="-40%" y="-40%" width="180%" height="200%"><feDropShadow dx="0" dy="26" stdDeviation="24" flood-color="#446375" flood-opacity=".28"/></filter>
+ <filter id="ringShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="16" dy="26" stdDeviation="15" flood-color="#456476" flood-opacity=".28"/></filter>
+ <filter id="micro"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="2" seed="9"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".026"/></feComponentTransfer></filter>
+</defs>
+<rect width="1080" height="1920" fill="url(#room)"/>
+<ellipse cx="170" cy="330" rx="930" ry="740" fill="url(#light)"/>
+<ellipse cx="850" cy="1540" rx="710" ry="650" fill="#6bafca" opacity=".08" filter="url(#soft)"/>
+<!-- A continuous machined optical arc replaces the empty upper field. -->
+<g transform="rotate(-17 540 420)" filter="url(#ringShadow)">
+ <ellipse cx="540" cy="110" rx="745" ry="424" fill="none" stroke="#9cbdcd" stroke-width="118"/>
+ <ellipse cx="540" cy="91" rx="745" ry="424" fill="none" stroke="url(#titanium)" stroke-width="110"/>
+ <ellipse cx="540" cy="70" rx="745" ry="424" fill="none" stroke="#ffffff" stroke-opacity=".83" stroke-width="2"/>
+ <ellipse cx="540" cy="118" rx="692" ry="372" fill="none" stroke="#5b9cb9" stroke-opacity=".31" stroke-width="2"/>
+</g>
+<!-- Broad glass ribbons and distant architectural shadows, never source UI. -->
+<path d="M-270 690 C80 530 170 1760 -160 1970" fill="none" stroke="url(#titanium)" stroke-width="115" opacity=".48"/>
+<path d="M1130 470 C1540 880 1420 1460 1050 1700" fill="none" stroke="url(#titanium)" stroke-width="130" opacity=".65"/>
+<path d="M1120 470 C1530 870 1420 1440 1040 1680" fill="none" stroke="#faffff" stroke-width="2" opacity=".8"/>
+<!-- A real dimensional foundation occupies the former empty bottom. -->
+<ellipse cx="575" cy="1715" rx="665" ry="145" fill="#57778d" opacity=".28" filter="url(#soft)"/>
+<path d="M-102 1580 C120 1375 915 1375 1190 1580 L1185 1770 C865 1954 177 1941 -90 1767Z" fill="url(#floor)" filter="url(#shadow)"/>
+<ellipse cx="543" cy="1571" rx="650" ry="170" fill="url(#glass)" stroke="url(#edge)" stroke-width="4"/>
+<ellipse cx="543" cy="1572" rx="591" ry="130" fill="none" stroke="#9bbdce" stroke-opacity=".42" stroke-width="2"/>
+<path d="M-76 1690 C174 1844 918 1842 1168 1690" fill="none" stroke="#f6fbff" stroke-opacity=".8" stroke-width="2"/>
+<path d="M-64 1746 C227 1908 907 1878 1160 1740" fill="none" stroke="#6f91a9" stroke-opacity=".26" stroke-width="1"/>
+<!-- Integrated silver main display, actual video remains flat and front-facing. -->
+<rect x="9" y="132" width="1062" height="1040" rx="38" fill="url(#frame)" filter="url(#shadow)"/>
+<rect x="16" y="138" width="1048" height="1026" rx="31" fill="none" stroke="url(#edge)" stroke-width="2"/>
+<rect x="26" y="154" width="1028" height="994" rx="20" fill="url(#glass)"/>
+<path d="M38 165 H1041" stroke="#ffffff" stroke-width="2" opacity=".86"/>
+<rect x="22" y="362" width="1036" height="588" rx="4" fill="#90a7b6"/>
+<rect x="25" y="365" width="1030" height="582" rx="2" fill="#f9fdff"/>
+<path d="M66 328 H245" stroke="#3f829f" stroke-width="3"/>
+<path d="M64 1138 H1017" stroke="#d9e7ee" stroke-width="2"/>
+<path d="M62 1142 H1015" stroke="#ffffff" stroke-width="1"/>
+<path d="M18 386 V930" stroke="#77c2dc" stroke-width="2" opacity=".62"/>
+<path d="M1062 386 V930" stroke="#ffffff" stroke-width="2" opacity=".85"/>
+<!-- Genuine previous-episode content deck; no fake controls or data. -->
+<rect x="28" y="1230" width="1024" height="440" rx="26" fill="url(#frame)" filter="url(#shadow)"/>
+<rect x="34" y="1236" width="1012" height="428" rx="21" fill="url(#glass)" stroke="url(#edge)" stroke-width="1"/>
+<path d="M59 1296 H1020" stroke="#bbcfdd" stroke-width="1" opacity=".55"/>
+<rect width="1080" height="1920" filter="url(#micro)" opacity=".48"/>
+</svg>

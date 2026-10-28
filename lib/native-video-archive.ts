@@ -1,0 +1,13 @@
+import{db}from'./store';import{getJob}from'./production';import{promoBinding}from'./promo-delivery';import{hash,text,ProductionError}from'./production-contract';
+// Service callback records an actually finalized and re-materialized Library file.
+// It grants neither video quality approval nor permission to publish externally.
+export async function recordNativeVideoArchive(id:string,b:Record<string,unknown>){
+ if(id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw new ProductionError('Protected video job excluded',403);
+ const j=await getJob(id),binding=promoBinding(j),sha=text(b.sha256,64),libraryId=text(b.library_file_id,100),fileId=text(b.file_id,100),version=Number(b.version),size=Number(b.size_bytes),verified=text(b.verified_at,50);
+ if(JSON.stringify(binding)!==JSON.stringify(b.binding))throw new ProductionError('视频或脚本绑定已变化，先重新核验',409);
+ const candidate=j.reviews.find(r=>r.id===binding.video_reference&&r.decision==='native_video_candidate'),native=candidate?JSON.parse(String(candidate.note)):null;
+ if(!native||sha!==binding.video_sha256||b.materialized_sha256!==sha||!Number.isInteger(size)||size!==native.size_bytes||!/^libfile_[a-f0-9]{32}$/.test(libraryId)||!/^file_[a-f0-9]{32}$/.test(fileId)||!Number.isInteger(version)||version<0||!Number.isFinite(Date.parse(verified))||b.quality_approved!==false||b.publication_authorized!==false)throw new ProductionError('仅接收当前真实视频的 Library 归档与二次下载核验',400);
+ const note=JSON.stringify({schema:'native-video-library-archive-v1',binding,sha256:sha,materialized_sha256:sha,library_file_id:libraryId,file_id:fileId,version,file_name:text(b.file_name,240),size_bytes:size,verified_at:verified,quality_approved:false,publication_authorized:false,site_bytes_stored:false}),rid='native_archive_'+await hash(id+sha+libraryId+fileId+version),old=await db().prepare('SELECT note FROM production_reviews WHERE id=?').bind(rid).first<{note:string}>();
+ if(old){if(old.note!==note)throw new ProductionError('归档记录不可覆盖；保留原始核验版本',409);return{id:rid,replayed:true};}
+ const r=await db().prepare("INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) SELECT ?,id,revision,?,'native_video_archive_v1',?,'verified-library-materialization',? FROM production_jobs WHERE id=? AND revision=? AND mode_epoch=? AND approved_hash=? ON CONFLICT(id) DO NOTHING").bind(rid,sha,note,new Date().toISOString(),id,j.revision,j.mode_epoch,j.approved_hash).run();if(!r.meta.changes&&!await db().prepare('SELECT id FROM production_reviews WHERE id=? AND note=?').bind(rid,note).first())throw new ProductionError('当前绑定并发变化，归档未登记',409);return{id:rid,replayed:!r.meta.changes};
+}

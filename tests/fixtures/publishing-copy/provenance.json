@@ -1,0 +1,24 @@
+{
+  "fixtures": [
+    {
+      "fixture": "refund-promotion.md",
+      "sanitization": "Internal facts body replaced; all public sections and historical review-status preamble preserved verbatim.",
+      "fixture_sha256": "62f52e11631df0cc4c6b9413cd4669f781e66e1bfca9028f457d66609b9ad172",
+      "original_sha256": "893525cf3f98ba056c3990c0ca664933e4f6873752dace5ff3f18e9f79079314"
+    },
+    {
+      "fixture": "glm-promotion.md",
+      "sanitization": "Internal facts body replaced; all public sections and historical review-status preamble preserved verbatim.",
+      "fixture_sha256": "e0064073dd77f85c74c80d094c7a5b6ed9623f97fbb6b29f1818843d3b96ce4f",
+      "original_sha256": "c688a7356b079ab5ac22c48911a0b053577dd831cc3528e7705698916ecdff6f"
+    },
+    {
+      "fixture": "japanese-promotion.txt",
+      "sanitization": "Public text and historical review-status notes preserved verbatim.",
+      "fixture_sha256": "256e0bae30761d22d948c4aa3a3d345ddb3e06c8f210b5e8502f5c11ad48b6cd",
+      "original_sha256": "256e0bae30761d22d948c4aa3a3d345ddb3e06c8f210b5e8502f5c11ad48b6cd"
+    }
+  ],
+  "origin": "Read from the current approved archive texts whose SHA256 the parent verified against live material bindings.",
+  "schema": "publishing-copy-fixtures-v1"
+}

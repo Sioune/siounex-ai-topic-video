@@ -1,0 +1,10 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createFlowExecutor} from '../scripts/flow-executor-call.mjs';
+const response=(status,value)=>new Response(JSON.stringify(value),{status,headers:{'Content-Type':'application/json'}});
+test('parallel long-flow authentication expiry performs one native refresh and retries only the exact rejected bodies',async()=>{
+ const sent=[];let refreshed=0;const e=createFlowExecutor({token:'SYNTHETIC-old',project_id:'SYNTHETIC-project'},{request:async(url,o)=>{sent.push({url,token:o.headers['OAI-Sites-Authorization'],body:o.body,redirect:o.redirect});return o.headers['OAI-Sites-Authorization']==='Bearer SYNTHETIC-old'?response(401,{error:'authentication required'}):response(200,{accepted:JSON.parse(o.body).request_id});},readCredential:async id=>{assert.equal(id,'SYNTHETIC-project');refreshed++;await new Promise(r=>setTimeout(r,2));return{token:'SYNTHETIC-renewed',diagnostic:{code:'CREDENTIAL_READ_SUCCEEDED'}};}});
+ const bodies=[{action:'native_preparation_progress',request_id:'one'},{action:'research_complete',request_id:'two'}],r=await Promise.all(bodies.map(b=>e.call(b)));assert.equal(refreshed,1);assert.deepEqual(r.map(x=>x.accepted),['one','two']);for(const b of bodies)assert.equal(sent.filter(s=>s.body===JSON.stringify(b)).length,2);assert.ok(sent.every(s=>s.redirect==='error'));e.close();await assert.rejects(()=>e.call(bodies[0]),/FLOW_CLOSED/);
+});
+test('a network loss, unknown 5xx, permission rejection or definite business error cannot replay a mutation',async()=>{
+ for(const kind of ['network',500,403,409]){let calls=0,refreshes=0;const e=createFlowExecutor({token:'SYNTHETIC',project_id:'SYNTHETIC'},{request:async()=>{calls++;if(kind==='network')throw Error('SYNTHETIC transport loss');return response(kind,{error:'SYNTHETIC original receipt must be checked'});},readCredential:async()=>{refreshes++;throw Error('No refresh')}});await assert.rejects(()=>e.call({action:'local_review_draft_return',request_id:'SYNTHETIC'}));assert.equal(calls,1);assert.equal(refreshes,0);e.close();}
+});

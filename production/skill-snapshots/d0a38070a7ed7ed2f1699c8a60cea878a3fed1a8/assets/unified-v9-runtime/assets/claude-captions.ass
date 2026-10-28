@@ -1,0 +1,43 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 0
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Caption,Microsoft YaHei,76,&H003E3120&,&H003E3120&,&H00000000&,&H00000000&,0,0,0,0,100,100,1,0,1,0,0,2,76,76,788,1
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:00.00,0:00:01.08,Caption,,0,0,0,,{\an2\pos(540,1132)\fnSegoe UI Semibold\fs128\c&H88691F&}20{\fnMicrosoft YaHei\fs90\c&H3E3120&}辆车，
+Dialogue: 0,0:00:01.29,0:00:02.44,Caption,,0,0,0,,{\an2\pos(540,1132)}怎么一早就没了？
+Dialogue: 0,0:00:03.07,0:00:04.78,Caption,,0,0,0,,{\an2\pos(540,1132)}看这个自行车调度演示：
+Dialogue: 0,0:00:05.30,0:00:06.28,Caption,,0,0,0,,{\an2\pos(540,1132)}早高峰一到，
+Dialogue: 0,0:00:06.55,0:00:08.84,Caption,,0,0,0,,{\an2\pos(540,1132)}坡上的车一辆辆往市中心跑。
+Dialogue: 0,0:00:09.36,0:00:09.96,Caption,,0,0,0,,{\an2\pos(540,1132)\fnSegoe UI Semibold\fs128\c&H88691F&}20{\fnMicrosoft YaHei\fs90\c&H3E3120&}辆，
+Dialogue: 0,0:00:10.14,0:00:10.87,Caption,,0,0,0,,{\an2\pos(540,1132)\fnSegoe UI Semibold\fs128\c&H88691F&}15{\fnMicrosoft YaHei\fs90\c&H3E3120&}辆，
+Dialogue: 0,0:00:11.00,0:00:11.70,Caption,,0,0,0,,{\an2\pos(540,1132)\fnSegoe UI Semibold\fs128\c&H88691F&}12{\fnMicrosoft YaHei\fs90\c&H3E3120&}辆……
+Dialogue: 0,0:00:12.24,0:00:12.71,Caption,,0,0,0,,{\an2\pos(540,1132)}最后，
+Dialogue: 0,0:00:12.93,0:00:13.72,Caption,,0,0,0,,{\an2\pos(540,1132)}车桩空了。
+Dialogue: 0,0:00:14.54,0:00:15.53,Caption,,0,0,0,,{\an2\pos(540,1132)}光看表格，
+Dialogue: 0,0:00:15.55,0:00:17.54,Caption,,0,0,0,,{\an2\pos(540,1132)}你看到的就是‘这里没车了’。
+Dialogue: 0,0:00:18.11,0:00:19.41,Caption,,0,0,0,,{\an2\pos(540,1132)}可让数据动起来，
+Dialogue: 0,0:00:19.58,0:00:20.42,Caption,,0,0,0,,{\an2\pos(540,1132)}车去了哪儿、
+Dialogue: 0,0:00:20.60,0:00:21.69,Caption,,0,0,0,,{\an2\pos(540,1132)}站点怎么空的，
+Dialogue: 0,0:00:21.92,0:00:22.86,Caption,,0,0,0,,{\an2\pos(540,1132)}一眼就明白了。
+Dialogue: 0,0:00:23.69,0:00:25.88,Caption,,0,0,0,,{\an2\pos(540,1132)}Claude现在就能把这些图表、
+Dialogue: 0,0:00:25.95,0:00:27.16,Caption,,0,0,0,,{\an2\pos(540,1132)}数字和路线，
+Dialogue: 0,0:00:27.40,0:00:28.93,Caption,,0,0,0,,{\an2\pos(540,1132)}变成能动的讲解。
+Dialogue: 0,0:00:29.57,0:00:31.53,Caption,,0,0,0,,{\an2\pos(540,1132)}蓝色路线带着车往前走，
+Dialogue: 0,0:00:31.82,0:00:33.21,Caption,,0,0,0,,{\an2\pos(540,1132)}旁边的数字跟着变，
+Dialogue: 0,0:00:33.64,0:00:35.63,Caption,,0,0,0,,{\an2\pos(540,1132)}整个过程直接演给你看。
+Dialogue: 0,0:00:36.13,0:00:37.27,Caption,,0,0,0,,{\an2\pos(540,1132)}哪个地方没看清？
+Dialogue: 0,0:00:37.42,0:00:38.27,Caption,,0,0,0,,{\an2\pos(540,1132)}还能接着改。
+Dialogue: 0,0:00:38.78,0:00:40.71,Caption,,0,0,0,,{\an2\pos(540,1132)}比如把空车桩多停一会儿，
+Dialogue: 0,0:00:40.98,0:00:41.90,Caption,,0,0,0,,{\an2\pos(540,1132)}让人反应过来：
+Dialogue: 0,0:00:42.33,0:00:42.94,Caption,,0,0,0,,{\an2\pos(540,1132)}哦，
+Dialogue: 0,0:00:43.01,0:00:44.57,Caption,,0,0,0,,{\an2\pos(540,1132)}原来车都跑到那边去了。
+Dialogue: 0,0:00:45.30,0:00:47.13,Caption,,0,0,0,,{\an2\pos(540,1132)}以后讲一份复杂的报表，
+Dialogue: 0,0:00:47.37,0:00:49.58,Caption,,0,0,0,,{\an2\pos(540,1132)}或许不用先说‘大家听我解释’，
+Dialogue: 0,0:00:49.90,0:00:51.17,Caption,,0,0,0,,{\an2\pos(540,1132)}直接让它演一遍。
+Dialogue: 0,0:00:51.74,0:00:52.57,Caption,,0,0,0,,{\an2\pos(540,1132)}你的工作里，
+Dialogue: 0,0:00:52.73,0:00:54.42,Caption,,0,0,0,,{\an2\pos(540,1132)}哪件事最适合这样讲？

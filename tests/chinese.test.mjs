@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';import fs from 'node:fs';
+import {parseFeed,articleText,filterTopics} from '../lib/feed.ts';import {isChinese,relevantAI,findDuplicate,chineseBrief} from '../lib/dedupe.ts';
+const sources=JSON.parse(fs.readFileSync('lib/sources.json'));let count=0;for(const s of sources){const file='/tmp/chinese_ai_sources/'+s.id.replace('-zh','')+'.xml';if(!fs.existsSync(file))continue;const rows=parseFeed(fs.readFileSync(file,'utf8'),s);assert(rows.length>0);count+=rows.length;for(const t of rows){assert(t.url.startsWith('https://'));if(s.id!=='qbitai-zh'&&isChinese(t.title,t.summary)&&relevantAI(t.title,t.summary))assert(chineseBrief(t.title,t.summary).length>30)}}
+assert(!isChinese('Only English','This is a full English article which should never pass.'));
+assert(!relevantAI('早报｜AI模型上线；手机发布；股市回顾','人工智能大模型智能体'));
+const archived={id:'t_123',url:'https://www.ifanr.com/1682888',title:'AI 视频榜全球第二，藏着一家新影视公司的野心',original_title:'AI 视频榜全球第二',summary:'视频制片流程',published_at:'2026-10-03T00:00:00Z',content_lang:'legacy',favorite:1,disposition:'rejected'};
+assert.equal(findDuplicate({url:'https://www.qbitai.com/2026/10/501803.html',title:'AI影视新平台',summary:'模型和制片工具',published_at:'2026-10-07T00:00:00Z'},[archived])?.id,archived.id);
+const filter={q:'',category:'all',time:'all',material:'all',sort:'date',tab:'all'};assert.equal(filterTopics([archived],filter).length,0);assert.equal(filterTopics([archived],{...filter,tab:'saved'}).length,1);assert.equal(filterTopics([archived],{...filter,tab:'rejected'}).length,1);assert.equal(filterTopics([archived],{...filter,tab:'legacy'}).length,1);
+const file='/tmp/chinese_ai_sources/qbit_gpt_ui.html';if(fs.existsSync(file)){const body=articleText(fs.readFileSync(file,'utf8'));assert(body.length>1000);assert(!/热门文章|相关阅读/.test(body));}
+console.log('PASS: '+count+' available local feed fixtures; Chinese language detection, meaningful summaries, original HTTPS links, roundups, cross-source event merge, saved/rejected/history preservation, bounded article extraction. Multilingual visibility is covered separately.');

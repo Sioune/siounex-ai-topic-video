@@ -1,0 +1,217 @@
+{
+  "schema": "warehouse-cover-branding-v1",
+  "policy_version": "bottom-lockup-20261023",
+  "owner_authorization": "所有生成封面均包含本人logo与怎么用好AI；现有片仓封面按本人选定底部融合形式修正",
+  "migrations": [
+    {
+      "job_id": "job_2cd12bf1-3fec-4b9d-ac4a-b8e4add60277",
+      "title": "AI 润稿后多了一句客套话，为什么会一路进了印刷厂？",
+      "owner_instruction_date": "2026-10-23",
+      "original_binding": {
+        "job_id": "job_2cd12bf1-3fec-4b9d-ac4a-b8e4add60277",
+        "revision": 1,
+        "script_hash": "28d722fc6e16d20a2425dfc4183f0f9971bab16db4ce4cc87fbcc88bbe30c80b",
+        "mode_epoch": 0,
+        "contract_hash": "ff9bb216e32a996c7da5dcfe0a52758823e6753b910533bdc555670ed314b240",
+        "video_milestone_id": "local_review_video_1c80eb333af48c5fec68166806b554ff1a22986fe50a05327de17b4c42a9db4a",
+        "video_artifact_version": 2,
+        "video_artifact_hash": "e5987878985272b438ed30e91ac4d340b72d31ffcea792f0e5f04c21af9c1288",
+        "delivery_milestone_id": "post_video_final_3a5c6588bc386d5a0c7dbfc18688a418c5df78d93d3ce37d24285ecb4f9f2483",
+        "delivery_artifact_version": 1,
+        "delivery_artifact_hash": "0792894c0841e5674125eaf28462f75ce32c5a67a144e0782681b6937d5ac39c",
+        "site_archive_id": "sitefile_0fd0a1847bbb560c1e099c9145860379d2b5ebb0f5e4f94633a33f498ac564db",
+        "video_sha256": "586afe4fd6cc12869ef351c1121b95f4c1ee54091baae01521b20b476a49d020",
+        "size_bytes": 9803350,
+        "file_name": "full-review.mp4",
+        "materials": [
+          {
+            "role": "cover_3_4",
+            "site_archive_id": "sitefile_1e3c4c8d9b75e4eedd0da7d078c155cdafb6c6b5d40c1f3f113b87574fee82d4",
+            "sha256": "8fff208bcabcc7a959b87b6291220a47188701bb1c3d20159ab7658b23a65d90",
+            "size_bytes": 1969916,
+            "file_name": "cover_3_4.png",
+            "mime_type": "image/png",
+            "milestone_id": "post_video_final_a68efbb11146e763af84cd685cc0d97197c767571a32d120ad49eed16d6ad17e",
+            "artifact_hash": "564fb44bdc263f1d97541daeb2744866e1380e21a63416345d0a8b84d7809bd3",
+            "artifact_version": 1
+          },
+          {
+            "role": "cover_4_3",
+            "site_archive_id": "sitefile_1737683cafc99e809e00e0e9faac5ef07d993b2643d47b811ff09a7639912975",
+            "sha256": "09e7853457058c109d5e2548dd22bb8cf3394aa0e33164d172f46bdfd2682a6c",
+            "size_bytes": 2029532,
+            "file_name": "cover_4_3.png",
+            "mime_type": "image/png",
+            "milestone_id": "post_video_final_a68efbb11146e763af84cd685cc0d97197c767571a32d120ad49eed16d6ad17e",
+            "artifact_hash": "564fb44bdc263f1d97541daeb2744866e1380e21a63416345d0a8b84d7809bd3",
+            "artifact_version": 1
+          },
+          {
+            "role": "promotion",
+            "site_archive_id": "sitefile_e2a3288a0b8b454d0ea793c71100d33982fc3aaeac16d45355f24abfeb5c7bbe",
+            "sha256": "26993edc6a8d55ac44450fc5fcaa43bf463968cd23d51001c830bc6cae490090",
+            "size_bytes": 5334,
+            "file_name": "promotion.txt",
+            "mime_type": "text/plain",
+            "milestone_id": "post_video_final_4e72170e6155276f3f9013c2b3892a922676a152a8586bc17c7c3fbce511fd2a",
+            "artifact_hash": "64e0b046c479813ef83cd89e21d40ea96c8cea9ae7366f60842f844dc0621fad",
+            "artifact_version": 1
+          }
+        ]
+      },
+      "covers": [
+        {
+          "role": "cover_3_4",
+          "source_archive_id": "sitefile_1e3c4c8d9b75e4eedd0da7d078c155cdafb6c6b5d40c1f3f113b87574fee82d4",
+          "source_sha256": "8fff208bcabcc7a959b87b6291220a47188701bb1c3d20159ab7658b23a65d90",
+          "site_archive_id": "brandcover_c7673320d52a182930311a0b8f39542842231c622fda6b3f7c64ef626316fca9",
+          "sha256": "c7673320d52a182930311a0b8f39542842231c622fda6b3f7c64ef626316fca9",
+          "size_bytes": 1936223,
+          "width": 1086,
+          "height": 1448,
+          "file_name": "print-cover_3_4-c7673320d52a.png",
+          "mime_type": "image/png",
+          "asset_path": "/brand-covers/print-cover_3_4-c7673320d52a.png",
+          "visual_evidence": {
+            "method": "visual",
+            "observed_text": "怎么用好AI",
+            "logo_present": true,
+            "logo_source_sha256": "f5febc8fbbab8dcff5642f11d7ef1bf7ca1f598f2c6dceac556b560e29437258",
+            "layout": "bottom-integrated-lockup",
+            "image_sha256": "c7673320d52a182930311a0b8f39542842231c622fda6b3f7c64ef626316fca9",
+            "reviewed_at": "2026-10-23T15:59:48.188Z",
+            "note": "实际打开最终图片核验：品牌字与右侧蓝G银眼镜logo组成底部一体组合；标题、主体和关键事实可辨。"
+          }
+        },
+        {
+          "role": "cover_4_3",
+          "source_archive_id": "sitefile_1737683cafc99e809e00e0e9faac5ef07d993b2643d47b811ff09a7639912975",
+          "source_sha256": "09e7853457058c109d5e2548dd22bb8cf3394aa0e33164d172f46bdfd2682a6c",
+          "site_archive_id": "brandcover_f84bb88d24d02e0689bb6f6388e3eeb618cd44a0ec6d433266ef6f7e3733302e",
+          "sha256": "f84bb88d24d02e0689bb6f6388e3eeb618cd44a0ec6d433266ef6f7e3733302e",
+          "size_bytes": 2048525,
+          "width": 1448,
+          "height": 1086,
+          "file_name": "print-cover_4_3-f84bb88d24d0.png",
+          "mime_type": "image/png",
+          "asset_path": "/brand-covers/print-cover_4_3-f84bb88d24d0.png",
+          "visual_evidence": {
+            "method": "visual",
+            "observed_text": "怎么用好AI",
+            "logo_present": true,
+            "logo_source_sha256": "f5febc8fbbab8dcff5642f11d7ef1bf7ca1f598f2c6dceac556b560e29437258",
+            "layout": "bottom-integrated-lockup",
+            "image_sha256": "f84bb88d24d02e0689bb6f6388e3eeb618cd44a0ec6d433266ef6f7e3733302e",
+            "reviewed_at": "2026-10-23T15:59:48.206Z",
+            "note": "实际打开最终图片核验：品牌字与右侧蓝G银眼镜logo组成底部一体组合；标题、主体和关键事实可辨。"
+          }
+        }
+      ]
+    },
+    {
+      "job_id": "job_fcc5eaee-832c-498e-8196-b7de8a9ffbfc",
+      "title": "Claude新模型曝光！能跳出思维定势，修Bug治标又治本",
+      "owner_instruction_date": "2026-10-23",
+      "original_binding": {
+        "job_id": "job_fcc5eaee-832c-498e-8196-b7de8a9ffbfc",
+        "revision": 2,
+        "script_hash": "824e9748df469ad7fa5b822405ba136e0bf00ac9c456bcc8308fb5372e5e9663",
+        "mode_epoch": 0,
+        "contract_hash": "f8467d8b323a81b351fe45d85abad2c278cb903d411ee6b8c244b7ab630832fb",
+        "video_milestone_id": "local_review_video_b01ff763c7c487e91a5a9ce8817bff8be584fba6f81cfdddd2fa40cfce9d1959",
+        "video_artifact_version": 4,
+        "video_artifact_hash": "79873b8a5096127b8dcbea6b817fab338f6ffcaebc76f55951f49143ad98546a",
+        "delivery_milestone_id": "post_video_final_8b0adb6c3806a086f51f140be9c8dda86de476fbb3173d57db73c0128f59828b",
+        "delivery_artifact_version": 1,
+        "delivery_artifact_hash": "884fddf0b789a28acd135f26378b4bea167fce4fb95d2a3b7e679852a8f883f8",
+        "site_archive_id": "sitefile_dc6452a7dfb6ba568d28d08cb18221588e2656ef0443b1b24f50f928c416f56a",
+        "video_sha256": "7279ec86d6530898f5b78f46decf089d94e1a359788a3abd3c8afe40abc8273d",
+        "size_bytes": 9775109,
+        "file_name": "full-review.mp4",
+        "materials": [
+          {
+            "role": "cover_3_4",
+            "site_archive_id": "sitefile_7864aa0c257d52e85227c2a4bb3de293a3368f311ab886819cffc81b3b3f4ec3",
+            "sha256": "7bf04d993dc4d05d85d9e684018122e3f91094fe1bb91d45463f3fdfd8c486a3",
+            "size_bytes": 2088613,
+            "file_name": "cover_3_4.png",
+            "mime_type": "image/png",
+            "milestone_id": "post_video_final_51558a552c3798566eb6b42c120c9ecbeb93346d2368d1043fe4f6dcefd5e89b",
+            "artifact_hash": "bb96f9ac1eefa5be7ade2f686260f9ea211de424a1a97e71e2adfa190072044e",
+            "artifact_version": 1
+          },
+          {
+            "role": "cover_4_3",
+            "site_archive_id": "sitefile_1296ea46ba2a99ef689511d9099413880c37e4b2922679a1f5e070989050dc88",
+            "sha256": "e822d6cc9dc1bc654999e43c68aae3984b93168d607e7dbde1e82eb7cc3f60e9",
+            "size_bytes": 2269429,
+            "file_name": "cover_4_3.png",
+            "mime_type": "image/png",
+            "milestone_id": "post_video_final_51558a552c3798566eb6b42c120c9ecbeb93346d2368d1043fe4f6dcefd5e89b",
+            "artifact_hash": "bb96f9ac1eefa5be7ade2f686260f9ea211de424a1a97e71e2adfa190072044e",
+            "artifact_version": 1
+          },
+          {
+            "role": "promotion",
+            "site_archive_id": "sitefile_542027cdb72fdf0ab3e9dcc152b73bc194dfd045fb35b79b7b6f7bddd9bb9f61",
+            "sha256": "7eab2e8bcf297fde765508b54c93de64b75132d74aa30759594f7200fbbdb60a",
+            "size_bytes": 5389,
+            "file_name": "promotion.txt",
+            "mime_type": "text/plain",
+            "milestone_id": "post_video_final_836f20f96d3578c00dd8d0e6696be3d844a40568e7463320fc89319141057233",
+            "artifact_hash": "36e066859e193326590d0dcda1bcb39fe9a6de9825a0a0901033dcf7154836d4",
+            "artifact_version": 1
+          }
+        ]
+      },
+      "covers": [
+        {
+          "role": "cover_3_4",
+          "source_archive_id": "sitefile_7864aa0c257d52e85227c2a4bb3de293a3368f311ab886819cffc81b3b3f4ec3",
+          "source_sha256": "7bf04d993dc4d05d85d9e684018122e3f91094fe1bb91d45463f3fdfd8c486a3",
+          "site_archive_id": "brandcover_594235bb79e8786d5af024e0e01d507da2887a3b28fd42fc8057c7a531b67ae2",
+          "sha256": "594235bb79e8786d5af024e0e01d507da2887a3b28fd42fc8057c7a531b67ae2",
+          "size_bytes": 2077315,
+          "width": 1086,
+          "height": 1448,
+          "file_name": "claude-cover_3_4-594235bb79e8.png",
+          "mime_type": "image/png",
+          "asset_path": "/brand-covers/claude-cover_3_4-594235bb79e8.png",
+          "visual_evidence": {
+            "method": "visual",
+            "observed_text": "怎么用好AI",
+            "logo_present": true,
+            "logo_source_sha256": "f5febc8fbbab8dcff5642f11d7ef1bf7ca1f598f2c6dceac556b560e29437258",
+            "layout": "bottom-integrated-lockup",
+            "image_sha256": "594235bb79e8786d5af024e0e01d507da2887a3b28fd42fc8057c7a531b67ae2",
+            "reviewed_at": "2026-10-23T15:59:48.223Z",
+            "note": "实际打开最终图片核验：品牌字与右侧蓝G银眼镜logo组成底部一体组合；标题、主体和关键事实可辨。"
+          }
+        },
+        {
+          "role": "cover_4_3",
+          "source_archive_id": "sitefile_1296ea46ba2a99ef689511d9099413880c37e4b2922679a1f5e070989050dc88",
+          "source_sha256": "e822d6cc9dc1bc654999e43c68aae3984b93168d607e7dbde1e82eb7cc3f60e9",
+          "site_archive_id": "brandcover_71b9e6c72e5c6e75ee90c2346f854638b06cfe764bdfa37c05088a80d7594d91",
+          "sha256": "71b9e6c72e5c6e75ee90c2346f854638b06cfe764bdfa37c05088a80d7594d91",
+          "size_bytes": 2202917,
+          "width": 1448,
+          "height": 1086,
+          "file_name": "claude-cover_4_3-71b9e6c72e5c.png",
+          "mime_type": "image/png",
+          "asset_path": "/brand-covers/claude-cover_4_3-71b9e6c72e5c.png",
+          "visual_evidence": {
+            "method": "visual",
+            "observed_text": "怎么用好AI",
+            "logo_present": true,
+            "logo_source_sha256": "f5febc8fbbab8dcff5642f11d7ef1bf7ca1f598f2c6dceac556b560e29437258",
+            "layout": "bottom-integrated-lockup",
+            "image_sha256": "71b9e6c72e5c6e75ee90c2346f854638b06cfe764bdfa37c05088a80d7594d91",
+            "reviewed_at": "2026-10-23T15:59:48.236Z",
+            "note": "实际打开最终图片核验：品牌字与右侧蓝G银眼镜logo组成底部一体组合；标题、主体和关键事实可辨。"
+          }
+        }
+      ]
+    }
+  ]
+}

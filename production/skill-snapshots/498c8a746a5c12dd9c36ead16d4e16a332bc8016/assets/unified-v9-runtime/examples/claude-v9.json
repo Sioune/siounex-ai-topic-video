@@ -1,0 +1,247 @@
+{
+  "schema": "siounex-unified-case-v1",
+  "mechanism": "mechanism-v1.json",
+  "font_profile": "font-profile-windows.json",
+  "case_only": true,
+  "title": "车去哪儿？",
+  "body": {
+    "source": {
+      "path": "media/published-v9.mp4",
+      "sha256": "56113f21fa38021da3ecad44be8e8e407d292110fc3cd090c0d608a057cd8cc3"
+    },
+    "frames": 1636,
+    "source_rectangle": [
+      28,
+      368,
+      1024,
+      576
+    ],
+    "complete_source_confirmed": true,
+    "opening_highlight": {
+      "range_frames": [
+        0,
+        90
+      ],
+      "already_in_source": true,
+      "method": "reuse original actual 1x highlight, no duplicate or retime"
+    }
+  },
+  "audio_master": {
+    "path": "media/published-v9.mp4",
+    "sha256": "56113f21fa38021da3ecad44be8e8e407d292110fc3cd090c0d608a057cd8cc3",
+    "video_offset": 0.021029,
+    "new_audio_generation": false
+  },
+  "outro": {
+    "path": "media/original-dark-outro-normalized.mp4",
+    "sha256": "f7a9efa24c8de9f8bf1e5f41c22aac99c8d5db2184d3e81f834548b2902d85f7",
+    "provenance": {
+      "bundle_library_file_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+      "bundle_file_id": "file_0000000095548230900df003a2f8e798",
+      "bundle_version": 0,
+      "member": "example-inputs/original-dark-outro-normalized.mp4"
+    }
+  },
+  "captions": {
+    "path": "assets/claude-captions.ass",
+    "sha256": "345297301993d8c41fad4de5ccf318da1c7fa0bb253b655225a12fc0afa776f9",
+    "original_approved_style_and_text": true
+  },
+  "chapters": [
+    {
+      "label": "车去哪了",
+      "start_frame": 0,
+      "end_frame": 544
+    },
+    {
+      "label": "数据动起来",
+      "start_frame": 544,
+      "end_frame": 1084
+    },
+    {
+      "label": "接着改",
+      "start_frame": 1084,
+      "end_frame": 1359
+    },
+    {
+      "label": "讲报表",
+      "start_frame": 1359,
+      "end_frame": 1636,
+      "center_x": 968
+    }
+  ],
+  "history": {
+    "mode": "single-round",
+    "label": "往期精选 · 主页可看",
+    "intervals": [
+      {
+        "id": "dragon",
+        "start_frame": 690,
+        "end_frame": 798
+      },
+      {
+        "id": "animals",
+        "start_frame": 798,
+        "end_frame": 906
+      },
+      {
+        "id": "latte",
+        "start_frame": 906,
+        "end_frame": 1014
+      }
+    ],
+    "episodes": [
+      {
+        "id": "dragon",
+        "title": "AI做的杯子，\n主打滴水不进？",
+        "lookpoint": "龙盘上了，杯口却没开。",
+        "published_confirmed": true,
+        "confirmation_scope": "user confirmed prior work publication; no platform verification",
+        "cover": {
+          "path": "media/history-dragon.png",
+          "sha256": "6906b6319e3399cc0f9fa43c8c3de2c96a4232322815cf27f61bbd03fe9fd4c0",
+          "provenance": {
+            "bundle_library_file_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+            "bundle_file_id": "file_0000000095548230900df003a2f8e798",
+            "bundle_version": 0,
+            "member": "example-inputs/history-dragon.png"
+          }
+        }
+      },
+      {
+        "id": "animals",
+        "title": "AI偷听动物群聊",
+        "lookpoint": "叫声与行为对照，AI找规律。",
+        "published_confirmed": true,
+        "confirmation_scope": "user confirmed prior work publication; no platform verification",
+        "cover": {
+          "path": "media/history-animals.png",
+          "sha256": "d775a45ff9fca349f14823eb23ab68a23a85f1b2fae50155c6df3b6909d76dab",
+          "provenance": {
+            "bundle_library_file_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+            "bundle_file_id": "file_0000000095548230900df003a2f8e798",
+            "bundle_version": 0,
+            "member": "example-inputs/history-animals.png"
+          }
+        }
+      },
+      {
+        "id": "latte",
+        "title": "这杯拿铁，\n居然能玩？",
+        "lookpoint": "挪杯子接配料，接对就加分。",
+        "published_confirmed": true,
+        "confirmation_scope": "user confirmed prior work publication; no platform verification",
+        "cover": {
+          "path": "media/history-latte.png",
+          "sha256": "5d7041c1cf658e7046cf99dd2fe126ab275926618b41b38db6d159d1302075ff",
+          "provenance": {
+            "bundle_library_file_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+            "bundle_file_id": "file_0000000095548230900df003a2f8e798",
+            "bundle_version": 0,
+            "member": "example-inputs/history-latte.png"
+          }
+        }
+      }
+    ]
+  },
+  "filmstrip": {
+    "samples": [
+      {
+        "frame": 30,
+        "roi": [
+          240,
+          0,
+          784,
+          560
+        ],
+        "thumbnail_only": true,
+        "interval": [
+          0,
+          9.088888888888889
+        ]
+      },
+      {
+        "frame": 331,
+        "roi": [
+          240,
+          0,
+          784,
+          560
+        ],
+        "thumbnail_only": true,
+        "interval": [
+          9.088888888888889,
+          18.177777777777777
+        ]
+      },
+      {
+        "frame": 804,
+        "roi": [
+          130,
+          30,
+          770,
+          546
+        ],
+        "thumbnail_only": true,
+        "interval": [
+          18.177777777777777,
+          27.266666666666666
+        ]
+      },
+      {
+        "frame": 930,
+        "roi": [
+          240,
+          0,
+          784,
+          560
+        ],
+        "thumbnail_only": true,
+        "interval": [
+          27.266666666666666,
+          36.355555555555554
+        ]
+      },
+      {
+        "frame": 1092,
+        "roi": [
+          100,
+          20,
+          770,
+          550
+        ],
+        "thumbnail_only": true,
+        "interval": [
+          36.355555555555554,
+          45.44444444444444
+        ]
+      },
+      {
+        "frame": 1500,
+        "roi": [
+          240,
+          0,
+          784,
+          560
+        ],
+        "thumbnail_only": true,
+        "interval": [
+          45.44444444444444,
+          54.53333333333333
+        ]
+      }
+    ]
+  },
+  "approval": {
+    "script": true,
+    "audio": true,
+    "prepared_visual_timeline": true,
+    "scope": "reuse current existing v9 content, not all future topic timing"
+  },
+  "publication": {
+    "user_self_reported": true,
+    "time": "2026-10-10T20:22:00+08:00",
+    "platform_checked": false
+  },
+  "generic_warning": "23–33.8s is this case only. A future topic must bind its own source, captions, chapters, samples, history intervals, approved audio and original outro. No fee authorization is implied."
+}

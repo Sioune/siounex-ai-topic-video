@@ -1,0 +1,101 @@
+{
+  "canvas": [
+    1080,
+    1920
+  ],
+  "source": {
+    "x": 28,
+    "y": 474,
+    "width": 1024,
+    "height": 576
+  },
+  "title": {
+    "x": 64,
+    "y": 150,
+    "size": 110,
+    "max_lines": 2,
+    "max_width": 948
+  },
+  "caption": {
+    "x": 540,
+    "y": 1136,
+    "normal_size": 76,
+    "numeric_size": 128,
+    "suffix_size": 90
+  },
+  "chapter": {
+    "x": 0,
+    "y": 1228,
+    "width": 1080,
+    "height": 62,
+    "safe_text_side_margin": 52
+  },
+  "filmstrip": {
+    "x": 64,
+    "y": 1370,
+    "width": 952,
+    "height": 96
+  },
+  "history": {
+    "x": 64,
+    "y": 1304,
+    "width": 952,
+    "height": 236
+  },
+  "minimum_bottom_clearance": 380,
+  "history_card": {
+    "width": 952,
+    "height": 236,
+    "radius": 20,
+    "background": "#1c2d41",
+    "border": "#8295ad",
+    "cover": {
+      "x": 3,
+      "y": 3,
+      "width": 304,
+      "height": 228,
+      "radius": 16
+    },
+    "copy": {
+      "x": 335,
+      "y": 17,
+      "width": 600
+    },
+    "label": {
+      "size": 30,
+      "y": 17,
+      "height": 40
+    },
+    "title": {
+      "size": 64,
+      "y": 69,
+      "height": 77
+    },
+    "description": {
+      "size": 48,
+      "y": 158,
+      "height": 58
+    },
+    "counter": {
+      "size": 30,
+      "y": 17,
+      "right": 935
+    },
+    "accent": {
+      "x": 335,
+      "y": 25,
+      "width": 4,
+      "height": 24
+    },
+    "text": "#eff2ee",
+    "muted": "#bcc8d7",
+    "accent_color": "#ffc29c",
+    "counter_color": "#91a0b5"
+  },
+  "reference": {
+    "kind": "owner-approved-day-night-layout",
+    "previous_profile": "approved-node-stage-v1",
+    "spacing_revision": "subtitle-breathing-room-20261022",
+    "source": "Owner-reviewed day/night spacing previews and request to apply both templates, 2026-10-22"
+  }
+}

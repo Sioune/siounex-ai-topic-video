@@ -15,6 +15,16 @@
 | 发布 | IRON、Claude 已有公开/本人报告结果，禁止因交接重发 |
 | 可用待发库存 | 0 |
 
+## 下载后先还原片尾资源
+
+三个较大的片尾原件采用分块存储，全部原字节包含在 `.snapshot-assets/` 中。下载或克隆仓库后，在仓库根目录执行一次：
+
+```sh
+node scripts/restore-snapshot-assets.mjs
+```
+
+脚本无需联网或安装依赖，会校验各分块及完整文件 SHA256，再还原到原 `production/assets/` 路径。其余源码直接保存。该步骤只还原本地快照文件，不执行制作、同步或发布。
+
 ## 先读这些
 
 - [当前进展与未解决事项](docs/handoff/current-progress.md)

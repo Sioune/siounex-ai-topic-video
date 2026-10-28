@@ -1,0 +1,3 @@
+import fs from'node:fs';import path from'node:path';import{prepareUnified}from'./prepare-unified-project.mjs';import{command}from'./media-adapter.mjs';
+const[config,inputRoot,outputRoot,...mode]=process.argv.slice(2);if(!config||!inputRoot||!outputRoot||!['--check','--preview','--full'].includes(mode[0]))throw Error('Use project.json input-root output-root --check|--preview start duration|--full');
+const p=await prepareUnified({project:JSON.parse(fs.readFileSync(config,'utf8')),inputRoot,outputRoot}),r=await command(process.execPath,[path.join(p.out,'render-project.mjs'),'project-render.json',...mode,'--out','rendered'],360000);console.log(r.out);

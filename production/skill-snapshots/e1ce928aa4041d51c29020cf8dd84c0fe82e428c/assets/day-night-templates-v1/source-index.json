@@ -1,0 +1,56 @@
+{
+  "schema": "siounex-day-night-template-source-index-v1",
+  "policy": "morning-light-evening-dark-v1",
+  "captured_date": "2026-10-22",
+  "storage_scope": "Policy/catalog/layout identity and real formal-source locators only; not a complete executable runtime or media bundle",
+  "formal_path_base": "current owner-confirmed official site source repository root",
+  "skill_path_base": "current skill root",
+  "formal_policy_path": "production/template-policy.json",
+  "formal_policy_sha256": "57fa8c0cdffe7ffc48784fccaf2a9e4f95687d4467fca3a427ab1f1eaeb5a8c7",
+  "formal_catalog_path": "production/template-catalog.json",
+  "formal_catalog_sha256_at_capture": "d92b44633d98f7c662806db2f24dcf6642432397903b21417f422380e136cf65",
+  "templates": [
+    {
+      "key": "morning-light@1",
+      "runtime": "morning-light-v1",
+      "source_bundle": {
+        "manifest_path": "production/template-assets/morning-light-v1/manifest.json",
+        "sha256": "051233cc8faea8660ae35a70237cac9b2c1bc45aad38577343e77d9a51792005"
+      }
+    },
+    {
+      "key": "evening-dark@1",
+      "runtime": "evening-dark-v2",
+      "source_bundle": {
+        "manifest_path": "production/template-assets/evening-dark-v2/manifest.json",
+        "sha256": "00ec6d81dbd974a4f8e24bf795ff828561d0f2d5f9e4377526c871e9fa15cef9"
+      }
+    }
+  ],
+  "skill_files": [
+    {
+      "path": "assets/day-night-templates-v1/policy.json",
+      "sha256": "57fa8c0cdffe7ffc48784fccaf2a9e4f95687d4467fca3a427ab1f1eaeb5a8c7",
+      "size_bytes": 3071
+    },
+    {
+      "path": "assets/day-night-templates-v1/template-catalog.json",
+      "sha256": "59b19a216366fdb25ab6a35c7b894fb544655cada20db0c47d99959ae8120cd0",
+      "size_bytes": 2828
+    },
+    {
+      "path": "assets/day-night-templates-v1/layout-identity.json",
+      "sha256": "712c065de39034e4c13913061b39f6e1d6b723511edbb9093789a85aff7fb0e5",
+      "size_bytes": 165
+    }
+  ],
+  "runtime_recovery": "Obtain the formal source manifest and all dependency files matching their actual SHA256 in the current environment, plus fonts/runtime dependencies. Never replace these templates with the old bundled unified-v9 historical example.",
+  "existing_outro_recovery": "Resolve existing assets/outros-v5-20261021/ files relative to this skill root and verify the resource-manifest v5 SHA256; keep original 119 frames and complete original audio.",
+  "not_included": [
+    "formal renderer source tree",
+    "fonts",
+    "project-specific original media",
+    "accounts or credentials",
+    "deployment or publication approval"
+  ]
+}

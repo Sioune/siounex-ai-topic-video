@@ -1,0 +1,12 @@
+import fs from 'node:fs';import {createHash} from 'node:crypto';
+const root='production/skill-snapshot',old=JSON.parse(fs.readFileSync(root+'/snapshot.json','utf8'));
+const paths=['SKILL.md','references/pre-draft.md','references/production.md'];
+const files=Object.fromEntries(paths.map(p=>[p,fs.readFileSync(root+'/'+p,'utf8')]));
+const digest=x=>createHash('sha256').update(x).digest('hex');
+const frozen=JSON.stringify(files);
+const next={name:old.name,origin:old.origin,revision:'eb015e0e41f627d1157f6671466d1473e6cb2363',sha256:digest(frozen),files,file_sha256:Object.fromEntries(paths.map(p=>[p,digest(files[p])])),contents:paths.map(p=>`\n## Frozen file: ${p}\n${files[p]}`).join('\n'),scope:'source-verification-and-script-only',references_status:'Three changed files supplied by the parent after verified remote readback; remaining local files retained. Media execution remains separately gated.'};
+fs.writeFileSync(root+'/snapshot.json',JSON.stringify(next,null,2)+'\n');
+const read=JSON.parse(fs.readFileSync(root+'/snapshot.json','utf8'));
+if(digest(JSON.stringify(read.files))!==read.sha256)throw Error('Snapshot readback mismatch');
+for(const p of paths)if(read.files[p]!==fs.readFileSync(root+'/'+p,'utf8'))throw Error('File readback mismatch '+p);
+console.log(JSON.stringify({revision:read.revision,sha256:read.sha256,file_sha256:read.file_sha256,verified:true}));

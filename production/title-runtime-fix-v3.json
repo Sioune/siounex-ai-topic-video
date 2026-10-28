@@ -1,0 +1,49 @@
+{
+  "schema": "private-title-runtime-fix-v3",
+  "scope": "new-unfrozen-private-render-only",
+  "approved_text_unchanged": true,
+  "geometry_unchanged": true,
+  "existing_template_lock_preserved": true,
+  "frozen_runtime_modified": false,
+  "minimum_font_sizes": {
+    "history_title": 32,
+    "history_description": 32,
+    "main_title": 48
+  },
+  "baseline_source_files": [
+    {
+      "path": "production/unified-runtime/title-layout.mjs",
+      "sha256": "d7d6ba62d57416a5eae8781ba15039a75cd516ffe7737d613139147f6f3681b3",
+      "size_bytes": 5081
+    },
+    {
+      "path": "production/unified-runtime/render-v9.mjs",
+      "sha256": "943cd032ec7e8a06d472eb225e0c196365766d0fbf5098d5ed3938ac99e8372d",
+      "size_bytes": 19004
+    }
+  ],
+  "template_manifests": [
+    {
+      "path": "production/template-assets/morning-light-v1/manifest.json",
+      "sha256": "e3ba1c555acc058fe49c8425bea0e7bcc9a85daa9994e094cc46abab2e3e3bc2",
+      "size_bytes": 4534
+    },
+    {
+      "path": "production/template-assets/evening-dark-v2/manifest.json",
+      "sha256": "ddbbab048cff86419fc2395182fccb560ef06fbed2a75d1caadaadb275dee1f5",
+      "size_bytes": 4533
+    }
+  ],
+  "replacement_source_files": [
+    {
+      "path": "production/unified-runtime/title-layout-v3.mjs",
+      "sha256": "651f7ba4afe1df1eea4e3b8fe88edb3e8fdc2b2df1c68fe8a45332755c64cbc5",
+      "size_bytes": 5431
+    },
+    {
+      "path": "production/unified-runtime/render-v10.mjs",
+      "sha256": "e326486d309bdb7c028eff9384c657d6d96c72c3ecfa2bed0c35adbf540c8a26",
+      "size_bytes": 19034
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "schema": "siounex-day-night-template-source-index-v1",
+  "policy": "morning-light-evening-dark-v1",
+  "captured_date": "2026-10-22",
+  "storage_scope": "Policy/catalog/layout identity and real formal-source locators only; not a complete executable runtime or media bundle",
+  "formal_path_base": "current owner-confirmed official site source repository root",
+  "skill_path_base": "current skill root",
+  "formal_policy_path": "production/template-policy.json",
+  "formal_policy_sha256": "627912d9cfd02804edaddb3e2ba286119dfa33fcddced8fc8762c40ded78700d",
+  "formal_catalog_path": "production/template-catalog.json",
+  "formal_catalog_sha256_at_capture": "8c1ef7a853a896d0ee2fed1868b819669a92ab736901f9572e26dc787c3aa6d0",
+  "templates": [
+    {
+      "key": "morning-light@1",
+      "runtime": "morning-light-v1",
+      "source_bundle": {
+        "manifest_path": "production/template-assets/morning-light-v1/manifest.json",
+        "sha256": "e3ba1c555acc058fe49c8425bea0e7bcc9a85daa9994e094cc46abab2e3e3bc2"
+      }
+    },
+    {
+      "key": "evening-dark@1",
+      "runtime": "evening-dark-v2",
+      "source_bundle": {
+        "manifest_path": "production/template-assets/evening-dark-v2/manifest.json",
+        "sha256": "ddbbab048cff86419fc2395182fccb560ef06fbed2a75d1caadaadb275dee1f5"
+      }
+    }
+  ],
+  "skill_files": [
+    {
+      "path": "assets/day-night-templates-v1/policy.json",
+      "sha256": "627912d9cfd02804edaddb3e2ba286119dfa33fcddced8fc8762c40ded78700d",
+      "size_bytes": 4818
+    },
+    {
+      "path": "assets/day-night-templates-v1/template-catalog.json",
+      "sha256": "fdaa66b55f44617b6747e70a3d996a0b6bf69f7cea6e6967b24bcf140d4ec161",
+      "size_bytes": 2828
+    },
+    {
+      "path": "assets/day-night-templates-v1/layout-identity.json",
+      "sha256": "712c065de39034e4c13913061b39f6e1d6b723511edbb9093789a85aff7fb0e5",
+      "size_bytes": 165
+    }
+  ],
+  "runtime_recovery": "Obtain the formal source manifest and all dependency files matching their actual SHA256 in the current environment, plus fonts/runtime dependencies. Never replace these templates with the old bundled unified-v9 historical example.",
+  "existing_outro_recovery": "Resolve existing assets/outros-v5-20261021/ files relative to this skill root and verify the resource-manifest v5 SHA256; keep original 119 frames and complete original audio.",
+  "not_included": [
+    "formal renderer source tree",
+    "fonts",
+    "project-specific original media",
+    "accounts or credentials",
+    "deployment or publication approval"
+  ],
+  "source_dependency_snapshot_scope": "Formal source package/lock bytes live under production/template-assets/shared/. They are source dependency snapshots, not the installed executor host package configuration.",
+  "duration_policy": "measured-body-tempo-fit-v1: final <=60; current complete measured 60<T<=70 permits extra pitch-preserving body-only tempo from retained audio with recorded cumulative speed, >70 requires script revision; original outro and both human reviews preserved."
+}

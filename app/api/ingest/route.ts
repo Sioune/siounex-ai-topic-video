@@ -1,0 +1,4 @@
+import {identity,json} from '@/lib/api';import {validateEntries,ingest} from '@/lib/editorial';
+// Shared writer for this verified owner-private Site. Dispatch authenticates service access.
+// Never changes favorites, dispositions, access permissions, or caller identity.
+export async function POST(req:Request){if(req.headers.has('origin')){if(!await identity(req,true))return json({error:'登录或来源无效'},403)}else if(req.headers.has('sec-fetch-site')||!req.headers.get('content-type')?.includes('application/json'))return json({error:'来源无效'},403);let entries;try{const text=await req.text();if(text.length>250000)throw Error('请求过大');const body=JSON.parse(text);if(Object.keys(body).some(k=>k!=='entries'))throw Error('不支持的字段');entries=validateEntries(body.entries)}catch(e){return json({error:e instanceof Error?e.message:'请求无效'},400)}try{return json(await ingest(entries))}catch(e){console.error('ingest',e);return json({error:'写入未完成，请先读取状态再重试。'},503)}}

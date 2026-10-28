@@ -1,0 +1,26 @@
+{
+  "schema": "outro-v5-skill-delta-v1",
+  "policy_version": "outro-v5-20261021",
+  "baseline_revision": "c3c66b3dd605a86de6237ccd8d21050472bb15c5",
+  "baseline_sha256": "21686e846a24b267346dac7dd327ad97daa176f2fa0b00855fea2bfe2b6ff2dd",
+  "source_configuration": {
+    "path": "production/outro-v5-assets.json",
+    "sha256": "2d1fec147d7b1c98705983325cdae3c001bd76613def8d28620e30a619e38248"
+  },
+  "runtime_delta": [
+    {
+      "file": "assets/unified-v9-runtime/render-v9.mjs",
+      "baseline_sha256": "905abe893db15e72973dd5b34e0a6ac71dd3422c639ae936a7e22f9fb55611a0",
+      "current_sha256": "65165ec613cdd7460ba691a64852920676a98a00a779c7b60b739dbf19505dde",
+      "change": "Only read cfg.outro.frames with legacy default 120; accept actual 119-frame v5; preserve source bytes/rate/audio and old case configurations."
+    },
+    {
+      "file": "assets/a2-runtime/render-a2.mjs",
+      "baseline_sha256": "730059edbb5c8c600f65786a64b5301306ed79a327337d5e55c7cd76344e8dc2",
+      "current_sha256": "2b7f592944116ace501eb00fa4d12169eb1869c4d56ca04b5fe6bdb054a25a6e",
+      "change": "Only read cfg.outro.frames with legacy default 120; accept actual 119-frame v5; preserve source bytes/rate/audio and old case configurations."
+    }
+  ],
+  "historical_manifest_policy": "Existing source manifests, example configurations and QA receipts are retained unchanged and describe their historical version only.",
+  "verification_scope": "Hash/freeze and pure contract tests; no new media rendering, listening, owner approval or publication implied."
+}

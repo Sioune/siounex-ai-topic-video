@@ -1,0 +1,35 @@
+{
+  "schema": "automatic-clone-capability-observation-v1",
+  "observed_date_beijing": "2026-10-21",
+  "scope": "Read-only diagnostic observation; not a reusable generation authorization or a live quota guarantee",
+  "connected_native_tools": {
+    "heygen_get_current_user": "read succeeded",
+    "heygen_list_voices_private": "read succeeded",
+    "heygen_create_speech": "tool available; not invoked",
+    "selected_voice_found": true,
+    "voice_name": "Siounex口播",
+    "voice_id": "e791e6e058f6459cbfb720cd95f24f87",
+    "selected_engine": "starfish",
+    "available_engines": ["starfish", "orca", "elevenlabs", "elevenlabs_v3"],
+    "saved_default_engine": "elevenlabs",
+    "automatic_engine_substitution_allowed": false
+  },
+  "account_observation": {
+    "plan": "free",
+    "premium_credits_remaining": null,
+    "add_on_credits_remaining": null,
+    "wallet": null,
+    "usage_based": null,
+    "meaning": "Unknown numeric quota and provider debit; null does not mean zero balance, paid-only access, or a need to recharge"
+  },
+  "scheduled_runtime": {
+    "connected_native_speech_bridge_configured": false,
+    "behavior": "Persist exact original request as blocked and continue independent jobs; existing native conversation may quote, claim, checkpoint and return real audio then render/upload the bound clone version",
+    "no_fallback_credentials": true,
+    "no_recharge_or_upgrade": true,
+    "new_payment_limit": 0
+  },
+  "personal_account_fields_redacted": true,
+  "speech_calls_made": 0,
+  "owner_approvals_created": 0
+}

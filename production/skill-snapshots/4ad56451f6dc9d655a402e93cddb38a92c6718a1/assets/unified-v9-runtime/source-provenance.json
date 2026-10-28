@@ -1,0 +1,16 @@
+{
+  "source_package": {
+    "library_file_id": "libfile_ecc3fa4af2c48191bb985be7ed8dc603",
+    "file_id": "file_000000003d7c81fdb3f5815d9ff86f1b",
+    "version": 0,
+    "filename": "Siounex-Unified-v9-template-source-v1.zip",
+    "bytes": 20293,
+    "sha256": "f918aaa728f6442128f79ea71071146cb728c365e189c2f234ed504d33cb2045"
+  },
+  "all_manifest_members_verified": true,
+  "verified_manifest_members": 11,
+  "run_member_hashes_match_packaged_code": true,
+  "verification_report_archive_note": "QA report tested_source_zip_sha256 identifies a prior test archive; final delivery ZIP includes QA/manifest. Final ZIP SHA and all indexed members were independently verified. Four recorded executed code/config hashes match this final source.",
+  "runtime_execution_during_skill_integration": false,
+  "original_files_preserved_byte_for_byte": true
+}

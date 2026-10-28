@@ -1,0 +1,5 @@
+import {publishingServiceOwner} from '@/lib/publishing-controller';
+import {readBrowserPublishingMedia} from '@/lib/publishing-browser';
+import {ProductionError} from '@/lib/production-contract';
+export const dynamic='force-dynamic';
+export async function POST(req:Request){if(req.headers.has('origin')||req.headers.has('sec-fetch-site')||req.headers.get('x-publishing-service')!=='owner-private'||!/^application\/json(?:\s*;|$)/i.test(req.headers.get('content-type')||''))return Response.json({error:'仅允许本人私有发布服务读取当前工作包素材'},{status:403});try{const raw=await req.text();if(raw.length>2000)throw new ProductionError('请求过大',400);const b=JSON.parse(raw);if(!b||typeof b!=='object'||Array.isArray(b)||Object.keys(b).some(k=>!['work_id','role'].includes(k)))throw new ProductionError('不接受任意所有者、归档ID或文件路径',400);return await readBrowserPublishingMedia(await publishingServiceOwner(),b);}catch(e){return Response.json({error:e instanceof ProductionError?e.message:'读取正式发布素材失败'},{status:e instanceof ProductionError?e.status:503,headers:{'Cache-Control':'private, no-store'}});}}

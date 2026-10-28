@@ -1,0 +1,111 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1791385092067,
+      "tag": "0000_legal_nebula",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1791456240345,
+      "tag": "0001_regular_jazinda",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791601829647,
+      "tag": "0002_chief_shiver_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1791609425682,
+      "tag": "0003_special_greymalkin",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1791609608307,
+      "tag": "0004_amused_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1791615284643,
+      "tag": "0005_dapper_justice",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1791633055959,
+      "tag": "0006_puzzling_wither",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791635948697,
+      "tag": "0007_even_cerebro",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792296603346,
+      "tag": "0008_silly_nuke",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792426074000,
+      "tag": "0009_publishing_v2",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792428600000,
+      "tag": "0010_existing_platform_collection",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1792600200000,
+      "tag": "0011_platform_time_precision",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1792749040471,
+      "tag": "0012_production_cancelled",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "6",
+      "when": 1793069591291,
+      "tag": "0013_production_lookup_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1793077253410,
+      "tag": "0014_topics_collected_lookup",
+      "breakpoints": true
+    }
+  ]
+}

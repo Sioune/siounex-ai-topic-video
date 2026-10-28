@@ -1,0 +1,192 @@
+{
+  "schema_version": 1,
+  "template_id": "a2-silver-history",
+  "status": "actual_source_integrated_windows_smoke_verified",
+  "approval": {
+    "date": "2026-10-10",
+    "scope": "A2 visual layout and history-carousel sample; reuse in current full video and future template",
+    "source_message_id": "Sentinel_6f8263fcd1f88191b43ad8aa19ef7a11"
+  },
+  "canvas": {
+    "aspect_ratio": "9:16",
+    "width_px": 1080,
+    "height_px": 1920
+  },
+  "visual": {
+    "background": "approved cool-silver technology stage",
+    "layout_source": "a2-runtime/assets/background.svg",
+    "geometry": {
+      "canvas": [
+        1080,
+        1920
+      ],
+      "enclosure": [
+        9,
+        132,
+        1062,
+        1040
+      ],
+      "source": {
+        "x": 28,
+        "y": 368,
+        "width": 1024,
+        "height": 576
+      },
+      "title": {
+        "x": 66,
+        "y": 190,
+        "size": 120
+      },
+      "caption": {
+        "x": 540,
+        "y": 1132,
+        "normal_size": 76,
+        "numeric_size": 128,
+        "suffix_size": 90
+      },
+      "history": {
+        "x": 28,
+        "y": 1310,
+        "width": 1024,
+        "height": 348
+      },
+      "history_deck": [
+        28,
+        1230,
+        1024,
+        440
+      ],
+      "bottom_safe_space": 250
+    },
+    "exact_colors": "Read original a2-runtime/assets/background.svg and a2-runtime/render-a2.mjs; do not invent alternative colors.",
+    "fonts": {
+      "bold": {
+        "family": "Microsoft YaHei",
+        "path": "C:/Windows/Fonts/msyhbd.ttc",
+        "sha256": "4508821b3dffe01f0ef5e5326a3e60df705a44633858811f67b6982dce3f6ee6",
+        "bytes": 16883552,
+        "redistributed": false
+      },
+      "regular": {
+        "family": "Microsoft YaHei",
+        "path": "C:/Windows/Fonts/msyh.ttc",
+        "sha256": "d79c55e68b1131eea0cc1c47be4f572d964f28c682e143db2ad09c1e4cb07a3f",
+        "bytes": 19704352,
+        "redistributed": false
+      },
+      "numeric": {
+        "family": "Segoe UI Semibold",
+        "path": "C:/Windows/Fonts/seguisb.ttf",
+        "sha256": "6c3fd894b19950b10c34bf64069ef821eaf2f58f959146306fee5b367472e501",
+        "bytes": 974760,
+        "redistributed": false
+      }
+    },
+    "unrequested_badges": false
+  },
+  "main": {
+    "source": null,
+    "fit": "contain_full_landscape",
+    "focus": "establish_global_then_narration_led_smooth_focus_then_return_global",
+    "approved_sample_reported_width_px": 1024,
+    "width_note": "Reported for this sample only; do not infer canvas or other geometry."
+  },
+  "subtitles": {
+    "source": null,
+    "separate_from_history": true,
+    "mobile_readability_required": true,
+    "style": {
+      "x": 540,
+      "y": 1132,
+      "normal_size": 76,
+      "numeric_size": 128,
+      "suffix_size": 90
+    }
+  },
+  "history": {
+    "enabled": true,
+    "items": [],
+    "item_contract": {
+      "cover_resource_id": "required verified original cover",
+      "title": "required matching actual title",
+      "highlight": "required factual concise highlight",
+      "provenance": "required source or archive reference"
+    },
+    "direction": "vertical",
+    "hold_seconds": 4.0,
+    "transition_seconds": 0.8,
+    "easing_curve": "smoothstep",
+    "timing_scope": "approved sample starting values; not a universal timing mandate",
+    "overlap_subtitles": false,
+    "clickable_in_mp4": false,
+    "opening_static_seconds": 6,
+    "example_protected_ranges": [
+      [
+        0,
+        3.1
+      ],
+      [
+        8.72,
+        14
+      ],
+      [
+        51.7,
+        54.53333333333333
+      ]
+    ],
+    "protected_ranges_scope": "Claude example only; derive new ranges from actual narration."
+  },
+  "next_episode": {
+    "enabled": false,
+    "confirmed": false,
+    "title": null,
+    "media": null,
+    "missing_behavior": "hide",
+    "enable_rule": "Future only after next episode is confirmed and real materials are available; disabled in the current full video."
+  },
+  "outro": {
+    "source_selection": "resource-manifest.json selection_map; inverse actual main-background light/dark",
+    "duration_seconds": 4,
+    "reuse_original": true,
+    "preserve_original_audio": true,
+    "overlay_music": false,
+    "extend_history_over_outro": false
+  },
+  "recovery": {
+    "source_thread_id": "01a123bd-acf2-767d-8bef-9d2aa036e000",
+    "manifest_path_hint": "C:/Users/赵元章/Documents/Codex/2026-10-10/task-2/work/claude/design-refinement/silver-history-v2/manifest.json",
+    "library_file_id": "libfile_aee174c0b49c8191a45f600e4aa79049",
+    "source_bundle_resource_id": "libfile_aee174c0b49c8191a45f600e4aa79049",
+    "render_entrypoint": "a2-runtime/render-a2.mjs",
+    "requires_current_environment_authorization": true,
+    "example_media_resource_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+    "example_config": "a2-runtime/render-config.json",
+    "source_status": "Restored and integrated; historic local path is no longer required."
+  },
+  "unresolved_fields": [],
+  "verification": {
+    "sample_duration_seconds": 8.966,
+    "sample_audio_tracks": 0,
+    "technical_qa": "not confirmed; final QA result was not read back before access stopped",
+    "full_video_qa": "Existing Claude full export separately decoded and preservation-checked per source thread; complete template command and new-topic full pipeline not yet tested.",
+    "source_package_verification": {
+      "actual_check_passed": true,
+      "actual_90_frame_template_export_passed": true,
+      "first90_SSIM": 0.999946,
+      "zip_integrity_passed": true,
+      "zip_restore_local_check_and_smoke_passed": true,
+      "restored_smoke_matches_original": true,
+      "full_template_command_tested": false,
+      "new_topic_full_run_tested": false,
+      "Mac_Linux_verified": false
+    },
+    "integration": "Original source-member SHA-256 verified in cloud; runtime files integrated byte-for-byte. No rendering performed during integration."
+  },
+  "limitations": [
+    "Fonts are not bundled; compatible local fonts must be verified.",
+    "Windows input check and 90-frame restored smoke verified; Mac/Linux not verified.",
+    "Full generic template command and new-topic complete run not yet verified.",
+    "Example approval fields are historical data, not authorization for future projects.",
+    "Current renderer requires next_episode.visible=false; future teaser needs implementation and separate visual review, not merely toggling a field."
+  ]
+}

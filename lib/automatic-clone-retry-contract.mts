@@ -1,0 +1,13 @@
+// Preparation telemetry only. It never authorizes another provider call.
+export type AutomaticClonePreparationRetry={phase:'prepare'|'recover-preparation';failure_code:string;diagnostic:string;consecutive_count:number;last_failed_at:string;next_retry_at:string;implementation_sha256:string};
+const codes=new Set(['STUDIO_PREVIEW_BROWSER_UNAVAILABLE','STUDIO_PREVIEW_DRAFT_DISCOVERY_UNKNOWN','STUDIO_PREVIEW_DRAFT_NOT_FOUND','STUDIO_PREVIEW_BROWSER_UI_ERROR','NATIVE_CLI_CONNECTION_FAILED','STUDIO_PREVIEW_BROWSER_RESULT_UNKNOWN']);
+const iso=(v:any)=>typeof v==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{3})?Z$/.test(v)&&Number.isFinite(Date.parse(v));
+export function sanitizeClonePreparationDiagnostic(value:string,privateInputs:string[]=[]){
+ let text=value;for(const input of privateInputs)if(input)text=text.split(input).join('[private input]');
+ return text.replace(/https?:\/\/[^\s<>"']+/gi,'[URL redacted]').replace(/Bearer\s+[^\s,;"']+/gi,'Bearer [redacted]').replace(/\b(?:sk-|sess-)[A-Za-z0-9_-]+/g,'[credential redacted]').replace(/(["']?(?:access[_ -]?token|refresh[_ -]?token|api[_ -]?key|authorization|password|cookie|signature|secret)["']?\s*[=:]\s*["']?)[^\s,;}"']+/gi,'$1[redacted]').replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,'[credential redacted]').replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,'[email redacted]').replace(/\b[a-f0-9]{24,}\b/gi,'[id redacted]').replace(/\b\d{11,}\b/g,'[number redacted]').replace(/[A-Z]:[\\/][^\s<>"']+/gi,'[local path redacted]').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').slice(0,600);
+}
+export function validateClonePreparationRetry(v:any,{now=Date.now(),notBefore=0,privateInputs=[]}:{now?:number;notBefore?:number;privateInputs?:string[]}={}):AutomaticClonePreparationRetry|null{
+ const fields=['phase','failure_code','diagnostic','consecutive_count','last_failed_at','next_retry_at','implementation_sha256'];
+ if(!v||typeof v!=='object'||Array.isArray(v)||Object.keys(v).length!==fields.length||Object.keys(v).some(k=>!fields.includes(k))||!['prepare','recover-preparation'].includes(v.phase)||!codes.has(v.failure_code)||typeof v.diagnostic!=='string'||v.diagnostic.length>600||!Number.isSafeInteger(v.consecutive_count)||v.consecutive_count<1||v.consecutive_count>1000||!iso(v.last_failed_at)||!iso(v.next_retry_at)||Date.parse(v.last_failed_at)<notBefore||Date.parse(v.last_failed_at)>now+30000||Date.parse(v.next_retry_at)<=Date.parse(v.last_failed_at)||Date.parse(v.next_retry_at)-Date.parse(v.last_failed_at)>1800000||!/^[a-f0-9]{64}$/.test(v.implementation_sha256||''))return null;
+ return {...v,diagnostic:sanitizeClonePreparationDiagnostic(v.diagnostic,privateInputs)};
+}

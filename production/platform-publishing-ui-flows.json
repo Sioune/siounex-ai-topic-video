@@ -1,0 +1,78 @@
+{
+  "schema": "platform-publishing-ui-flows-v2",
+  "purpose": "Reusable UI execution routes for the existing authorized four-platform publishing agent. This file is not an execution receipt.",
+  "updated_at": "2026-10-22",
+  "platforms": {
+    "wechat_channels": {
+      "routing_file": "C:/Users/赵元章/Documents/ChatGPT/选题生视频一站式网站/.takeover/publishing-v2-20261020/wechat-native-thread-routing.json",
+      "executor_thread_id": "01a15804-7564-7fb0-8ad6-2de3e2c42726",
+      "description": "Read designated thread before dispatch. Same package, native saved editor, known WPS UTF-8 copy method, actual device/layout/account calibration. No location, truthful originality/AI declaration. Publish once then bottom recommendation/comment directly.",
+      "browser_state": "security_blocked",
+      "transport": "native-adb",
+      "account_label": "怎么用好AI",
+      "draft_rule": "Verified 2026-10-22: after editing, use 取消 → 保存. The saved draft is on the account personal page under 草稿箱, to the right of 视频／特效. Resume the existing title/cover draft instead of importing the video again.",
+      "resume_options": "Observed on the Yuewen draft: text, cover and no-location persist, but 原创声明 and 含AI生成内容 reset. Restore these two existing approved options before the single submit; do not reimport, refill the unchanged copy or repeat approval."
+    },
+    "bilibili": {
+      "crop": "For bottom-lockup-20261023 branded covers, the final platform cover must retain the full bottom 怎么用好AI plus logo group and readable title/subject. Use a separately arranged approved ratio or fit/pad when a normal 16:9 crop would clip the lockup. Existing frozen in-flight packages, including Huang, retain their original materials and crop authorization; do not regenerate or repost them. Keep the platform AI declaration selected.",
+      "management_url": "https://member.bilibili.com/platform/upload-manager/article",
+      "account_label": "StarForge-Kernel",
+      "cover_role": "cover_4_3",
+      "account_id": "bilibili:1046852553",
+      "draft_rule": "Verified 2026-10-21: use actual 存草稿, resume /platform/upload/video/frame?type=draft&draftId=<actual id>. The first verified draft is 4015954 for this exact Yuewen package; never reuse this ID for another package.",
+      "entry_label": "投稿",
+      "description": "Replace filename-derived title/tags and unwanted category defaults with approved platform copy and technology/AI category. Real custom tag/topic chips, self-produced-commentary and AI declaration. Same owner-consented upload agreement is reused; a substantive new tool/legal requirement is handled honestly.",
+      "editor_input": "After filling the title, press Tab/blur and wait for the title counter to update before saving. For tags, wait for each actual chip after Enter; rapid bulk input can drop later values. Reuse the same draft if a field needs correction, without reuploading.",
+      "engagement_ui": {
+        "route": "Open the actual successful post URL https://www.bilibili.com/video/<actual BV id>/ in the same logged-in account; like and comment are on this page.",
+        "reaction": ".video-like[title=\"点赞（Q）\"]. Read its selected state first, leave an existing like alone, otherwise click once and observe the resulting selected state.",
+        "comment": "Normally scroll once to load comments. Inside the visible bili-comment-box, use .brt-editor[contenteditable=\"true\"] through open shadow DOM; another matching editor may be hidden. In the same visible box, the send control is button[data-v-risk=\"fingerprint\"] with text 发布, exposed when editing.",
+        "verification_scope": "2026-10-21 read-only route/account/control verification, UID 1046852553. No like or comment was sent during route discovery. Actual execution must observe the selected reaction and visible exact author comment once."
+      }
+    },
+    "douyin": {
+      "account_label": "耿梗人",
+      "upload_button": "上传视频",
+      "management_url": "https://creator.douyin.com/creator-micro/content/manage",
+      "cover_roles": [
+        "cover_3_4",
+        "cover_4_3"
+      ],
+      "account_id": "douyin:subtitler",
+      "draft_rule": "Verified 2026-10-21: 暂存离开 returns to /creator-micro/content/upload?enter_from=publish with 你还有上次未发布的视频，是否继续编辑？. Resume via 继续编辑. No publish click was used.",
+      "entry_label": "作品发布",
+      "description": "Actual topic picker creates selected data-mention topic chips; do not treat raw hashtags as selected topics. Set both exposed cover slots, AI/public/immediate and existing collection options.",
+      "editor_input": "Use native paste into focused editor. For each exact hashtag, type #label then press Space; this creates a true data-mention=# chip. Plain bulk hashtags do not. One DOM read can check all chips after the batch.",
+      "form_sequence": "Set title/description/topics, dual covers, existing collection, AI declaration, then permission options last: selecting a collection can restore download defaults. For asynchronous menus, verify the selected value before opening the next menu; reuse semantic labels rather than transient AX indices.",
+      "engagement_ui": {
+        "route": "Open the actual successful post URL https://www.douyin.com/video/<actual post id> in the same logged-in 耿梗人 account. The public post page provides like and comment without a data-management detour.",
+        "reaction": "Prefer the semantic like control on the same actual work. Earlier layout exposes div[data-e2e=\"video-player-digg\"] and data-e2e-state=video-player-no-digged. Observed 2026-10-22 detail layout instead has the exact 赞 label in .o2tLobnl, with white unselected heart/prpiPAWb class; after one click the heart is red and that unselected class disappears. Use the current visible layout, preserve an existing selected heart, and do not treat the numeric count alone as selected state.",
+        "comment": "Click 留下你的精彩评论吧 to focus the visible [contenteditable=\"true\"].public-DraftEditor-content[role=\"combobox\"]. Use native paste. The current send-arrow span is .wchsYBpK inside .comment-input-inner-container; after text entry use the actual enabled send control, not an unrelated sidebar icon.",
+        "verification_scope": "The exact current routes were executed for the authorized Yuewen publication on 2026-10-22. Sending may require owner SMS verification. After the owner finishes, read the same work comments first: the original send can complete automatically, so an already visible exact author comment must not be sent again. Verify any pending like independently."
+      }
+    },
+    "kuaishou": {
+      "cover_role": "cover_3_4",
+      "description": "One 作品描述 field contains approved title followed by body. Use native # topic selection (maximum four), actual selected chips. Do not silently invent a fifth topic or merge metadata into unselected plain text.",
+      "management_url": "https://cp.kuaishou.com/article/manage/video?status=1&from=publish",
+      "draft_rule": "Verified 2026-10-21: the editor shows 发布/取消 and no explicit save button. Normal 取消 returns to upload page with 还有上次未发布的视频，是否继续编辑？; 继续编辑 restores the same uploaded video, cover, description, selected topics, collection and AI declaration. This is the supported retained-draft path, not a publication.",
+      "account_id": "browser-account-label:星火实验室",
+      "account_label": "星火实验室",
+      "resume_options": "Known actual platform behavior: after restoring a draft, 允许同框/允许下载/同城 reset to enabled. During final preparation reopen once, turn these three off, and keep that editor for the submit time; do not claim these three settings persist across another cancel/reopen. No need to redo title/covers/topics.",
+      "engagement_ui": {
+        "route": "Open the actual successful post URL https://www.kuaishou.com/short-video/<actual post id>. The same post page has the like and comment controls; the current author profile is /profile/3xqrxgwxigrftze (星火实验室).",
+        "reaction": "div.interactive-item.like-item contains span.c-icon.vertical-like. Observe actual icon selection before clicking, preserve an existing like and read its resulting selected state once. The current control has no aria-pressed; a changing count alone is not a selected-state check.",
+        "comment": "textarea[placeholder=\"说点什么...\"] and button.submit-button with text 发送. The send button is disabled while empty. Paste the exact package comment, read it back once, send once and observe the matching author comment.",
+        "fallback_comment": "Only if the post-page comment control is actually unavailable: https://cp.kuaishou.com/article/comment, select the same work. .author-comment-input__row__input[contenteditable=\"true\"][placeholder=\"有爱评论，说点儿好听的\"] and div.author-comment-input__row__btn. This page does not provide the like control.",
+        "verification_scope": "2026-10-21 read-only route/account/control verification. No reaction or comment was performed. Actual enabled send and positive reaction state must be observed during execution."
+      }
+    }
+  },
+  "shared": {
+    "prepare": "From one frozen package, use existing login, upload once, fill exact approved copy, selected topics, covers, existing 怎么用好AI collection and real options. Save draft and retain its real locator. A live unsaved editor or queued service task is not draft_saved.",
+    "submit": "Open the saved draft at the allowed real time; check current target account and prior submission, then submit once. Reuse preparation facts rather than repeating content review.",
+    "engage": "Immediately after complete_browser_work saves the real confirmed/published result, read_engagement and claim_engagement use the original publication_id even before website reconciliation. If this exact actual public post page and ID/account are visible while the official publication time is unreadable, observe_browser_engagement unlocks only the same-work interaction; it does not assign a publication time, collection anchor or new submission. Review/acceptance rows do not qualify. Perform the pending visible reaction/comment on that same post and record_engagement, preserving an already-selected reaction and existing author comment. No website registration, collection scheduling or management/data detour is required first.",
+    "boundary": "Supported CUA UI only for three browser platforms. No video-platform hidden state/private API. Native WeChat delegated separately.",
+    "perception": "Use known semantic UI controls, batch deterministic fill actions, read only the state needed for the next decision. Recover changed controls or login normally; do not use blind stale coordinates."
+  }
+}

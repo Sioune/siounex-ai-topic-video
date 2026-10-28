@@ -1,0 +1,2 @@
+export function sourceImageSchema(images){const properties=Object.fromEntries(images.map((x,i)=>['image_'+i,{type:'object',properties:{sha256:{type:'string',enum:[x.sha256]},description:{type:'string'},limits:{type:'string'}},required:['sha256','description','limits'],additionalProperties:false}]));return {type:'object',properties,required:Object.keys(properties),additionalProperties:false};}
+export function sourceImageObservations(value){return Array.isArray(value)?value:Object.values(value||{});}

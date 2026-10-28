@@ -1,0 +1,16 @@
+import fs from 'node:fs';import path from 'node:path';import {spawnSync} from 'node:child_process';import {createHash} from 'node:crypto';import {frozenSkill} from './frozen-skill.mjs';
+import {splitNarrationPreflight} from './review-stage-policy.mjs';
+import {isFixedOutroSegment,STORYBOARD_SEGMENTS_VERSION} from '../lib/storyboard-segments.mts';
+const sha=x=>createHash('sha256').update(x).digest('hex');
+export function narrationGate(job){const {skill}=frozenSkill(job);return skill.files?.['references/narration-gate.md']||'';}
+export function narrationPreflight(job,content,{images=[],root='.sites-runtime/narration-preflight'}={}){
+ const {skill}=frozenSkill(job),code=skill.files?.['scripts/qa_narration.py'];if(!code)return {machine_preflight:'legacy-unavailable',manual_review_required:true,problems:['历史技能未包含前台文案门控'],production_ready:false};
+ const gate=narrationGate(job);if(!gate||sha(code)!==skill.file_sha256?.['scripts/qa_narration.py'])throw Error('Frozen narration checker mismatch');
+ // Planned scenes are pending until actual checked footage/graphics exist. Exact
+ // source still images alone cannot prove the planned action or core result.
+ const storyboard=content.storyboard||[],silentOutro=(s,i)=>isFixedOutroSegment(s,i,storyboard)&&typeof s.narration==='string'&&!s.narration.trim()&&typeof s.visual==='string'&&s.visual.trim(),excluded=storyboard.flatMap((s,i)=>silentOutro(s,i)?[{index:i,asset_id:s.asset_id||null,role:'fixed-existing-outro',reason:'Existing non-narrated tail is a production binding, not missing body text.'}]:[]);
+ const data={narration:content.script,subtitles:content.subtitles||[],overlays:content.overlays||[],segments:storyboard.filter((s,i)=>!silentOutro(s,i)).map(s=>({text:s.narration,visual:s.visual,material_status:'pending'})),exceptions:content.frontstage_exceptions||[]};
+ const key=sha(JSON.stringify({skill:skill.sha256,data})),dir=path.resolve(root,key);fs.mkdirSync(dir,{recursive:true});const script=path.join(dir,'qa_narration.py'),input=path.join(dir,'input.json');fs.writeFileSync(script,code);fs.writeFileSync(input,JSON.stringify(data));
+ const r=spawnSync('C:/Python314/python.exe',['-X','utf8',script,input],{encoding:'utf8',windowsHide:true,timeout:10000});if(![0,1].includes(r.status))throw Error('Frozen narration preflight failed to execute');const report=JSON.parse(r.stdout),result={...report,...splitNarrationPreflight(report),storyboard_segments_version:STORYBOARD_SEGMENTS_VERSION,deferred_non_narrated_segments:excluded,checker_sha256:sha(code),gate_sha256:sha(gate),input_sha256:sha(JSON.stringify(data)),skill_sha256:skill.sha256,inspected_source_image_hashes:images.map(x=>x.sha256),exit_code:r.status};fs.writeFileSync(path.join(dir,'report.json'),JSON.stringify(result,null,2));return result;
+}
+export function assertCleanFrontstage(report){const failures=report.problems?.filter(p=>/^narration\[|^subtitles\[|^overlays\[/.test(p))||[];if(failures.length)throw Error('Frontstage narration gate rejected output: '+failures.join('; '));}

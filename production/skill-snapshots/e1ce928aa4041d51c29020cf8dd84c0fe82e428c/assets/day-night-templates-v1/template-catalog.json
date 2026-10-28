@@ -1,0 +1,64 @@
+[
+  {
+    "id": "morning-light",
+    "version": 1,
+    "name": "晨光浅底 · 字幕留白修订",
+    "tone": "light",
+    "runtime": "morning-light-v1",
+    "layout_profile": "approved-node-stage-v2",
+    "time_slot": "08:00",
+    "timezone": "Asia/Shanghai",
+    "outro_variant": "dark",
+    "outro_version": "v5",
+    "aesthetic_status": "user_approved",
+    "approval_evidence": "2026-10-22 本人认可浅底视觉方向，要求深浅两版一起下移字幕并增加上下留白；已按 source.y=474、caption.y=1136、chapter.y=1228 修订预览，本人要求全面修复并固化早08浅底/晚18深底。此模板认可不代替每条内容人工审核。",
+    "preview_library_id": null,
+    "bundle": null,
+    "source_bundle": {
+      "manifest_path": "production/template-assets/morning-light-v1/manifest.json",
+      "sha256": "051233cc8faea8660ae35a70237cac9b2c1bc45aad38577343e77d9a51792005"
+    },
+    "runtime_ready": true,
+    "features": [
+      "沿用本人认可的同系列标题和主画面布局",
+      "完整1024×576横屏素材，不裁内容",
+      "76px手机大字幕，正文与章节之间各有留白",
+      "全幅常驻连续揭亮章节条",
+      "同槽真实往期卡与既有字号",
+      "底部380px平台安全区",
+      "08:00 固定浅色正文配原v5深色片尾",
+      "119帧原片尾与完整原声保留；每条内容仍需人工审核"
+    ]
+  },
+  {
+    "id": "evening-dark",
+    "version": 1,
+    "name": "夜间深底 · 字幕留白修订",
+    "tone": "dark",
+    "runtime": "evening-dark-v2",
+    "layout_profile": "approved-node-stage-v2",
+    "time_slot": "18:00",
+    "timezone": "Asia/Shanghai",
+    "outro_variant": "light",
+    "outro_version": "v5",
+    "aesthetic_status": "user_approved",
+    "approval_evidence": "2026-10-22 本人认可浅底视觉方向，要求深浅两版一起下移字幕并增加上下留白；已按 source.y=474、caption.y=1136、chapter.y=1228 修订预览，本人要求全面修复并固化早08浅底/晚18深底。此模板认可不代替每条内容人工审核。",
+    "preview_library_id": null,
+    "bundle": null,
+    "source_bundle": {
+      "manifest_path": "production/template-assets/evening-dark-v2/manifest.json",
+      "sha256": "00ec6d81dbd974a4f8e24bf795ff828561d0f2d5f9e4377526c871e9fa15cef9"
+    },
+    "runtime_ready": true,
+    "features": [
+      "沿用本人认可的同系列标题和主画面布局",
+      "完整1024×576横屏素材，不裁内容",
+      "76px手机大字幕，正文与章节之间各有留白",
+      "全幅常驻连续揭亮章节条",
+      "同槽真实往期卡与既有字号",
+      "底部380px平台安全区",
+      "18:00 固定深色正文配原v5浅色片尾",
+      "119帧原片尾与完整原声保留；每条内容仍需人工审核"
+    ]
+  }
+]

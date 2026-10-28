@@ -1,0 +1,59 @@
+import {withProductionStation} from './production-workstations.mjs';
+import{requireQualityInput,enforceProductionQuality}from'./production-quality-qa.mjs';
+import{uploadPrivateVideo}from'./private-site-upload.mjs';
+import fs from'node:fs';import path from'node:path';import{renderOperation,command,probe,sha}from'./media-adapter.mjs';import{buildLibraryHandoff}from'./library-handoff.mjs';import{archiveNativeFile}from'./native-library-archive.mjs';
+export async function technicalQa(receipt){const main=receipt.files.find(f=>f.role==='video');if(!main)return receipt;await command('ffmpeg',['-nostdin','-v','error','-i',main.path,'-f','null','-'],180000);const info=await probe(main.path),v=info.streams.find(s=>s.codec_type==='video'),volume=await command('ffmpeg',['-nostdin','-hide_banner','-i',main.path,'-vn','-af','volumedetect','-f','null','-']);const peak=Number(volume.error.match(/max_volume: ([\d.-]+) dB/)?.[1]);if(!v||v.width*16!==v.height*9||!Number.isFinite(peak)||peak>=0||!info.streams.some(s=>s.codec_type==='audio')||Number(info.format.duration)>60)throw Error('Actual video technical QA failed');return {...receipt,qa:{...receipt.qa,unattended_technical:{decoded:true,width:v.width,height:v.height,peak_dbfs:peak,checked_at:new Date().toISOString()},listened:false,full_playback_verified:false,quality_approved:false}};}
+export function cachedReceipt(job,op,dir){const file=path.join(dir,'receipt.json');if(!fs.existsSync(file))throw Object.assign(Error('Known file receipt missing; do not regenerate recovered operation'),{code:'CACHED_RECEIPT_MISSING'});const r=JSON.parse(fs.readFileSync(file));if(r.exit_code!==0||r.operation_id!==op.id||r.input_hash!==op.input_hash||r.script_hash!==job.approved_hash||r.revision!==job.revision||!r.files?.length||r.files.some(f=>!fs.existsSync(f.path)||sha(fs.readFileSync(f.path))!==f.sha256||fs.statSync(f.path).size!==f.size_bytes))throw Object.assign(Error('Cached outputs changed; no regeneration'),{code:'CACHED_RECEIPT_CHANGED'});return r;}
+
+const canonical=value=>JSON.stringify(value,(_,v)=>v&&typeof v==='object'&&!Array.isArray(v)?Object.fromEntries(Object.keys(v).sort().map(k=>[k,v[k]])):v);
+const localFailure=code=>Object.assign(Error(code),{code});
+const fileInventory=receipt=>receipt.files.map(({role,path,sha256,size_bytes})=>({role,path,sha256,size_bytes}));
+function readLocalReady(job,op,dir){
+ const checkpoint=typeof op.checkpoint==='string'?JSON.parse(op.checkpoint||'{}'):op.checkpoint,ref=checkpoint?.workstation_ready;if(!ref)return null;
+ if(!String(checkpoint.phase).startsWith('local-files-ready')||typeof ref.file!=='string'||!/^workstation-local-ready-[a-f0-9]{64}\.json$/.test(ref.file)||!ref.file.endsWith(ref.sha256+'.json'))throw localFailure('MEDIA_LOCAL_READY_REFERENCE_CHANGED');
+ const bytes=fs.readFileSync(path.join(dir,ref.file));if(sha(bytes)!==ref.sha256||bytes.length!==ref.size_bytes)throw localFailure('MEDIA_LOCAL_READY_BYTES_CHANGED');const saved=JSON.parse(bytes),original=cachedReceipt(job,op,dir);
+ if(saved.schema!=='unattended-local-files-ready-v1'||saved.operation_id!==op.id||saved.input_hash!==op.input_hash||saved.revision!==job.revision||saved.script_hash!==job.approved_hash||saved.mode_epoch!==job.mode_epoch||saved.receipt_sha256!==sha(fs.readFileSync(path.join(dir,'receipt.json')))||canonical(fileInventory(saved.receipt))!==canonical(fileInventory(original))||saved.receipt.operation_id!==op.id||saved.receipt.input_hash!==op.input_hash||saved.receipt.exit_code!==0)throw localFailure('MEDIA_LOCAL_READY_BINDING_CHANGED');
+ return saved.receipt;
+}
+function saveLocalReady(job,op,dir,receipt){
+ const saved={schema:'unattended-local-files-ready-v1',operation_id:op.id,input_hash:op.input_hash,revision:job.revision,script_hash:job.approved_hash,mode_epoch:job.mode_epoch,receipt_sha256:sha(fs.readFileSync(path.join(dir,'receipt.json'))),receipt},bytes=Buffer.from(JSON.stringify(saved,null,2)),digest=sha(bytes),file='workstation-local-ready-'+digest+'.json',target=path.join(dir,file);
+ if(fs.existsSync(target)){if(sha(fs.readFileSync(target))!==digest)throw localFailure('MEDIA_LOCAL_READY_BYTES_CHANGED');}else fs.writeFileSync(target,bytes,{flag:'wx'});return{file,sha256:digest,size_bytes:bytes.length};
+}
+
+export async function runUnattendedMedia({job,operation,inputRoot,qualityManifestFile,deadline=Date.now()+480000,outputRoot='.sites-runtime/media-operations'},{call,render=renderOperation,qa=technicalQa,archive=archiveNativeFile,afterArchive=()=>{},postAsset,workstations}={}){
+ if(job.id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'||job.is_test&&archive===archiveNativeFile)throw Error('Protected/test production excluded');
+ requireQualityInput(job,operation,{required:false});const op=operation,plan=JSON.parse(op.plan),dir=path.resolve(outputRoot,op.id),handoff=path.join(dir,'library-handoff.json');
+ if(op.status==='completed')return{status:'media-completed',operation_id:op.id,reused:true,quality_approved:false};
+ if(plan.cost!==0||plan.publication!==false&&plan.publication!==undefined||op.revision!==job.revision||op.script_hash!==job.approved_hash||op.mode_epoch!==job.mode_epoch||!['queued','running','prepared'].includes(op.status))throw Error('Media scope/version/status changed');
+ const mid='artifact_'+sha(Buffer.from(job.id+op.node+op.revision+op.id)),recorded=op.status==='prepared'&&op.result&&job.milestones?.some(m=>m.id===mid),recovery=op.status!=='queued';if(recovery&&!recorded)cachedReceipt(job,op,dir);const ready=recovery&&!recorded?readLocalReady(job,op,dir):null,station=op.node==='video'?'render':op.node==='cover'?'assets':'preparation';
+ const expectedStatus=job.status,expectedScope=canonical(job.media_continuation||null);
+ let binding,checkpointVersion,leaseUntil,phase='awaiting-workstation',receipt=ready;
+ const claim=async()=>{const claimed=await call({action:recovery?'operation_recover':'operation_claim',id:job.id,operation_id:op.id,invocation_id:op.invocation_id||'unattended-'+op.id});binding={id:job.id,operation_id:op.id,lease_token:claimed.lease_token};checkpointVersion=claimed.operation.checkpoint_version;leaseUntil=claimed.operation.lease_until;phase='claimed';return claimed.operation;};
+ const archiveAndComplete=async()=>{
+  // A queue wait can outlast an owner decision. Recheck only after this resource
+  // is acquired; the existing server lease/CAS remains authoritative.
+  if(workstations){const current=(await call({action:'read',id:job.id})).job,currentOp=current?.operations?.find(o=>o.id===op.id);if(!current||current.id!==job.id||current.revision!==op.revision||current.approved_hash!==op.script_hash||current.mode_epoch!==op.mode_epoch||current.status!==expectedStatus||canonical(current.media_continuation||null)!==expectedScope||!currentOp||!['running','prepared'].includes(currentOp.status)||currentOp.plan!==op.plan||currentOp.input_hash!==op.input_hash||currentOp.script_hash!==op.script_hash||currentOp.revision!==op.revision||currentOp.mode_epoch!==op.mode_epoch||currentOp.invocation_id!==(op.invocation_id||'unattended-'+op.id)||!Number.isSafeInteger(currentOp.lease_until)||currentOp.lease_until<=Date.now())throw localFailure('MEDIA_CURRENT_BINDING_CHANGED');}
+  let result;
+  if(op.status==='prepared'&&op.result&&!fs.existsSync(handoff)){const stored=JSON.parse(op.result);if(stored.input_hash!==op.input_hash||stored.receipt?.files?.some(f=>!receipt.files.some(g=>g.role===f.role&&g.sha256===f.sha256)))throw Error('Stored server receipt differs');fs.writeFileSync(handoff,JSON.stringify(stored),{flag:'wx'});}
+  if(fs.existsSync(handoff)){result=JSON.parse(fs.readFileSync(handoff));if(result.input_hash!==op.input_hash||result.receipt.files.some(f=>!receipt.files.some(g=>g.role===f.role&&g.sha256===f.sha256)))throw Error('Saved handoff binding changed');}
+  else{const uploads=[];for(const file of receipt.files)uploads.push(await archive(file,{directory:path.join(dir,'native-library',file.role),deadline}));result=buildLibraryHandoff(receipt,uploads);result.receipt={...result.receipt,qa:undefined,full_local_receipt_sha256:sha(fs.readFileSync(path.join(dir,'receipt.json')))};if(JSON.stringify(result).length>29000)throw Error('Exact handoff exceeds server receipt limit');fs.writeFileSync(handoff,JSON.stringify(result,null,2),{flag:'wx'});}
+  afterArchive(result);phase='site-uploading';if(plan.private_review?.kind==='private-review-commentary')await uploadPrivateVideo(job,receipt,result,postAsset);
+  phase='operation-completing';const done=await call({action:'operation_complete',...binding,result});return{status:'media-completed',job_id:job.id,operation_id:op.id,node:op.node,job_status:done.job.status,quality_approved:false,new_paid_calls:0,publication:false};
+ };
+ try{
+  if(recorded){return await withProductionStation(workstations,'archive',job.id,async()=>{await call({action:'operation_finish_recorded',id:job.id,operation_id:op.id});return{status:'media-completed',job_id:job.id,operation_id:op.id,reconciled_stored_result:true,quality_approved:false};});}
+  if(ready)return await withProductionStation(workstations,'archive',job.id,async()=>{await claim();phase='local-files-ready';return archiveAndComplete();});
+  await withProductionStation(workstations,station,job.id,async()=>{
+   const claimed=await claim();receipt=recovery?cachedReceipt(job,op,dir):await render({operation:claimed,job,inputRoot,outputRoot});receipt=await qa(receipt);receipt=await enforceProductionQuality({job,operation:op,inputRoot,receipt,qualityManifestFile});
+   if(receipt.files.length!==1)throw Object.assign(Error('Current automatic Library adapter supports only single-file fast path; prepared batch required'),{code:'LIBRARY_BATCH_UNSUPPORTED'});
+   const workstation_ready=saveLocalReady(job,op,dir,receipt),checkpoint=await call({action:'operation_checkpoint',...binding,checkpoint_version:checkpointVersion,checkpoint:{phase:'local-files-ready; unattended-native-archive',files:receipt.files.map(f=>({role:f.role,sha256:f.sha256,size_bytes:f.size_bytes})),receipt_path:path.join(dir,'receipt.json'),workstation_ready,cost:0,publication:false}});checkpointVersion=checkpoint.operation.checkpoint_version;leaseUntil=checkpoint.operation.lease_until;phase='local-files-ready';
+  });
+  return await withProductionStation(workstations,'archive',job.id,archiveAndComplete);
+ }catch(e){
+  const code=e.code||'MEDIA_RESULT_UNKNOWN';
+  if(code==='PRODUCTION_STATION_BUDGET_DEFERRED'&&(!binding||phase==='local-files-ready'))return{status:'media-budget-deferred',job_id:job.id,operation_id:op.id,phase:e.station||(!binding?station:'archive'),claimed:!!binding,generation_started:!!binding&&!recovery,local_files_retained:!!receipt,budget_exhausted:true,resume_same_archives:true,regeneration_forbidden:true,...(binding?{waiting_for:'original-operation-lease-expiry',lease_until:leaseUntil}:{}),quality_approved:false,new_paid_calls:0,publication:false};
+  if(!binding)throw e;
+  if(phase==='operation-completing'){const read=await call({action:'read',id:job.id}).catch(()=>null),stored=read?.job.operations.find(o=>o.id===op.id);if(stored?.status==='completed'&&stored.result===JSON.stringify(JSON.parse(fs.readFileSync(handoff))))return{status:'media-completed',job_id:job.id,operation_id:op.id,recovered_callback:true,quality_approved:false};return{status:'media-result-unknown',job_id:job.id,operation_id:op.id,code,local_files_retained:true,archive_retained:true,regeneration_forbidden:true};}
+  await call({action:'operation_pause',...binding,reason:code+': '+(['local-files-ready','site-uploading'].includes(phase)?'Known local files and any saved Library identity retained; resolve handoff; no repeated rendering':'Reconcile local process/output before resuming')}).catch(()=>{});return{status:'media-blocked',job_id:job.id,operation_id:op.id,code,local_files_retained:!!receipt,regeneration_forbidden:true,owner_decision_required:true};
+ }
+}

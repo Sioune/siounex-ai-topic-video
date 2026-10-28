@@ -1,0 +1,168 @@
+[
+  {
+    "id": "qbitai-zh",
+    "name": "量子位",
+    "url": "https://www.qbitai.com/feed",
+    "description": "中文 AI 专题报道；订阅摘要不足时继续读取同站中文原文。",
+    "language": "zh",
+    "aiOnly": true,
+    "hosts": [
+      "www.qbitai.com",
+      "qbitai.com"
+    ]
+  },
+  {
+    "id": "ifanr-zh",
+    "name": "爱范儿",
+    "url": "https://www.ifanr.com/feed",
+    "description": "中文产品实测与 AI 应用报道；仅保留有完整中文内容的 AI 相关条目。",
+    "language": "zh",
+    "hosts": [
+      "www.ifanr.com",
+      "ifanr.com"
+    ]
+  },
+  {
+    "id": "geekpark-zh",
+    "name": "极客公园",
+    "url": "https://www.geekpark.net/rss",
+    "description": "中文科技报道与产品体验；优先视频、声音、互动和真实使用场景。",
+    "language": "zh",
+    "hosts": [
+      "www.geekpark.net",
+      "geekpark.net"
+    ]
+  },
+  {
+    "id": "ithome-zh",
+    "name": "IT之家",
+    "url": "https://www.ithome.com/rss/",
+    "description": "中文科技快讯；只筛 AI 内容。订阅仅覆盖最近约 60 条，日更是当次来源快照，不能视为全天完整收录。",
+    "language": "zh",
+    "hosts": [
+      "www.ithome.com",
+      "ithome.com"
+    ]
+  },
+  {
+    "id": "openai-official",
+    "name": "OpenAI",
+    "url": "https://openai.com/news/rss.xml",
+    "description": "OpenAI 官方研究、模型与产品发布；保留英文标题和订阅原始发布日期。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "openai.com"
+    ]
+  },
+  {
+    "id": "huggingface-official",
+    "name": "Hugging Face",
+    "url": "https://huggingface.co/blog/feed.xml",
+    "description": "Hugging Face 平台精选博客；含团队与第三方机构文章，需保留具体作者归因；订阅无摘要。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "huggingface.co"
+    ]
+  },
+  {
+    "id": "mistral-official",
+    "name": "Mistral",
+    "url": "https://mistral.ai/news/rss",
+    "description": "Mistral 官方模型、语音、OCR、Agent 与产品公告；部分条目无摘要。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "mistral.ai"
+    ]
+  },
+  {
+    "id": "aws-ml-official",
+    "name": "AWS Machine Learning",
+    "url": "https://aws.amazon.com/blogs/machine-learning/feed/",
+    "description": "AWS 官方 AI/ML 工程案例、Bedrock、SageMaker 与工具更新。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "aws.amazon.com"
+    ]
+  },
+  {
+    "id": "cloudflare-ai-official",
+    "name": "Cloudflare AI",
+    "url": "https://blog.cloudflare.com/tag/ai/rss/",
+    "description": "Cloudflare 官方 AI 标签博客，侧重 Agent、推理及互联网工具。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "blog.cloudflare.com"
+    ]
+  },
+  {
+    "id": "google-ai-official",
+    "name": "Google AI",
+    "url": "https://blog.google/innovation-and-ai/technology/ai/rss/",
+    "description": "Google 官方 AI 产品与可体验应用发布。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "blog.google"
+    ]
+  },
+  {
+    "id": "google-research-official",
+    "name": "Google Research",
+    "url": "https://research.google/blog/rss/",
+    "description": "Google Research 官方研究博客；覆盖部分非 AI 计算与科学，需按条目筛选。",
+    "language": "en",
+    "aiOnly": false,
+    "hosts": [
+      "research.google"
+    ]
+  },
+  {
+    "id": "deepmind-official",
+    "name": "Google DeepMind",
+    "url": "https://deepmind.google/blog/rss.xml",
+    "description": "Google DeepMind 官方研究与模型应用博客。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "deepmind.google"
+    ]
+  },
+  {
+    "id": "ms-research-official",
+    "name": "Microsoft Research",
+    "url": "https://www.microsoft.com/en-us/research/feed/",
+    "description": "Microsoft Research 官方研究博客；并非全部文章属于 AI，需按条目筛选。",
+    "language": "en",
+    "aiOnly": false,
+    "hosts": [
+      "www.microsoft.com"
+    ]
+  },
+  {
+    "id": "apple-ml-official",
+    "name": "Apple ML Research",
+    "url": "https://machinelearning.apple.com/rss.xml",
+    "description": "Apple 官方机器学习研究、端侧模型与 MLX 工具。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "machinelearning.apple.com"
+    ]
+  },
+  {
+    "id": "nvidia-genai-official",
+    "name": "NVIDIA Generative AI",
+    "url": "https://blogs.nvidia.com/blog/category/generative-ai/feed/",
+    "description": "NVIDIA 官方生成式 AI 分类；可能含企业宣传与基础设施，需继续选题筛选。",
+    "language": "en",
+    "aiOnly": true,
+    "hosts": [
+      "blogs.nvidia.com"
+    ]
+  }
+]

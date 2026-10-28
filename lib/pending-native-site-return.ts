@@ -1,0 +1,38 @@
+import {db} from './store';
+import {getJob} from './production';
+import {hash,ProductionError} from './production-contract';
+import {canonicalNativeReturn as canonical} from './native-draft-revision-handoff';
+import {readPendingNativeRecord,pendingGuard,PENDING_NATIVE_ROLES} from './pending-native-site-context';
+import {getSiteArchiveMetadata,readSiteArchiveFile,type SiteArchiveActor} from './site-file-archive';
+import type {SiteFileArchive} from './site-file-archive-contract.mts';
+
+export async function returnPendingNativeSiteDraft(id:string,b:Record<string,unknown>,actor:SiteArchiveActor){
+ if(Object.keys(b).some(k=>!['action','id','pending_id'].includes(k)))throw new ProductionError('待审核提交不接收质量批准或替代身份',400);
+ const initial=await readPendingNativeRecord(id,b.pending_id,actor),p=initial.p;
+ if(p.status==='returned')return{job:await getJob(id),pending:p,replayed:true,quality_approved:false,publication_authorized:false};
+ const value=await readPendingNativeRecord(id,b.pending_id,actor,true),rows=(await db().prepare("SELECT key,value FROM app_state WHERE key>='site_archive_v1:' AND key<'site_archive_v1;' AND json_extract(value,'$.job_id')=? AND json_extract(value,'$.archive.pending_native_request_id')=? ORDER BY key").bind(id,p.pending_id).all<{key:string;value:string}>()).results;
+ if(rows.length!==4)throw new ProductionError('须先真实封存并完整二次下载视频、双封面和宣发四项',409);
+ const archives:Record<string,SiteFileArchive>={};
+ for(const row of rows){const stored=JSON.parse(row.value),a=await getSiteArchiveMetadata(id,stored.archive.site_archive_id,p.owner_id);if(a.status!=='confirmed'||a.materialized_sha256!==a.file.sha256||a.pending_native_request_id!==p.pending_id||a.owner_review_id!==null||a.quality_review!=='awaiting-human'||!PENDING_NATIVE_ROLES.some(role=>role===a.file.role)||archives[a.file.role])throw new ProductionError('四项待审核归档身份或物化证据不完整',409);archives[a.file.role]=a;}
+ if(PENDING_NATIVE_ROLES.some(role=>!archives[role])||archives.video.file.sha256!==p.request.sha256||archives.video.file.size_bytes!==p.request.size_bytes||archives.video.file.file_name!==p.request.file_name)throw new ProductionError('待审核原生成片精确字节不匹配',409);
+ const promoFile=await readSiteArchiveFile(id,archives.promotion.site_archive_id,p.owner_id),promotion=await new Response(promoFile.body).text();
+ const j=await getJob(id),url=(a:SiteFileArchive)=>'https://siounex-ai-topic-library.siounexzhao.chatgpt.site/api/site-archive?id='+encodeURIComponent(id)+'&archive='+a.site_archive_id;
+ const video={url:url(archives.video),sha256:p.request.sha256,provider_job_id:p.request.render_id,storage:'site-private-r2',site_archive_id:archives.video.site_archive_id,cost:0,verification:'actual-native-render-in-site-private-r2; independent human review pending',...(p.request.demonstration_check?{demonstration_check:p.request.demonstration_check}:{}),qa:{...p.request.qa,native_handoff:true,native_candidate_id:p.binding.candidate_id,pending_native_site_id:p.pending_id,project_id:p.request.project_id,timeline_id:p.request.timeline_id,render_id:p.request.render_id,native_render_id:p.request.render_id,site_archive_id:archives.video.site_archive_id,file_name:p.request.file_name,size_bytes:p.request.size_bytes,duration_seconds:p.request.duration,quality_approved:false,publication_authorized:false}};
+ const cover={url:url(archives.cover_3_4),sha256:archives.cover_3_4.file.sha256,provider_job_id:archives.cover_3_4.site_archive_id,cost:0,qa:{schema:'site-cover-pair-v1',binding:p.binding,covers:['cover_3_4','cover_4_3'].map(role=>({site_archive_id:archives[role].site_archive_id,...archives[role].file,url:url(archives[role])})),pending_native_site_id:p.pending_id,quality_approved:false,publication_authorized:false,new_paid_calls:0}};
+ const promo={text:promotion.trim(),limits:canonical({schema:'site-promotion-file-v1',site_archive_id:archives.promotion.site_archive_id,sha256:archives.promotion.file.sha256,pending_native_site_id:p.pending_id,quality_approved:false,publication_authorized:false})};
+ const nodes:Record<string,{id:string;artifact:string;hash:string;version:number;status:string}>={};
+ for(const [node,artifact]of Object.entries({video,cover,promotion:promo})){const prior=j.milestones.filter(m=>m.node===node&&m.revision===2).sort((a,b)=>b.artifact_version-a.artifact_version)[0],content=canonical(artifact);nodes[node]={id:'native_site_'+await hash(p.pending_id+'\n'+node),artifact:content,hash:await hash(content),version:(prior?.artifact_version||0)+1,status:node==='promotion'?'pending':'awaiting_human'};}
+ const at=new Date().toISOString(),token=crypto.randomUUID(),archiveIds=Object.fromEntries(PENDING_NATIVE_ROLES.map(role=>[role,archives[role].site_archive_id])),milestoneIds=Object.fromEntries(Object.entries(nodes).map(([node,v])=>[node,v.id])),receiptId='native_site_return_'+await hash(p.pending_id),receipt=canonical({schema:'native-site-draft-return-v1',pending_id:p.pending_id,request_hash:p.request_hash,video_sha256:p.request.sha256,render_id:p.request.render_id,archives:archiveIds,milestone_ids:milestoneIds,base_milestone_id:p.request.base_milestone_id,base_artifact_hash:p.request.base_artifact_hash,feedback_review_id:p.feedback.id,continuation_review_id:p.continuation.id,quality_approved:false,owner_button_clicked:false,publication_authorized:false,new_paid_calls:0,commit_token:token});
+ const guard=pendingGuard(p,value.raw),fileGuards=rows.map(()=>" AND EXISTS(SELECT 1 FROM app_state file WHERE file.key=? AND file.value=?)").join(''),fileArgs=rows.flatMap(row=>[row.key,row.value]),won="EXISTS(SELECT 1 FROM production_reviews winner WHERE winner.id=? AND winner.job_id=? AND winner.note=?)",wonArgs=[receiptId,id,receipt];
+ const candidate=canonical({schema:'native-video-candidate-v1',script_hash:p.binding.script_hash,sha256:p.request.sha256,file_name:p.request.file_name,size_bytes:p.request.size_bytes,duration:p.request.duration,project_id:p.request.project_id,timeline_id:p.request.timeline_id,source:p.request.source,quality_approved:false,publication:false,local_file_verified:true,pending_native_site_id:p.pending_id});
+ const returned=canonical({...p,status:'returned',returned_at:at,milestone_ids:milestoneIds,archives:archiveIds});
+ await db().batch([
+  db().prepare('INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) SELECT ?,j.id,j.revision,?,?,?,\'verified-native-site-pending-return\',? FROM production_jobs j WHERE j.id=? AND '+guard.sql+fileGuards+' ON CONFLICT(id) DO NOTHING').bind(receiptId,p.request_hash,'native_site_draft_return_v1',receipt,at,id,...guard.args,...fileArgs),
+  ...Object.entries(nodes).map(([node,n])=>db().prepare('INSERT INTO production_milestones(id,job_id,node,revision,artifact_version,artifact_hash,artifact,status,mode_epoch,created_at,updated_at) SELECT ?,?,?,2,?,?,?,?,?,?,? WHERE '+won).bind(n.id,id,node,n.version,n.hash,n.artifact,n.status,p.binding.mode_epoch,at,at,...wonArgs)),
+  db().prepare("INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) SELECT ?,?,2,?,'native_video_candidate',?,'verified-native-site-pending-return',? WHERE "+won).bind(p.binding.candidate_id,id,p.request.sha256,candidate,at,...wonArgs),
+  db().prepare('UPDATE app_state SET value=? WHERE key=? AND value=? AND '+won).bind(returned,value.key,value.raw,...wonArgs),
+  db().prepare("UPDATE production_jobs SET updated_at=? WHERE id=? AND "+won).bind(at,id,...wonArgs)
+ ]);
+ const saved=await readPendingNativeRecord(id,p.pending_id,actor);if(saved.p.status!=='returned')throw new ProductionError('回传并发失效，未批准或覆盖旧节点；请先读回',409);
+ return{job:await getJob(id),pending:saved.p,replayed:false,quality_approved:false,publication_authorized:false};
+}

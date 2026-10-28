@@ -1,0 +1,13 @@
+interface:
+  display_name: 怎么用好AI·视频制作
+  short_description: 制作本人口播竖屏短视频，保留品牌片尾，并用发布后数据复盘和逐轮测试改进
+  default_prompt: 使用 $make-siounex-videos，把这个主题制作成「怎么用好AI」竖屏口播视频：
+  icon_small: assets/icon.svg
+  icon_large: assets/icon.svg
+policy:
+  products:
+  - chatgpt
+  - codex
+  - api
+  - atlas
+  allow_implicit_invocation: true

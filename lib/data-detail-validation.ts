@@ -1,0 +1,9 @@
+import {text,ProductionError} from './production-contract';
+const iso=(v:unknown)=>{if(v===null||v===undefined||v==='')return null;if(typeof v!=='string'||!Number.isFinite(Date.parse(v)))throw new ProductionError('时间无效',400);return new Date(v).toISOString()};
+export function encodeSampleNote(note:string,meta:unknown,supersedes:unknown,observed:string|null){
+ if(!meta&&!supersedes)return note;const m=(meta||{}) as Record<string,unknown>,source=m.source as Record<string,unknown>|undefined,diag=m.diagnostic as Record<string,unknown>|undefined;
+ if(source&&(!/^libfile_[a-f0-9]+$/.test(String(source.library_file_id))||!/^[a-f0-9]{64}$/.test(String(source.sha256))))throw new ProductionError('原图Library身份或SHA256无效',400);
+ if(diag?.plays!==null&&diag?.plays!==undefined&&(!Number.isInteger(diag.plays)||Number(diag.plays)<0))throw new ProductionError('诊断播放无效',400);
+ const peer=(m.peer_percentiles||{}) as Record<string,unknown>;for(const n of Object.values(peer))if(n!==null&&(typeof n!=='number'||!Number.isFinite(n)||n<0||n>100))throw new ProductionError('同类百分位应为0–100，未知留空',400);
+ return JSON.stringify({schema:'sample-details-v1',text:note,captured_at:iso(m.captured_at)||observed,time_source:typeof m.time_source==='string'?text(m.time_source,1000):'实际采样时间；未据此推定诊断截止',source:source?{library_file_id:source.library_file_id,sha256:source.sha256,file_name:text(source.file_name,180),source_message_id:typeof source.source_message_id==='string'?text(source.source_message_id,180):null}:null,diagnostic:diag?{observed_at:iso(diag.observed_at),plays:diag.plays??null,time_source:typeof diag.time_source==='string'?text(diag.time_source,1000):'平台诊断所示截止时间，与手机截图时间分开'}:null,peer_percentiles:peer,peer_labels:m.peer_labels||{},platform_advice:typeof m.platform_advice==='string'?text(m.platform_advice,3000):null,publication_observations:m.publication_observations||{},supersedes_id:supersedes?text(supersedes,100):null});
+}

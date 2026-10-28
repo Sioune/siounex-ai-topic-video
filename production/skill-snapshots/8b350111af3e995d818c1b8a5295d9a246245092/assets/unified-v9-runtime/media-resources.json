@@ -1,0 +1,102 @@
+{
+  "schema": "siounex-unified-resources-v1",
+  "resources": {
+    "published_v9": {
+      "library_file_id": "libfile_7cd6310c62948191b7358238328fe072",
+      "file_id": "file_0000000016f081f7aee772fd63df4bad",
+      "version": 10,
+      "file_name": "Claude-20辆车去哪了-A2一体布局审阅-v9.mp4",
+      "local_path": "media/published-v9.mp4",
+      "sha256": "56113f21fa38021da3ecad44be8e8e407d292110fc3cd090c0d608a057cd8cc3",
+      "bytes": 12696320,
+      "required": true,
+      "role": "existing actual v9 source plane and approved audio master; immutable pinned bytes"
+    },
+    "legacy_media_bundle": {
+      "library_file_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+      "file_id": "file_0000000095548230900df003a2f8e798",
+      "version": 0,
+      "file_name": "Siounex-A2-Claude示例-真实素材-v1.zip",
+      "sha256": "322aa45fdf9151fa8190aa0b10ec981fec24edf8fc661f58bfbf40aa73fb21c1",
+      "bytes": 32174328,
+      "required": true,
+      "members": [
+        {
+          "member": "example-inputs/original-dark-outro-normalized.mp4",
+          "local_path": "media/original-dark-outro-normalized.mp4",
+          "sha256": "f7a9efa24c8de9f8bf1e5f41c22aac99c8d5db2184d3e81f834548b2902d85f7",
+          "bytes": 233299
+        },
+        {
+          "member": "example-inputs/history-dragon.png",
+          "local_path": "media/history-dragon.png",
+          "sha256": "6906b6319e3399cc0f9fa43c8c3de2c96a4232322815cf27f61bbd03fe9fd4c0",
+          "bytes": 2529424
+        },
+        {
+          "member": "example-inputs/history-animals.png",
+          "local_path": "media/history-animals.png",
+          "sha256": "d775a45ff9fca349f14823eb23ab68a23a85f1b2fae50155c6df3b6909d76dab",
+          "bytes": 2593153
+        },
+        {
+          "member": "example-inputs/history-latte.png",
+          "local_path": "media/history-latte.png",
+          "sha256": "5d7041c1cf658e7046cf99dd2fe126ab275926618b41b38db6d159d1302075ff",
+          "bytes": 2252323
+        }
+      ]
+    }
+  },
+  "restore": "Materialize exact file_id with library_file_id; never substitute latest; run official metadata-preserving Library transfer before local use. Windows paths must actually exist and match hashes.",
+  "archive_provenance": [
+    {
+      "id": "dragon",
+      "title": "AI做的杯子，主打滴水不进？",
+      "archive": {
+        "library_file_id": "libfile_931abfe731448191936196814597a214",
+        "file_id": "file_00000000dec881f7990b9e952f20c33c",
+        "version": 0,
+        "sha256": "23d1d5cc0da944c3588cc7807006636e5877804a69c0e6103e8b82e9cb11ca3e"
+      },
+      "cover_sha256": "6906b6319e3399cc0f9fa43c8c3de2c96a4232322815cf27f61bbd03fe9fd4c0"
+    },
+    {
+      "id": "animals",
+      "title": "AI偷听动物群聊",
+      "archive": {
+        "library_file_id": "libfile_f80177f96e40819199939b83c52bba93",
+        "file_id": "file_000000009e28820cbad75f876a1ee948",
+        "version": 0,
+        "sha256": "426f35c9c577db30dd39d3ae3052bda9893de9912b45f7a24f46dcbc78e9ead9"
+      },
+      "cover_sha256": "d775a45ff9fca349f14823eb23ab68a23a85f1b2fae50155c6df3b6909d76dab"
+    },
+    {
+      "id": "latte",
+      "title": "这杯拿铁，居然能玩？",
+      "archive": {
+        "library_file_id": "libfile_3bbf587af280819197e5a9ee999a4bf7",
+        "file_id": "file_00000000344481fb9a5aec1bc28e322c",
+        "version": 0,
+        "sha256": "615e93694168c50d476e1300dd2eaa373a562b9a25d52774fdae223f12acfc8d"
+      },
+      "cover_sha256": "5d7041c1cf658e7046cf99dd2fe126ab275926618b41b38db6d159d1302075ff"
+    }
+  ],
+  "original_outro": {
+    "library_file_id": "libfile_6f9e35a276848191b45781c59852837a",
+    "file_id": "file_0000000013f081f596894008e1210749",
+    "version": 0,
+    "sha256": "b7c8c94cd2231d5526beb32063653551856c19b1cd20cf561cb6dc2e48e6b286",
+    "normalization_member": "example-inputs/original-dark-outro-normalized.mp4",
+    "renormalization_needed": false
+  },
+  "previous_A2_package_preserved": {
+    "library_file_id": "libfile_aee174c0b49c8191a45f600e4aa79049",
+    "file_id": "file_00000000997481f792afc3a938f9b01d",
+    "version": 0,
+    "sha256": "b90f3295baac1579620fb359d68ae42f6ab0e53e9a7e23306b3eb2a8cd680297",
+    "required": false
+  }
+}

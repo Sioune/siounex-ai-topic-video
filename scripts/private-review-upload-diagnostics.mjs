@@ -1,0 +1,9 @@
+// Persist only bounded technical evidence, never credentials or raw HTTP JSON.
+import fs from 'node:fs';import path from 'node:path';import {createHash,randomUUID} from 'node:crypto';
+export function privateUploadFailure(error,{phase='local_review_draft_begin',readback_status}={}){
+ const message=String(error?.message||error),capacity=/技术容量超限：\s*(project_archive|video|complete_bundle)\s*实际(\d+)字节，须小于(\d+)字节/.exec(message),status=error?.http_status??error?.status,http_status=Number.isInteger(status)&&status>=100&&status<=599?status:null;
+ return{schema:'private-review-upload-failure-v1',phase,http_status,technical_code:capacity?'SITE_ARCHIVE_CAPACITY_EXCEEDED':http_status?'SITE_HTTP_'+http_status:'PRIVATE_UPLOAD_RESULT_UNKNOWN',...(capacity?{capacity:{role:capacity[1],actual_bytes:Number(capacity[2]),exclusive_max_bytes:Number(capacity[3])}}:{}),...(Number.isInteger(readback_status)?{readback_http_status:readback_status}:{}),response_message_sha256:createHash('sha256').update(message).digest('hex'),...(typeof error?.response_sha256==='string'&&/^[a-f0-9]{64}$/.test(error.response_sha256)?{response_body_sha256:error.response_sha256}:{}),retry_without_reconciliation:false,local_files_retained:true,quality_approved:false,publication_authorized:false};
+}
+export function recordPrivateUploadFailure(out,request_id,error,options={}){
+ const evidence=privateUploadFailure(error,options),dir=path.join(out,'site-upload-failures');fs.mkdirSync(dir,{recursive:true});const file=path.join(dir,new Date().toISOString().replaceAll(':','-')+'-'+randomUUID()+'.json');fs.writeFileSync(file,JSON.stringify({...evidence,request_id,observed_at:new Date().toISOString()},null,2),{flag:'wx'});return{http_status:evidence.http_status,technical_code:evidence.technical_code,failure_file:file,...(evidence.capacity?{capacity:evidence.capacity}:{})};
+}
