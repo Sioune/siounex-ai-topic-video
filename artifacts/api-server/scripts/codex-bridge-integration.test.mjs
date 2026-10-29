@@ -12,7 +12,7 @@ test('task grants issue, authenticate, rotate and revoke without access to other
     const outfile = path.join(dir, 'bridge.mjs');
     await build({
       stdin: {
-        contents: `export * from './src/lib/codex-executor-bridge.ts'; export { sql } from 'bridge-test-db';`,
+        contents: `export * from './src/lib/codex-executor-bridge.ts'; export * from './src/lib/codex-executor-device.ts'; export { requestIdentity } from './src/lib/studio-auth'; export { sql } from 'bridge-test-db';`,
         resolveDir: path.resolve(import.meta.dirname, '..'),
       },
       bundle: true, platform: 'node', format: 'esm', outfile,
@@ -37,7 +37,7 @@ test('task grants issue, authenticate, rotate and revoke without access to other
             ` : name === 'persist' ? `export async function persistStudioDatabase() {}` : `
               import { DatabaseSync } from 'node:sqlite';
               export const sql = new DatabaseSync(':memory:');
-              sql.exec("CREATE TABLE app_state(key TEXT PRIMARY KEY,value TEXT); CREATE TABLE production_jobs(id TEXT PRIMARY KEY,owner_id TEXT,is_test INTEGER,status TEXT,source_snapshot TEXT)");
+              sql.exec("CREATE TABLE app_state(key TEXT PRIMARY KEY,value TEXT); CREATE TABLE production_jobs(id TEXT PRIMARY KEY,owner_id TEXT,is_test INTEGER,status TEXT,source_snapshot TEXT,revision INTEGER DEFAULT 1,lease_until INTEGER)");
               const adapter = {
                 prepare(query) {
                   let values = [];
@@ -45,7 +45,7 @@ test('task grants issue, authenticate, rotate and revoke without access to other
                     bind(...args) { values = args; return this; },
                     async first() { return sql.prepare(query).get(...values) || null; },
                     async all() { return {results:sql.prepare(query).all(...values)}; },
-                    run() { return sql.prepare(query).run(...values); },
+                    run() { const result = sql.prepare(query).run(...values); return {meta:{changes:Number(result.changes)}}; },
                   };
                 },
                 async batch(statements) {
@@ -63,7 +63,7 @@ test('task grants issue, authenticate, rotate and revoke without access to other
     const bridge = await import(pathToFileURL(outfile).href);
     const host = 'bridge-test.replit.dev';
     const origin = `https://${host}`;
-    bridge.sql.prepare('INSERT INTO production_jobs VALUES (?,?,?,?,?)').run(
+    bridge.sql.prepare('INSERT INTO production_jobs(id,owner_id,is_test,status,source_snapshot) VALUES (?,?,?,?,?)').run(
       'job_local', 'owner_bridge_test', 0, 'waiting_executor', JSON.stringify({ url: 'https://source.example/article' }));
     const request = (body, extra = {}) => ({
       protocol: 'https', ownerId: 'owner_bridge_test', body: Buffer.from(JSON.stringify(body)),
@@ -108,6 +108,33 @@ test('task grants issue, authenticate, rotate and revoke without access to other
     assert.equal(bridge.sql.prepare('SELECT count(*) AS count FROM app_state').get().count, 1);
     const outcomes = await Promise.all(concurrent.map(result => execute(result.body.token, { action: 'read', id: 'job_local' })));
     assert.equal(outcomes.filter(result => result.next).length, 1, 'Concurrent issuance must leave only the latest credential valid');
+    const pairing = await invoke(bridge.issueCodexExecutorPairing, request({}));
+    assert.equal(pairing.status, 201);
+    const pairRequest = () => request({ device_name: 'Test Windows PC' }, { authorization: `Bearer ${pairing.body.pairing_code}` });
+    const paired = await invoke(bridge.pairCodexExecutorDevice, pairRequest());
+    assert.equal(paired.status, 201);
+    assert.equal((await invoke(bridge.pairCodexExecutorDevice, pairRequest())).status, 401, 'Pairing is single-use');
+    const deviceToken = paired.body.token;
+    assert.equal((await execute(deviceToken, { action: 'read', id: 'job_local' })).status, 401, 'Pairing alone must not authorize jobs');
+    assert.equal((await invoke(bridge.approveCodexExecutorJob, request({ job_id: 'job_local' }))).status, 201);
+    assert.equal((await execute(deviceToken, { action: 'read', id: 'job_local' })).next, true);
+    assert.equal((await execute(deviceToken, { action: 'read', id: 'job_other' })).status, 401);
+    assert.equal((await execute(deviceToken, { action: 'dispatch_next', id: 'job_local' })).status, 401);
+    const poll = () => bridge.requestIdentity.run(
+      { kind: 'codex-executor', userId: 'owner_bridge_test', executorDeviceId: paired.body.device_id },
+      () => invoke(bridge.pollCodexExecutorJobs, request({})),
+    );
+    assert.equal((await poll()).body.tasks[0].job_id, 'job_local');
+    bridge.sql.prepare('UPDATE production_jobs SET revision=2 WHERE id=?').run('job_local');
+    assert.equal((await execute(deviceToken, { action: 'read', id: 'job_local' })).status, 401, 'Revision changes invalidate approval');
+    assert.deepEqual((await poll()).body.tasks, []);
+    assert.equal((await invoke(bridge.approveCodexExecutorJob, request({ job_id: 'job_local' }))).status, 201);
+    assert.equal((await invoke(bridge.revokeCodexExecutorJobApproval, request({ job_id: 'job_local' }))).status, 204);
+    assert.equal((await execute(deviceToken, { action: 'read', id: 'job_local' })).status, 401);
+    assert.equal((await invoke(bridge.approveCodexExecutorJob, request({ job_id: 'job_local' }))).status, 201);
+    assert.equal((await invoke(bridge.revokeCodexExecutorDevice, request({ device_id: paired.body.device_id }))).status, 204);
+    assert.equal((await execute(deviceToken, { action: 'read', id: 'job_local' })).status, 401);
+    assert.deepEqual((await poll()).status, 401);
     bridge.sql.close();
   } finally { await rm(dir, { recursive: true, force: true }); }
 });

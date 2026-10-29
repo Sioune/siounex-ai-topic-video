@@ -18,8 +18,8 @@ async function firstRow<T>(statement: StatementLike): Promise<T | null> {
   return await statement.first() as T | null;
 }
 
-async function allRows<T>(statement: StatementLike): Promise<T[]> {
-  return (await statement.all()).results as T[];
+async function allRows<T>(statement: StatementLike): Promise<{ results: T[] }> {
+  return await statement.all() as { results: T[] };
 }
 
 export function trustedRequestOrigin(req: Request) {
@@ -174,7 +174,7 @@ async function executorIdentity(req: Request) {
   const job = await firstRow<{ owner_id: string; is_test: number }>(
     db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?').bind(grant.job_id),
   );
-  if (job?.owner_id !== grant.owner_id || job.is_test !== 0) return false;
+  if (!job || job.owner_id !== grant.owner_id || job.is_test !== 0) return false;
   const body = bodyObject(req, 1500000);
   if (!isCodexBridgeRequestAllowed(grant, body)) return false;
   return grant;

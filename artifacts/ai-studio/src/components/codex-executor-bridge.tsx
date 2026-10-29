@@ -143,15 +143,15 @@ export default function CodexExecutorBridge({ job }: { job: ProductionJob }) {
       {device ? (
         <div className="rounded-md border p-3 text-sm">
           <p>已配对设备：<strong>{device.device_name}</strong></p>
-          <p>{device.online ? '在线' : `离线；上次连接 ${new Date(device.last_seen_at).toLocaleString()}`}</p>
+          <p>{device.online ? '在线' : device.last_seen_at ? `离线；上次连接 ${new Date(device.last_seen_at).toLocaleString()}` : '等待本机首次连接'}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Button variant="outline" disabled={busy} onClick={() => void revokeDevice()}>撤销本机执行器</Button>
           </div>
         </div>
       ) : (
         <div className="space-y-2">
-          <Button disabled={busy} onClick={() => void issuePairing()}>
-            {busy ? '处理中…' : '配对本机并设置登录启动'}
+          <Button disabled={busy || !status} onClick={() => void issuePairing()}>
+            {!status ? '正在读取执行器状态…' : busy ? '处理中…' : '配对本机并设置登录启动'}
           </Button>
           {pairing && (
             <div className="space-y-2 rounded-md border p-3">

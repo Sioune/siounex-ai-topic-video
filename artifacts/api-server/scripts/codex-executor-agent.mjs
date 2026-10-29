@@ -12,7 +12,9 @@ const APP_HOME = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), '
 const CREDENTIAL_FILE = path.join(APP_HOME, 'device-credential.dpapi');
 const JOB_HOME = path.join(APP_HOME, 'jobs');
 const API_TIMEOUT_MS = 30_000;
-const SOURCE_LIMIT = 5 * 1024 * 1024;
+// Match the mature executor's bounded source input, rather than downloading
+// a file it will immediately reject.
+const SOURCE_LIMIT = 500_000;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 function requireWindows() {
@@ -163,7 +165,7 @@ async function downloadSource(urlValue, destination) {
     throw new Error('来源不是可读取的网页或纯文本。');
   }
   const length = Number(response.headers.get('content-length') || 0);
-  if (length > SOURCE_LIMIT) throw new Error('来源网页超过 5 MB 上限。');
+  if (length > SOURCE_LIMIT) throw new Error('来源网页超过执行器的 500 KB 上限。');
   if (!response.body) throw new Error('来源网页没有可读取的内容。');
   const reader = response.body.getReader();
   const chunks = [];
@@ -175,7 +177,7 @@ async function downloadSource(urlValue, destination) {
       total += value.byteLength;
       if (total > SOURCE_LIMIT) {
         await reader.cancel();
-        throw new Error('来源网页超过 5 MB 上限。');
+        throw new Error('来源网页超过执行器的 500 KB 上限。');
       }
       chunks.push(Buffer.from(value));
     }

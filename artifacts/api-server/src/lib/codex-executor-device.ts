@@ -19,8 +19,8 @@ async function firstRow<T>(statement: StatementLike): Promise<T | null> {
   return await statement.first() as T | null;
 }
 
-async function allRows<T>(statement: StatementLike): Promise<T[]> {
-  return (await statement.all()).results as T[];
+async function allRows<T>(statement: StatementLike): Promise<{ results: T[] }> {
+  return await statement.all() as { results: T[] };
 }
 
 type Device = {
@@ -112,7 +112,7 @@ export const issueCodexExecutorPairing: RequestHandler = async (req, res) => {
   );
   if (existingDevices.results.some(row => {
     const device = parseRecord<Device>(row.value);
-    return device?.owner_id === owner && !device.revoked;
+    return !!device && device.owner_id === owner && !device.revoked;
   })) {
     res.status(409).json({ error: '已有本机执行器登记。请先撤销旧设备，再配对新设备。' });
     return;
@@ -331,7 +331,7 @@ export const readCodexExecutorDeviceStatus: RequestHandler = async (req, res) =>
     db().prepare('SELECT key,value FROM app_state WHERE key LIKE ?').bind(DEVICE_PREFIX + '%'),
   );
   const device = rows.results.map(row => parseRecord<Device>(row.value))
-    .find(value => value?.owner_id === owner && !value.revoked);
+    .find(value => !!value && value.owner_id === owner && !value.revoked);
   const jobId = new URL(req.originalUrl, `https://${req.get('host')}`).searchParams.get('job_id');
   let approved = false;
   if (jobId) {
@@ -365,7 +365,7 @@ export const approveCodexExecutorJob: RequestHandler = async (req, res) => {
   const owner = await ownerId(req);
   if (!owner) { res.status(403).json({ error: '站主身份无效。' }); return; }
   const job = await getJob(jobId);
-  if (job?.owner_id !== owner || job.is_test !== 0 || job.status !== 'waiting_executor' ||
+  if (!job || job.owner_id !== owner || job.is_test !== 0 || job.status !== 'waiting_executor' ||
       !validSource(job.source_snapshot)) {
     res.status(409).json({ error: '任务已变化或缺少有效来源，不能授权给本机执行器。' });
     return;
@@ -374,7 +374,7 @@ export const approveCodexExecutorJob: RequestHandler = async (req, res) => {
     db().prepare('SELECT value FROM app_state WHERE key LIKE ?').bind(DEVICE_PREFIX + '%'),
   );
   const device = rows.results.map(row => parseRecord<Device>(row.value))
-    .find(value => value?.owner_id === owner && !value.revoked);
+    .find(value => !!value && value.owner_id === owner && !value.revoked);
   if (!device) { res.status(409).json({ error: '请先配对一台本机执行器。' }); return; }
   const approval: Approval = {
     version: 1, owner_id: owner, device_id: device.device_id, job_id: jobId,
