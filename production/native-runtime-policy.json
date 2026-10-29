@@ -4,6 +4,7 @@
   "owner_anchor_job_id": "job_ea5571a3-1437-4d09-acd1-ad576666b7a6",
   "allowed_actions": [
     "owner_feedback_continue",
+    "owner_feedback_review_continue",
     "studio_preview_generation_read",
     "studio_preview_generation_effect",
     "studio_preview_generation_claim",
@@ -98,5 +99,5 @@
   "publication_actions": false,
   "new_job_creation": false,
   "automatic_mutation_retry": false,
-  "executor_release": "workstation-flow-v27"
+  "executor_release": "workstation-flow-v28"
 }
