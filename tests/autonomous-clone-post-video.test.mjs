@@ -30,3 +30,8 @@ test('budget exhausted after confirmed clone appends deferred post stage without
 test('unconfirmed clone upload never begins downstream package preparation',async()=>{
  for(const status of ['private-review-upload-result-unknown','private-review-upload-deferred','automatic-clone-provider-unknown']){const a=api();let posts=0;const result=await autonomousPass({execute:true},{call:a.call,clone:async()=>({...cloneReady,status}),postVideo:async()=>{posts++;throw Error('No post preparation from unconfirmed video');}});assert.equal(posts,0);assert.equal(result.productions.length,1);assert.equal(result.productions[0].status,status);}
 });
+
+test('blocked unstarted voice leaves the already reviewed video eligible for independent package preparation',async()=>{
+ const a=api();let posts=0,clones=0;const result=await autonomousPass({execute:true},{call:a.call,clone:async()=>{clones++;return {status:'automatic-clone-native-handoff-required',job_id:id,request_id:rid,claimed:false,generation_started:false};},postVideo:async s=>{posts++;assert.equal(s.job.id,id);return {status:'post-video-prepared',job_id:id,plan_id:planId,quality_approved:false,publication_authorized:false};}});
+ assert.equal(clones,1);assert.equal(posts,1);assert.deepEqual(result.productions.map(p=>p.status),['automatic-clone-native-handoff-required','post-video-prepared']);assert.equal(result.productions[1].quality_approved,false);assert.equal(result.publication_authorized,false);
+});

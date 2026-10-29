@@ -77,13 +77,13 @@ function HistoricalDiagnostics({job,cancelled=false}:{job:ProductionJob;cancelle
 type ProductionPanel='review'|'media'|'delivery';
 function anchorPanel(id:string):ProductionPanel|null{
  if(['native-video-archive','promotion-delivery','promotion-review','delivery-review','publication-followup','post-video-preparation','final-review-confirmation'].includes(id))return 'delivery';
- if(['cover-review','video-review','recording-input','media-plan-input','media-next-step','voice-replacement','native-preparation-progress','execution-preparation-progress','automatic-clone','technical-video','private-review-video'].includes(id))return 'media';
+ if(['cover-review','video-review','local-review-draft','recording-input','media-plan-input','media-next-step','voice-replacement','native-preparation-progress','execution-preparation-progress','automatic-clone','technical-video','private-review-video'].includes(id))return 'media';
  if(['source-review','script-review','script-feedback'].includes(id))return 'review';
  return null;
 }
 const labels:Record<string,string>={cancelled:'已取消制作',completed:'交付已核验',waiting_executor:'等待执行器领取',running:'执行器已领单',awaiting_review:'等待节点审核',approved:'口播稿已批准',failed:'执行失败',paused:'已暂停，需要决定',awaiting_ai:'等待AI审核',awaiting_human:'等待人工审核',ai_running:'AI正在审核',pending:'等待前一节点',revise:'已打回返工'};
 const nodes:Record<string,string>={source:'来源与事实核验',script:'口播稿与分镜',cover:'封面',video:'成片画面与声音',promotion:'宣发文案',delivery:'交付检查'};
-const ordinaryVoiceArchiveJobs=new Set(['job_52beebd8-45f2-431b-a18b-185b00be4618','job_bd0c0018-208e-46a2-a795-a61b1f269f83']);
+const ordinaryVoiceArchiveJobs=new Set(['job_00000000-0000-4000-8000-000000000001','job_00000000-0000-4000-8000-000000000002']);
 export function currentProductionMilestone(job:ProductionJob,node:string){return(job.milestones||[]).filter(m=>m.node===node&&m.revision===job.revision&&m.mode_epoch===job.mode_epoch&&!['invalidated','superseded'].includes(m.status)).sort((a,b)=>b.artifact_version-a.artifact_version)[0];}
 export function localCoverPreparationStatus(job:ProductionJob){
  const current=currentLocalReviewDraft(job);if(!current||current.milestone.status==='revise'||!['approved','completed'].includes(job.status)||job.approved_revision!==job.revision||currentProductionMilestone(job,'cover'))return null;
@@ -326,7 +326,7 @@ export default function ProductionDesk(){
       {stoppedMessage&&!mediaReworkRecovery&&<a className="production-current-task" href="#production-recovery">查看暂停原因与恢复操作 →</a>}
      </header>
      <Tabs value={activePanel} onValueChange={value=>choosePanel(value as ProductionPanel)} className="production-tabs">
-      <ContentMotionStatus job={selected}/><WorkInProgressVideo key={selected.id} jobId={selected.id} onReviewChange={onPreviewReviewChange} reviewStatus={previewStatus}/><TabsList variant="line" className="production-panel-tabs" aria-label="制作内容"><TabsTrigger value="review">稿件与审阅</TabsTrigger><TabsTrigger value="media">素材与制作</TabsTrigger><TabsTrigger value="delivery">交付与版本</TabsTrigger></TabsList>
+      <ContentMotionStatus job={selected}/><WorkInProgressVideo key={selected.id} jobId={selected.id} onReviewChange={onPreviewReviewChange} reviewStatus={previewStatus} formalVideoSha={localReviewDraft?.sha256}/><TabsList variant="line" className="production-panel-tabs" aria-label="制作内容"><TabsTrigger value="review">稿件与审阅</TabsTrigger><TabsTrigger value="media">素材与制作</TabsTrigger><TabsTrigger value="delivery">交付与版本</TabsTrigger></TabsList>
       <TabsContent value="review" forceMount hidden={activePanel!=='review'} data-production-panel="review" className="production-panel">{panelMounted('review')&&<>
        <SourceInput key={'source-'+selected.id+'-'+selected.revision+'-'+selected.mode_epoch} job={selected} onSaved={j=>setSelected(current=>current?.id===j.id?j:current)}/>
        {content&&draft&&<><ScriptView job={selected} draft={draft} content={content}><ScriptFeedback key={selected.id+'-'+draft.revision+'-'+selected.mode_epoch} job={selected} onSaved={j=>setSelected(current=>current?.id===j.id?j:current)}/><details className="script-lock-options"><summary>使用完整原稿锁稿</summary><ScriptLock key={'lock-'+selected.id+'-'+draft.revision+'-'+selected.mode_epoch} job={selected} onSaved={j=>setSelected(current=>current?.id===j.id?j:current)}/></details></ScriptView></>}
