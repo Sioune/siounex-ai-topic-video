@@ -28,7 +28,7 @@ Do not enroll any test user as the real owner. Owner grants must target an expli
 3. Configure `STUDIO_OWNER_ID` through the secure Secrets/admin flow to that ID **only after checking that it matches existing local data ownership**. If existing data has a different owner ID, stop and arrange an explicitly authorized identity binding; do not rename/reassign data or set arbitrary external IDs.
 4. Restart the API and verify owner-only library/data reads, a safe reversible private operation, logout, and denial for an unrelated account. Production enrollment must run in the target production environment; do not copy development grants or production credentials into the workspace.
 
-This change swaps identity only. Anonymous browsing outside production/publishing and BYOK/existing Codex executor integration remain separate future work.
+Anonymous browsing outside production/publishing and BYOK model-provider adapters remain separate future work.
 
 ## Data and files
 
@@ -39,6 +39,14 @@ The original database is SQLite/D1. Its schema and SQL are preserved through a N
 Run **one active API instance**. Generation-conditional snapshot writes reject concurrent writers rather than silently overwriting their data. A storage failure must remain an explicit failure, never a fallback to an empty library. Multiple active replicas require a separately authorized storage architecture change.
 
 There is no test login endpoint or runtime development bypass. For browser tests only, a tester may temporarily override the development process owner allowlist to a synthetic account, then restore the managed workflow. This does not enroll the real owner or alter data ownership.
+
+## Local Codex bridge
+
+The bridge reuses the existing single-task Codex CLI production executor; it does not expose a local Codex port or start a persistent daemon. In the owner-only production desk, a real job in `waiting_executor` can receive a one-hour, one-job authorization. The server stores only its hash and binds it to the owner, job, and Replit HTTPS host. Reissuing for the same job rotates the old grant; the owner can also revoke it.
+
+On the Windows machine with the existing Codex CLI and this repository synced and dependencies installed (including the runner's development dependency `sharp`), start the runner from the repository root using the command shown in the production desk. Use Node.js 22.15+, the exact local source file for the task, and the hidden JSON prompt displayed once with the grant. The local overlay routes only the existing executor API calls to Replit; it does not alter `.migration-backup/` or use the old Codex Sites identity header. Grant actions are limited to reading, claiming, heartbeating, checkpointing, submitting or failing that one production job. Drafts return to the existing site review flow; there is no auto-approval, media render, paid media adapter, or external publishing.
+
+Do not paste the temporary token into chat, save it in source, or run commands other than the displayed bounded executor. If the local Codex run fails or its result is uncertain, inspect the task and receipts before retrying.
 
 ## Source and implementation
 

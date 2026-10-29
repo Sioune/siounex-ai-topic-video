@@ -20,7 +20,7 @@ export async function executorFetch(_url, options) {
   if (!match) throw new Error('A one-task Replit Codex grant is required.');
   const response = await fetch(new URL('/api/executor', origin), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${match[1]}` },
+    headers: { 'Content-Type': 'application/json', Origin: origin.origin, Authorization: `Bearer ${match[1]}` },
     body: options.body,
     redirect: 'error',
     signal: options.signal,

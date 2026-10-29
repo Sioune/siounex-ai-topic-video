@@ -60,7 +60,7 @@ export default function CodexExecutorBridge({ job }: { job: ProductionJob }) {
     catch { setMessage('浏览器未允许复制，请手动选择文本复制。'); }
   }
 
-  if (job.is_test !== 0 || job.status !== 'waiting_executor') return null;
+  if (job.is_test !== 0 || job.status !== 'waiting_executor' && !grant) return null;
 
   const runner = `$env:REPLIT_CODEX_BRIDGE_ORIGIN = '${grant?.origin || '在这里填入授权页面显示的网址'}'\nnode --import .\\artifacts\\api-server\\scripts\\codex-executor-loader.mjs .\\.migration-backup\\scripts\\production-codex-executor.mjs`;
   const payload = grant ? JSON.stringify({
@@ -68,13 +68,14 @@ export default function CodexExecutorBridge({ job }: { job: ProductionJob }) {
     job_id: job.id,
     source_file: sourceFile || '请填写本机已核对的来源文件绝对路径',
     source_url: url,
-    submission_id: `replit_${grant.grant_id}`,
+    submission_id: `replit_${job.id}_r${job.revision}`,
   }, null, 2) : '';
 
   return (
     <section className="milestone-card" aria-label="本机 Codex 单任务桥接">
       <h3>本机 Codex 单任务执行</h3>
       <p>仅适用于当前正式任务。授权限时一小时、绑定此任务，运行一次既有的本机 Codex 文稿流程；不会自动启动电脑、生成视频或发布内容。</p>
+      <p className="text-sm text-muted-foreground">先在本机同步此仓库并安装依赖，使用 Node.js 22.15+ 和原来已经登录的 Codex CLI。模型仍沿用本机 Codex 的账号与额度。</p>
       {!grant ? (
         <Button disabled={busy} onClick={() => void issue()}>{busy ? '正在准备…' : '为此任务生成临时授权'}</Button>
       ) : (

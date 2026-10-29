@@ -2,7 +2,7 @@ import express, { type Express } from "express";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { authRouter, requireStudioOwner } from "./lib/studio-auth";
+import { authRouter, requestIdentity, requireStudioOwner } from "./lib/studio-auth";
 import { importedRouter } from "./routes/imported";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
@@ -34,18 +34,25 @@ app.set("trust proxy", 1);
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(express.raw({ type: () => true, limit: "32mb" }));
 
-app.use(
-  clerkMiddleware((req) => ({
+// Authenticate the narrowly scoped machine credential before Clerk, so it is
+// never forwarded to Clerk or treated as a malformed user session JWT.
+app.post("/api/executor", codexExecutorBridgeMiddleware);
+const clerkSession = clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
       getClerkProxyHost(req) ?? "",
       process.env.CLERK_PUBLISHABLE_KEY,
     ),
-  })),
-);
+  }));
+app.use((req, res, next) => {
+  if (requestIdentity.getStore()?.kind === "codex-executor") {
+    next();
+    return;
+  }
+  return clerkSession(req, res, next);
+});
 
 // A task-scoped Codex credential is accepted only on the existing production
 // executor route. All other routes continue to require the owner's Clerk session.
-app.use("/api/executor", codexExecutorBridgeMiddleware);
 app.post("/api/codex-executor/grant", requireStudioOwner, issueCodexExecutorGrant);
 app.post("/api/codex-executor/grant/revoke", requireStudioOwner, revokeCodexExecutorGrant);
 app.use("/api", router);

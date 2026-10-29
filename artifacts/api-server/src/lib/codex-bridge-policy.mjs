@@ -9,10 +9,10 @@ const schemas = {
 
 export function isCodexBridgeRequestAllowed(grant, body, now = Date.now()) {
   if (!grant || grant.revoked || !Number.isSafeInteger(grant.expires_at) || grant.expires_at <= now) return false;
-  if (!body || typeof body !== 'object' || Array.isArray(body) || !schemas[body.action]) return false;
+  if (!body || typeof body !== 'object' || Array.isArray(body) ||
+      typeof body.action !== 'string' || !Object.hasOwn(schemas, body.action)) return false;
   if (Object.keys(body).some(key => !schemas[body.action].includes(key))) return false;
   if (body.id !== grant.job_id) return false;
-  if (typeof body.action !== 'string') return false;
   if (body.action === 'claim' && (typeof body.executor !== 'string' || !/^[A-Za-z0-9_-]{1,120}$/.test(body.executor))) return false;
   if (['heartbeat', 'checkpoint', 'submit', 'fail'].includes(body.action) &&
       (typeof body.lease_token !== 'string' || body.lease_token.length > 200)) return false;

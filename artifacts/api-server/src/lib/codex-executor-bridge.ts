@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import { db } from '../imported/lib/store';
 import { persistStudioDatabase } from './studio-database';
-import { requestIdentity } from './studio-auth';
+import { authenticatedUser, requestIdentity } from './studio-auth';
 import { isCodexBridgeRequestAllowed } from './codex-bridge-policy.mjs';
 
 const GRANT_PREFIX = 'codex_executor_grant_v1:';
@@ -19,10 +19,10 @@ export function trustedRequestOrigin(req: Request) {
   return `https://${host}`;
 }
 
-function bodyObject(req: Request) {
+function bodyObject(req: Request, limit = 10000) {
   try {
     const raw = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
-    if (!raw || raw.length > 10000) return null;
+    if (!raw || Buffer.byteLength(raw) > limit) return null;
     const value: unknown = JSON.parse(raw);
     return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null;
   } catch { return null; }
@@ -50,7 +50,7 @@ export const issueCodexExecutorGrant: RequestHandler = async (req, res) => {
     res.status(400).json({ error: '任务编号无效。' });
     return;
   }
-  const owner = requestIdentity.getStore()?.userId;
+  const owner = authenticatedUser(req)?.userId;
   if (typeof owner !== 'string' || !owner) {
     res.status(403).json({ error: '站主身份无效。' });
     return;
@@ -102,6 +102,11 @@ export const issueCodexExecutorGrant: RequestHandler = async (req, res) => {
     res.status(429).json({ error: '当前已有多个本机任务授权；先等待过期或撤销后重试。' });
     return;
   }
+  // Rotate at transaction execution time, not from the earlier read: two
+  // simultaneous clicks must not leave two active grants for the same job.
+  statements.push(db().prepare(`DELETE FROM app_state WHERE key LIKE ? AND json_valid(value)
+    AND json_extract(value,'$.owner_id')=? AND json_extract(value,'$.job_id')=?`)
+    .bind(GRANT_PREFIX + '%', owner, jobId));
   statements.push(db().prepare('INSERT INTO app_state(key,value) VALUES (?,?)')
     .bind(GRANT_PREFIX + tokenId, JSON.stringify(grant)));
   await db().batch(statements);
@@ -121,7 +126,7 @@ export const revokeCodexExecutorGrant: RequestHandler = async (req, res) => {
     res.status(400).json({ error: '授权编号无效。' });
     return;
   }
-  const owner = requestIdentity.getStore()?.userId;
+  const owner = authenticatedUser(req)?.userId;
   const tokenId = grantId.slice('grant_'.length);
   const key = GRANT_PREFIX + tokenId;
   const row = await db().prepare('SELECT value FROM app_state WHERE key=?').bind(key).first<{ value: string }>();
@@ -147,7 +152,11 @@ async function executorIdentity(req: Request) {
   const storedHash = Buffer.from(typeof grant.token_hash === 'string' ? grant.token_hash : '', 'hex');
   if (storedHash.length !== presentedHash.length || !timingSafeEqual(storedHash, presentedHash)) return false;
   if (req.protocol !== 'https' || grant.origin !== `https://${req.get('host')}`) return false;
-  const body = bodyObject(req);
+  if (typeof grant.owner_id !== 'string' || grant.owner_id !== process.env.STUDIO_OWNER_ID) return false;
+  const job = await db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?')
+    .bind(grant.job_id).first<{ owner_id: string; is_test: number }>();
+  if (job?.owner_id !== grant.owner_id || job.is_test !== 0) return false;
+  const body = bodyObject(req, 1500000);
   if (!isCodexBridgeRequestAllowed(grant, body)) return false;
   return grant;
 }
