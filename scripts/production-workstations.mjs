@@ -21,7 +21,7 @@ export function createProductionWorkstations({deadline_ms=Infinity,onEvent,onSta
  const budgetAvailable=()=>deadline_ms===Infinity||deadline_ms-time()>=PRODUCTION_STATION_MIN_BUDGET_MS;
  const clearBudgetTimer=()=>{if(budgetTimer!==null){clearTimeout(budgetTimer);budgetTimer=null;}};
  function defer(ticket,state){
-  jobs.delete(ticket.job_id);state.deferred++;
+  jobs.delete(ticket.key);state.deferred++;
   const error=Object.assign(failure('PRODUCTION_STATION_BUDGET_DEFERRED'),{station:ticket.station,job_id:ticket.job_id});
   ticket.reject(error);emit('deferred',ticket);
  }
@@ -38,7 +38,7 @@ export function createProductionWorkstations({deadline_ms=Infinity,onEvent,onSta
  }
  function finish(ticket,state,ok,value){
   // A station and job remain held until the actual function promise settles.
-  state.active=null;activeCount--;jobs.delete(ticket.job_id);state[ok?'finished':'failed']++;
+  state.active=null;activeCount--;jobs.delete(ticket.key);state[ok?'finished':'failed']++;
   if(ok)ticket.resolve(value);else ticket.reject(value);
   emit(ok?'finished':'failed',ticket);pump(state);
  }
@@ -51,14 +51,17 @@ export function createProductionWorkstations({deadline_ms=Infinity,onEvent,onSta
   }
   armBudgetTimer();
  }
- function run(station,job_id,fn){
+ function run(station,job_id,fn,options={}){
   const state=queues.get(station);
   if(!state||typeof job_id!=='string'||!job_id.trim()||job_id!==job_id.trim()||job_id.length>200||/[\x00-\x1f]/.test(job_id)||typeof fn!=='function')return Promise.reject(failure('PRODUCTION_STATION_INPUT_INVALID'));
+  // Only the approved-ordinary post-video lane can overlap a clone's own lane.
+  const lane=options?.lane;if(lane!==undefined&&(lane!=='approved-ordinary-post-video'||!['assets','archive'].includes(station)))return Promise.reject(failure('PRODUCTION_STATION_INPUT_INVALID'));
+  const key=job_id+'\0'+(lane||'default');
   // Includes queued tickets: a job cannot reserve two resources while waiting,
   // and nested calls for the same job reject instead of deadlocking.
-  if(jobs.has(job_id))return Promise.reject(failure('PRODUCTION_STATION_JOB_ACTIVE'));
+  if(jobs.has(key))return Promise.reject(failure('PRODUCTION_STATION_JOB_ACTIVE'));
   let resolve,reject;const result=new Promise((yes,no)=>{resolve=yes;reject=no;});
-  const ticket={station,job_id,fn,resolve,reject};jobs.set(job_id,ticket);pending.add(result);
+  const ticket={station,job_id,key,fn,resolve,reject};jobs.set(key,ticket);pending.add(result);
   result.then(()=>pending.delete(result),()=>pending.delete(result));state.waiting.push(ticket);emit('queued',ticket);pump(state);return result;
  }
  function snapshot(){
