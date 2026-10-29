@@ -7,8 +7,8 @@ import {readCurrentEditorialDelivery,hasOwnerEditorialDeliveryClassification} fr
 import {editorialDeliveryAuthorityRequired} from './owner-editorial-delivery-contract.mts';
 import {OWNER_LOCAL_MEDIA_REWORK_PAUSE} from './owner-media-rework-contract.mts';
 
-export const MINICPM_JOB='job_9ef39025-d92e-4770-82d0-05881451c5df';
-export const PROTECTED_VIDEO_JOB='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee';
+export const MINICPM_JOB='job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf';
+export const PROTECTED_VIDEO_JOB='job_e13e8b19-aa0a-4840-abc9-333eefc91b05';
 export type NativeScopeContext={owner:string;scope_id:string;scope_hash:string;scope_raw:string;scope:Record<string,unknown>};
 type NativeReturnJob=Awaited<ReturnType<typeof getJob>>;
 

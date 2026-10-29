@@ -11,6 +11,7 @@ import {materialResearchSchema} from './automatic-material-research.mjs';
 import {readPublicMaterial,articleMaterialReferences,inspectMaterial} from './material-acquisition.mjs';
 import {extractSourceArticle} from '../lib/source-document.mts';
 import {classifyCliProcess} from '../lib/cli-failure-contract.mts';
+import {ownerFeedbackContinuation} from '../lib/owner-feedback-continuation.mts';
 const sha=x=>createHash('sha256').update(x).digest('hex');
 const fail=code=>{throw Object.assign(Error(code),{code})};
 const inside=(base,file)=>{const rel=path.relative(base,file);return !!rel&&!path.isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('..'+path.sep)};
@@ -21,6 +22,16 @@ function currentBrief(saved,briefFile,dir){
  const base=JSON.parse(fs.readFileSync(briefFile)),original=JSON.parse(fs.readFileSync(saved.bundle.file));if(base.source_sha256&&base.source_sha256!==saved.identity.source_sha256||base.source_url&&base.source_url!==saved.identity.source_url)fail('CONTENT_SUPPORT_SOURCE_CHANGED');
  const evidence=[...(base.evidence||[])];for(const note of saved.documents)if(evidence.length<9&&!evidence.some(e=>e.url===note.url&&e.sha256===note.sha256))evidence.push(note);
  const bundle={...base,source_sha256:saved.identity.source_sha256,source_url:saved.identity.source_url,evidence,images:base.images||[],content_support:original.content_support},file=path.join(dir,'production-brief-'+sha(JSON.stringify(bundle))+'.json');put(file,bundle);return file;
+}
+// Owner feedback may refer to a source already saved with the topic. Read that
+// exact public page, retain its bytes and add its extracted text to this revision.
+// Existing source and manifest remain immutable; failed reads are not evidence.
+async function withSavedRelatedSources(job,source,briefPath,dir,root,read,now){
+ if(!ownerFeedbackContinuation(job))return briefPath;
+ let related=source.related_urls;try{if(typeof related==='string')related=JSON.parse(related)}catch{related=[]}
+ if(!Array.isArray(related))return briefPath;const urls=[...new Set(related.map(v=>typeof v==='string'?v:v?.url).filter(Boolean))].slice(0,3),brief=JSON.parse(fs.readFileSync(briefPath)),notes=[],failures=[];
+ for(const url of urls){try{researchUrl(url);const key=sha(url),meta=path.join(dir,'owner-related-'+key+'.json');let note;if(fs.existsSync(meta)){note=JSON.parse(fs.readFileSync(meta));checked(note,root);checked(note.raw,root);}else{const response=await read(url,{kind:'page-or-video',maxBytes:2000000,dnsCache:new Map()});if(response.extension!=='.html')throw Error('RELATED_SOURCE_NOT_HTML');const raw=put(path.join(dir,'owner-related-raw-'+key+'.html'),Buffer.from(response.body)),article=articleMaterialReferences(Buffer.from(response.body).toString('utf8'),response.resolved_url,{public_player:true});const extracted=extractSourceArticle(Buffer.from(response.body).toString('utf8'),{url:response.resolved_url});if(!extracted.text?.trim())throw Error('RELATED_SOURCE_NO_TEXT');const text=put(path.join(dir,'owner-related-text-'+key+'.txt'),extracted.text.slice(0,16000));note={...text,raw,url,title:(extracted.title||article.title||url).slice(0,500),published_at:null,retrieved_at:now(),facts:[extracted.text.slice(0,1800)],materials:['本人选题已保存的关联来源，实际读取的公开文字'],limits:['仅核读文字；不得将转述冒充完整提示词或实际复现。'],relation:'选题已保存的关联来源',raw_sha256:raw.sha256,read_scope:'actual-public-page-text'};put(meta,note);}notes.push(note);}catch(e){if(/^CONTENT_SUPPORT_(?:CACHE|BYTES)/.test(e.code||''))throw e;failures.push({url,reason:String(e.code||e.message).slice(0,250)});}}
+ const evidence=[...notes,...(brief.evidence||[]).filter(e=>!notes.some(n=>n.url===e.url&&n.sha256===e.sha256))].slice(0,9),result={...brief,evidence,related_source_failures:failures};const out=path.join(dir,'owner-related-brief-'+sha(JSON.stringify(result))+'.json');put(out,result);return out;
 }
 function searchDirectory(base,prompt,now){
  for(let attempt=0;attempt<4;attempt++){
@@ -39,7 +50,7 @@ export async function prepareContentSupport({job,sourceFile,directory,briefFile=
  const source=JSON.parse(job.source_snapshot),sourceBytes=fs.readFileSync(sourceFile),sourceHash=sha(sourceBytes),root=fs.realpathSync(path.dirname(sourceFile)),dir=path.resolve(directory);researchUrl(source.url);
  if(!inside(root,dir))fail('CONTENT_SUPPORT_DIRECTORY_SCOPE');fs.mkdirSync(dir,{recursive:true});if(fs.lstatSync(dir).isSymbolicLink()||!inside(root,fs.realpathSync(dir)))fail('CONTENT_SUPPORT_DIRECTORY_SCOPE');
  const identity={job_id:job.id,contract_hash:job.contract_hash,source_snapshot_sha256:sha(job.source_snapshot),source_sha256:sourceHash,source_url:source.url},manifestFile=path.join(dir,'manifest.json'),bundleFile=path.join(dir,'production-brief.json');
- if(fs.existsSync(manifestFile)){const saved=JSON.parse(fs.readFileSync(manifestFile));if(JSON.stringify(saved.identity)!==JSON.stringify(identity))fail('CONTENT_SUPPORT_SOURCE_CHANGED');checked(saved.bundle,root);for(const e of [...saved.documents,...saved.media]){checked(e,root);if(e.frame)checked(e.frame,root);}return {brief_file:currentBrief(saved,briefFile,dir),...saved,reused:true};}
+ if(fs.existsSync(manifestFile)){const saved=JSON.parse(fs.readFileSync(manifestFile));if(JSON.stringify(saved.identity)!==JSON.stringify(identity))fail('CONTENT_SUPPORT_SOURCE_CHANGED');checked(saved.bundle,root);for(const e of [...saved.documents,...saved.media]){checked(e,root);if(e.frame)checked(e.frame,root);}return {...saved,brief_file:await withSavedRelatedSources(job,source,currentBrief(saved,briefFile,dir),dir,root,read,now),reused:true};}
  const text=source.research?sourceBytes.toString('utf8'):extractSourceArticle(sourceBytes.toString('utf8'),{url:source.url}).text,prompt=contentSupportPrompt(source,text),searchDir=searchDirectory(dir,prompt,now),output=path.join(searchDir,'search.json'),schemaPath=path.join(searchDir,'schema.json'),intent=path.join(searchDir,'search-started.json'),processDir=path.join(searchDir,'process');let receipt;
  if(fs.existsSync(intent)){
   const started=JSON.parse(fs.readFileSync(intent)),exit=path.join(processDir,'cli-process-exit.json');if(started.prompt_sha256!==sha(prompt)||!fs.existsSync(exit))fail('CONTENT_SUPPORT_SEARCH_RECONCILIATION_REQUIRED');receipt=JSON.parse(fs.readFileSync(exit));
@@ -72,7 +83,7 @@ export async function prepareContentSupport({job,sourceFile,directory,briefFile=
  }
  const base=briefFile?JSON.parse(fs.readFileSync(briefFile)):{evidence:[],images:[]},available=Math.max(0,9-(base.evidence||[]).length),notes=documents.slice(0,available),support={schema:'content-driven-support-v1',identity,queries:events.queries,search_count:events.search_count,sources,documents:notes,media,failures,video_watched_by_writer:false,quality_approved:false,publication_authorized:false};
  const bundle=put(bundleFile,{...base,source_url:source.url,source_sha256:sourceHash,evidence:[...(base.evidence||[]),...notes],images:base.images||[],content_support:support});
- const saved={schema:'content-driven-support-manifest-v1',identity,base_brief_sha256:briefFile?sha(fs.readFileSync(briefFile)):null,bundle,documents:notes,media,sources,search_count:events.search_count,failures,finished_at:now(),quality_approved:false,publication_authorized:false};put(manifestFile,saved);return {brief_file:bundleFile,...saved,reused:false};
+ const saved={schema:'content-driven-support-manifest-v1',identity,base_brief_sha256:briefFile?sha(fs.readFileSync(briefFile)):null,bundle,documents:notes,media,sources,search_count:events.search_count,failures,finished_at:now(),quality_approved:false,publication_authorized:false};put(manifestFile,saved);return {...saved,brief_file:await withSavedRelatedSources(job,source,bundleFile,dir,root,read,now),reused:false};
 }
 // Source-bound research is reused across script revisions. The exact approved
 // article must match; completed and owner-paused jobs are not changed here.
@@ -86,7 +97,7 @@ export function restoreContentSupportBrief({job,sourceFile,directory,briefFile=n
  const file=path.join(directory,'manifest.json');if(!fs.existsSync(file))fail('CONTENT_SUPPORT_REVIEW_CACHE_MISSING');const saved=JSON.parse(fs.readFileSync(file)),base=fs.realpathSync(path.dirname(sourceFile));
  if(saved.identity.job_id!==job.id||saved.identity.contract_hash!==job.contract_hash||saved.identity.source_snapshot_sha256!==sha(job.source_snapshot)||saved.identity.source_sha256!==sha(fs.readFileSync(sourceFile)))fail('CONTENT_SUPPORT_SOURCE_CHANGED');
  checked(saved.bundle,base);const original=JSON.parse(fs.readFileSync(saved.bundle.file));if(sha(JSON.stringify(original.content_support))!==expected)fail('CONTENT_SUPPORT_REVIEW_BINDING_CHANGED');
- const brief=briefFile?JSON.parse(fs.readFileSync(briefFile)):{evidence:[],images:[]},evidence=[...(brief.evidence||[])];for(const doc of saved.documents){checked(doc,base);if(draft.evidence?.some(e=>e.url===doc.url&&e.sha256===doc.sha256)&&!evidence.some(e=>e.url===doc.url&&e.sha256===doc.sha256))evidence.push(doc);}
+ const brief=briefFile?JSON.parse(fs.readFileSync(briefFile)):{evidence:[],images:[]},evidence=[...(brief.evidence||[])];for(const doc of saved.documents){checked(doc,base);if(draft.evidence?.some(e=>e.url===doc.url&&e.sha256===doc.sha256)&&!evidence.some(e=>e.url===doc.url&&e.sha256===doc.sha256))evidence.push(doc);}for(const name of fs.readdirSync(directory).filter(n=>/^owner-related-[a-f0-9]{64}\.json$/.test(n))){const doc=JSON.parse(fs.readFileSync(path.join(directory,name)));checked(doc,base);checked(doc.raw,base);if(draft.evidence?.some(e=>e.url===doc.url&&e.sha256===doc.sha256)&&!evidence.some(e=>e.url===doc.url&&e.sha256===doc.sha256))evidence.push(doc);}
  if(evidence.length>9)fail('CONTENT_SUPPORT_REVIEW_EVIDENCE_LIMIT');const result={...brief,evidence,images:brief.images||[],content_support:original.content_support},out=path.join(directory,'review-brief-'+sha(JSON.stringify(result))+'.json');put(out,result);return out;
 }
 export function importContentSupportMedia(support,{root,jobDir}){

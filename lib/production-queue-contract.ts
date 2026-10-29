@@ -1,7 +1,7 @@
 import {cliContentBudget} from './cli-content-budget.mts';
 import type {ProductionJob} from './production-contract';
 import {currentMediaOperation} from './current-media-operation';
-export const PROTECTED_JOB='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee';
+export const PROTECTED_JOB='job_e13e8b19-aa0a-4840-abc9-333eefc91b05';
 export type ExecutionBinding={revision:number;mode_epoch:number;checkpoint_version:number;contract_hash:string;kind:'text'|'review'|'media';target_id:string;target_hash:string};
 export function executionBinding(j:ProductionJob,now=Date.now()):ExecutionBinding|null{
  if(j.is_test||j.id===PROTECTED_JOB||j.publication_reports?.length||j.reworks>2)return null;

@@ -1,6 +1,10 @@
+import {continueSavedOwnerFeedback} from './owner-feedback-continuation';
 import {db} from './store';
 import {ProductionError} from './production-contract';
 import {getResearch} from './research';
+import {retryJob} from './production';
+import {retryOwnerTextReview,recoverOwnerTerminalTextReview} from './owner-text-review-retry';
+import {getLatestWorkInProgress,getWorkInProgressPartDigest} from './work-in-progress-video';
 import {POST as executePrivateProduction} from '../app/api/executor/route';
 import policy from '../production/native-runtime-policy.json';
 
@@ -23,6 +27,14 @@ export async function nativeProductionRequest(owner:string,args:Record<string,un
   if(job?.owner_id!==owner||job.is_test)throw new ProductionError('宣发任务归属不符',403);bound=true;
  }
  if(!bound&&!policy.global_actions.includes(b.action))throw new ProductionError('正常制作动作必须绑定原任务',403);
+ // The owner's request to continue failed work can use the same checkpoint-
+ // preserving retry as the production page. This grants no content approval.
+ if(b.action==='retry')return {status:200,body:{job:await retryJob(b.id,owner)}};
+ if(b.action==='owner_feedback_continue'){if(Object.keys(b).some(k=>!['action','id','feedback_id','revision','content_hash','mode_epoch'].includes(k))||typeof b.feedback_id!=='string'||!Number.isSafeInteger(b.revision)||!Number.isSafeInteger(b.mode_epoch)||typeof b.content_hash!=='string')throw new ProductionError('意见接续请求无效',400);return {status:200,body:await continueSavedOwnerFeedback(b.id,owner,b)};}
+ if(b.action==='owner_text_review_retry')return {status:200,body:await retryOwnerTextReview(b.id,owner,b)};
+ if(b.action==='owner_text_review_output_recover')return {status:200,body:await recoverOwnerTerminalTextReview(b.id,owner,b)};
+ if(b.action==='wip_video_read'){if(Object.keys(b).some(k=>!['action','id'].includes(k)))throw new ProductionError('预览读取请求无效',400);return {status:200,body:{preview:await getLatestWorkInProgress(b.id,owner)}};}
+ if(b.action==='wip_video_read_part'){if(Object.keys(b).some(k=>!['action','id','preview_id','part'].includes(k))||typeof b.preview_id!=='string'||!Number.isSafeInteger(b.part))throw new ProductionError('预览分片读取请求无效',400);return {status:200,body:await getWorkInProgressPartDigest(b.id,b.preview_id,owner,b.part)};}
  // Drain old processes without interrupting their existing claims or exports.
  // The unchanged scheduled task then starts the synchronized normal executor.
  if(args.runtime_protocol!==2&&['dispatch_next','research_next'].includes(b.action))return {status:200,body:{kind:'idle',job:null,research:null,no_work:true,executor_reload_required:true,content_motion_policy:'content-motion@1'}};

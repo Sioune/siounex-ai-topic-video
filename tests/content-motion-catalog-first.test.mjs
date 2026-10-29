@@ -24,6 +24,10 @@ test('unknown original selection is reconciled before decoding, discovery or res
 
 test('changed source bytes fail closed before research or selection instead of being treated as a new candidate',async t=>{const f=fixture(t);fs.appendFileSync(f.file,'SYNTHETIC changed');await assert.rejects(f.run,/MOTION_SOURCE_BYTES_CHANGED/);assert.equal(f.counts.research,0);assert.equal(f.counts.discover,0);assert.equal(f.counts.selection,0);});
 
+test('a timed-out candidate probe cannot prevent selecting another fully decoded source',async t=>{const f=fixture(t),bad=path.join(f.jobDir,'slow-probe.mp4');fs.writeFileSync(bad,'SYNTHETIC unreadable candidate');const badHash=sha(fs.readFileSync(bad));f.catalog.unshift({...f.media,asset_id:'bad-probe',file:bad,sha256:badHash});const prepare=f.deps.prepareVideo;f.deps.prepareVideo=async m=>{if(m.sha256===badHash)throw Object.assign(Error('probe timed out'),{code:'AUTO_VIDEO_PROBE_TIMEOUT'});return prepare(m)};const r=await f.run();assert.equal(f.counts.selection,1);assert.equal(f.counts.compile,1);assert.equal(r.media.some(m=>m.sha256===badHash),false);assert.equal(r.automatic_editing.quality_approved,undefined);});
+
+test('when every source probe times out the task retains its gap and produces no video',async t=>{const f=fixture(t,{selection:'gap'});f.deps.prepareVideo=async()=>{throw Object.assign(Error('probe timed out'),{code:'AUTO_VIDEO_PROBE_TIMEOUT'})};await assert.rejects(f.run,/MOTION_CONTENT_GAPS/);assert.equal(f.counts.compile,0);});
+
 test('a duration/hash hint without full decoded review does not receive the catalog-first ordering',async t=>{const f=fixture(t,{fullDecode:false,researchStops:true});await assert.rejects(f.run,/stop after normal research/);assert.equal(f.counts.research,1);assert.equal(f.counts.selection,0);assert.ok(f.counts.prepare>0);});
 
 test('prepared source capacity below the current measured duration falls back to discovery and research',async t=>{const f=fixture(t,{duration:3,researchStops:true});await assert.rejects(f.run,/stop after normal research/);assert.equal(f.counts.discover,1);assert.equal(f.counts.research,1);assert.equal(f.counts.selection,0);});

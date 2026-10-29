@@ -27,4 +27,72 @@ test('readonly held reconciliation keeps the job identity and resolves only afte
  const f=fixture(t),id='job_11111111-1111-4111-8111-111111111111',parent=path.join(f.root,'.sites-runtime/authorized-inputs',id,'revision-2/automatic-material-plan');fs.mkdirSync(path.dirname(parent),{recursive:true});fs.renameSync(f.parent,parent);const dir=path.join(parent,'1'.repeat(64));attempt(dir);const exitFile=path.join(dir,'process/cli-process-exit.json'),original=fs.readFileSync(exitFile);fs.unlinkSync(exitFile);let diagnostic;try{inspectMaterialSelectionHistory(parent,binding,{now:()=>AT+10000000});}catch(e){diagnostic=e.material_reconciliation;}fs.writeFileSync(exitFile,original);
  const h={job_id:id,queue_id:'native_prep_'+'a'.repeat(64),version:2,binding:{...binding,scope:'private-video'},reconciliation:diagnostic},selection={job:{id},native_preparation:{job_id:id,binding:h.binding,handoff:h}},calls=[];
  const r=await reconcileHeldSelection(selection,{root:f.root,now:()=>AT+10000000,call:async b=>{calls.push(b);if(b.action==='native_preparation_read')return{handoff:h};assert.equal(b.action,'native_preparation_reconcile_diagnostic');assert.equal(b.diagnostic.previous_fingerprint,diagnostic.fingerprint);assert.ok(diagnostic.evidence_hashes.every(x=>b.diagnostic.evidence_hashes.includes(x)));return{handoff:{...h,version:3,reconciliation:b.diagnostic}};}});assert.equal(r.selection.native_preparation.job_id,id);assert.equal(r.selection.native_preparation.reconciliation.state,'resolved');assert.equal(calls.length,2);
+ assert.equal(r.selection.native_preparation.handoff.reconciliation.state,'resolved');assert.equal(r.selection.native_preparation.handoff.version,3);assert.equal(selection.native_preparation.handoff.reconciliation.state,'unknown');
+ const again=await reconcileHeldSelection(r.selection,{root:f.root,call:async()=>{throw Error('Resolved nested handoff must not run reconciliation again');}});assert.equal(again.selection,r.selection);
+});
+
+function staleReadonly(dir,{change=()=>{}}={}){
+ const a=attempt(dir,{kind:'missing-exit'}),processDir=path.join(dir,'process');fs.unlinkSync(path.join(processDir,'cli-process-exit.json'));
+ const start=JSON.parse(fs.readFileSync(path.join(processDir,'cli-process-started.json')));start.sandbox='read-only';fs.writeFileSync(path.join(processDir,'cli-process-started.json'),JSON.stringify(start));
+ const owned=JSON.parse(fs.readFileSync(path.join(processDir,'cli-owned-child.json')));owned.parent_pid=124;fs.writeFileSync(path.join(processDir,'cli-owned-child.json'),JSON.stringify(owned));
+ const events=[{type:'thread.started',thread_id:'SYNTHETIC-thread'},{type:'turn.started'},{type:'item.completed',item:{type:'error',message:'Skill descriptions were shortened to fit the skills context budget.'}},
+  '2026-10-21T00:00:00Z ERROR codex_api::endpoint::responses_websocket: failed to connect to websocket: IO error: tls handshake eof, url: wss://chatgpt.com/backend-api/codex/responses',
+  {type:'error',message:'Reconnecting... 2/5 (stream disconnected before completion: tls handshake eof)'},{type:'item.completed',item:{type:'error',message:'Falling back from WebSockets to HTTPS transport. stream disconnected before completion: tls handshake eof'}},
+  {type:'error',message:'Reconnecting... waiting for network (Connection failed: error sending request)'},
+  '2026-10-21T00:00:00Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit',
+  {type:'error',message:'Reconnecting... 1/5 (stream disconnected before completion: Transport error: network error: error decoding response body)'}];
+ fs.writeFileSync(path.join(processDir,'cli-events.log'),events.map(x=>typeof x==='string'?x:JSON.stringify(x)).join('\n'));change({dir,processDir,start,owned});return a;
+}
+function retainedFiles(dir){return Object.fromEntries(['selection-started.json','prompt.txt','process/cli-process-started.json','process/cli-owned-child.json','process/cli-events.log'].map(f=>[f,sha(fs.readFileSync(path.join(dir,f)))]));}
+
+test('dead owned read-only selection keeps its original unknown and starts a separate bounded attempt',t=>{
+ const f=fixture(t),dir=path.join(f.parent,'1'.repeat(64)),a=staleReadonly(dir),before=retainedFiles(dir),probes=[];
+ const isProcessAlive=(pid,options)=>{probes.push([pid,options]);return false;};
+ const history=inspectMaterialSelectionHistory(f.parent,binding,{persist:false,isProcessAlive});assert.equal(history.attempts[0].status,'stale-readonly');assert.equal(history.attempts[0].original_result_unknown,true);assert.equal(fs.existsSync(path.join(dir,'selection-stale-readonly.json')),false);
+ const next=materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive});assert.equal(next,path.join(dir,'recovery-unknown-1'));
+ const proof=JSON.parse(fs.readFileSync(path.join(dir,'selection-stale-readonly.json')));assert.equal(proof.original_result_unknown,true);assert.equal(proof.observed_tool_calls,0);assert.equal(Object.hasOwn(proof,'confirmed_no_result'),false);assert.equal(Object.hasOwn(proof,'finished_at'),false);assert.equal(fs.existsSync(path.join(dir,'process/cli-process-exit.json')),false);assert.equal(fs.existsSync(path.join(dir,'selection-receipt.json')),false);assert.deepEqual(retainedFiles(dir),before);assert.deepEqual(new Set(probes.map(([pid])=>pid)),new Set([123,124]));assert.ok(probes.every(([,o])=>o.output===path.join(dir,'selection.json')));
+ staleReadonly(next);assert.equal(materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive}),path.join(dir,'recovery-unknown-2'));staleReadonly(path.join(dir,'recovery-unknown-2'));
+ assert.throws(()=>materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive}),e=>e.code==='AUTO_MATERIAL_RETRY_EXHAUSTED');assert.deepEqual(retainedFiles(dir),before);
+});
+
+for(const kind of ['child-alive','parent-alive','probe-unknown','output','receipt','tool','agent','terminal','unknown-json','unknown-log','write-sandbox','prompt-changed','binding-changed','missing-parent'])test('stale selection '+kind+' does not admit an independent call',t=>{
+ const f=fixture(t),dir=path.join(f.parent,'1'.repeat(64));staleReadonly(dir,{change:({processDir,start,owned})=>{
+  if(kind==='output')fs.writeFileSync(path.join(dir,'selection.json'),'SYNTHETIC retained output');
+  if(kind==='receipt')fs.writeFileSync(path.join(dir,'selection-receipt.json'),'{}');
+  const bad={tool:{type:'item.started',item:{type:'mcp_tool_call'}},agent:{type:'item.completed',item:{type:'agent_message',text:'SYNTHETIC partial'}},terminal:{type:'turn.completed'},'unknown-json':{type:'unexpected'}}[kind];
+  if(bad)fs.appendFileSync(path.join(processDir,'cli-events.log'),'\n'+JSON.stringify(bad));
+  if(kind==='unknown-log')fs.appendFileSync(path.join(processDir,'cli-events.log'),'\nSYNTHETIC unknown log');
+  if(kind==='write-sandbox'){start.sandbox='workspace-write';fs.writeFileSync(path.join(processDir,'cli-process-started.json'),JSON.stringify(start));}
+  if(kind==='prompt-changed')fs.appendFileSync(path.join(dir,'prompt.txt'),'changed');
+  if(kind==='binding-changed'){const marker=JSON.parse(fs.readFileSync(path.join(dir,'selection-started.json')));delete marker.binding;fs.writeFileSync(path.join(dir,'selection-started.json'),JSON.stringify(marker));}
+  if(kind==='missing-parent'){delete owned.parent_pid;fs.writeFileSync(path.join(processDir,'cli-owned-child.json'),JSON.stringify(owned));}
+ }});
+ const isProcessAlive=pid=>kind==='probe-unknown'?undefined:kind==='child-alive'?pid===123:kind==='parent-alive'?pid===124:false;
+ assert.throws(()=>materialSelectionAttempt({parent:f.parent,baseDir:path.join(f.parent,'2'.repeat(64)),binding,prompt:'new prompt',isProcessAlive}),/RECONCILIATION_REQUIRED/);assert.equal(fs.existsSync(path.join(dir,'selection-stale-readonly.json')),false);
+});
+
+test('a recovered selection is reusable and a changed original stale log cannot reuse its proof',t=>{
+ const f=fixture(t),dir=path.join(f.parent,'1'.repeat(64)),a=staleReadonly(dir),isProcessAlive=()=>false;
+ const next=materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive});attempt(next,{kind:'completed'});
+ assert.equal(materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive}),next);
+ fs.appendFileSync(path.join(dir,'process/cli-events.log'),'\n'+JSON.stringify({type:'error',message:'Reconnecting... waiting for network (Connection failed: error sending request)'}));
+ assert.throws(()=>inspectMaterialSelectionHistory(f.parent,binding,{isProcessAlive}),/RECONCILIATION_REQUIRED/);
+});
+
+test('an exact persisted dead-selection proof remains usable when a later process probe is unavailable',t=>{
+ const f=fixture(t),dir=path.join(f.parent,'1'.repeat(64)),a=staleReadonly(dir);
+ const first=materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive:()=>false});
+ const proof=fs.readFileSync(path.join(dir,'selection-stale-readonly.json')),before=retainedFiles(dir);
+ const second=materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive:()=>{throw Error('SYNTHETIC process inspection timed out under render load');}});
+ assert.equal(second,first);assert.deepEqual(retainedFiles(dir),before);assert.deepEqual(fs.readFileSync(path.join(dir,'selection-stale-readonly.json')),proof);assert.equal(JSON.parse(proof).original_result_unknown,true);assert.equal(fs.existsSync(path.join(dir,'process/cli-process-exit.json')),false);
+});
+
+for(const kind of ['output','receipt','exit','intent','process','owned','log','proof'])test('persisted dead-selection proof cannot hide a newly arrived or changed '+kind,t=>{
+ const f=fixture(t),dir=path.join(f.parent,'1'.repeat(64)),a=staleReadonly(dir);materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive:()=>false});
+ if(kind==='output')fs.writeFileSync(path.join(dir,'selection.json'),'SYNTHETIC recovered result');
+ if(kind==='receipt')fs.writeFileSync(path.join(dir,'selection-receipt.json'),'{}');
+ if(kind==='exit')fs.writeFileSync(path.join(dir,'process/cli-process-exit.json'),'{}');
+ const files={intent:'selection-started.json',process:'process/cli-process-started.json',owned:'process/cli-owned-child.json',log:'process/cli-events.log',proof:'selection-stale-readonly.json'};
+ if(files[kind]){const file=path.join(dir,files[kind]);if(kind==='log')fs.appendFileSync(file,'\n'+JSON.stringify({type:'error',message:'Reconnecting... waiting for network (Connection failed: error sending request)'}));else{const value=JSON.parse(fs.readFileSync(file));value.synthetic_changed=true;fs.writeFileSync(file,JSON.stringify(value));}}
+ assert.throws(()=>materialSelectionAttempt({parent:f.parent,baseDir:dir,binding,prompt:a.prompt,isProcessAlive:()=>false}),/RECONCILIATION_REQUIRED/);
 });

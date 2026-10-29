@@ -7,7 +7,7 @@ import type {MediaPreparation} from './media-preparation-contract';
 // Private working files may be prepared in parallel. This event never creates a
 // video milestone, changes approval, claims an operation, or bypasses the cover gate.
 export async function recordPreparation(id:string,value:MediaPreparation){
- const j=await getJob(id);await assertMediaScope(j,'video');if(id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw new ProductionError('当前Claude任务由独立制作任务维护',409);
+ const j=await getJob(id);await assertMediaScope(j,'video');if(id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05')throw new ProductionError('当前Claude任务由独立制作任务维护',409);
  if(j.status!=='approved'||j.approved_revision!==value.revision||j.revision!==value.revision||j.approved_hash!==value.script_hash||j.mode_epoch!==value.mode_epoch)throw new ProductionError('准备稿必须绑定当前已批准稿件和审核模式');
  if(value.schema!=='private-media-preparation-v1'||value.cost!==0||value.quality_approved!==false||value.publication!==false||value.voice_kind!=='ordinary-review'||!value.qa?.decoded||value.qa.listened!==false||value.qa.full_playback_verified!==false||!Number.isFinite(value.duration)||value.duration<3||value.duration>120)throw new ProductionError('仅接受零费用、未批准的普通配音私有准备稿',400);
  text(value.authorization_reference,1000);text(value.limits,4000);

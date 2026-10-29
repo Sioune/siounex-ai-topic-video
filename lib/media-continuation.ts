@@ -2,7 +2,7 @@ import {db} from './store';import {getJob} from './production';import {hash,text
 import {PREPARATION_REGISTRATION_SQL,preparationRegistrationBinding} from './preparation-registration-contract.mts';
 import {automaticPrivatePreparationBinding,AUTOMATIC_PRIVATE_UPGRADE_SQL} from './automatic-private-production';
 import {APPROVED_PRODUCTION_AUTHORIZATION,LEGACY_APPROVED_PRODUCTION_JOB} from './approved-production-policy.mts';
-const key=(id:string)=>'media_scope_v1:'+id,at=()=>new Date().toISOString(),protectedJob='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee';
+const key=(id:string)=>'media_scope_v1:'+id,at=()=>new Date().toISOString(),protectedJob='job_e13e8b19-aa0a-4840-abc9-333eefc91b05';
 type State={id:string;scope:MediaScope|null};type Prep={schema:'media-input-probe-v1';scope_id:string;binding:MediaScopeBinding;attempt:number;lease_hash?:string;lease_until?:number;invocation_id?:string;receipt?:ProbeReceipt;decision?:string};
 export type ProbeReceipt={schema:'media-input-probe-receipt-v1';kind:'media_inventory'|'media_inputs';status:'ready'|'blocked';checks:{code:string;passed:boolean;detail:string}[];cost:0;visual_inspected:false;audio_listened:false;quality_approved:false;publication:false};
 async function ownerJob(id:string,owner:string){const row=await db().prepare('SELECT owner_id FROM production_jobs WHERE id=?').bind(id).first<{owner_id:string}>();if(!owner||row?.owner_id!==owner)throw new ProductionError('仅任务所有者可确认媒体范围与许可',403);if(id===protectedJob)throw new ProductionError('此任务由既有人工视频流程维护',409);return getJob(id,owner);}

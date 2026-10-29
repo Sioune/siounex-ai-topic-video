@@ -99,7 +99,7 @@ export async function ensureContentMotionPlan({job,binding,media,root,timing,c,e
   if(checkedCatalog.has(m.sha256)){const cached=checkedCatalog.get(m.sha256);if(cached)rows.push(cached);continue;}
   const file=fs.realpathSync(path.resolve(root,m.file));if(!file.startsWith(fs.realpathSync(jobDir)+path.sep)||sha(fs.readFileSync(file))!==m.sha256)fail('MOTION_SOURCE_BYTES_CHANGED');const checked={...m,file,size_bytes:fs.statSync(file).size};
   try{const readable=m.kind==='video'?await prepareVideo(checked,{root,jobDir,deadline_ms,now:clock}):checked;checkedCatalog.set(m.sha256,readable);rows.push(readable);}
-  catch(error){if(!['AUTO_VIDEO_FRAME_INVALID','AUTO_VIDEO_TOO_SHORT_FOR_REVIEW'].includes(error?.code))throw error;checkedCatalog.set(m.sha256,null);readSources.push({checked_sources:[{source_url:m.source_url||m.url,source_sha256:m.sha256,status:'unusable-video-candidate',code:error.code}]});}
+  catch(error){if(!['AUTO_VIDEO_PROBE_TIMEOUT','AUTO_VIDEO_PROBE_FAILED','AUTO_VIDEO_PROBE_INVALID','AUTO_VIDEO_FULL_DECODE_TIMEOUT','AUTO_VIDEO_FULL_DECODE_FAILED','AUTO_VIDEO_FRAME_TIMEOUT','AUTO_VIDEO_FRAME_FAILED','AUTO_VIDEO_FRAME_INVALID','AUTO_VIDEO_TOO_SHORT_FOR_REVIEW'].includes(error?.code))throw error;checkedCatalog.set(m.sha256,null);readSources.push({checked_sources:[{source_url:m.source_url||m.url,source_sha256:m.sha256,status:'unusable-video-candidate-this-pass',code:error.code}]});}
  }return rows;};
  const seconds=()=>unique().filter(m=>m.kind==='video').reduce((n,m)=>{const known=checkedCatalog.get(m.sha256);return n+(checkedCatalog.has(m.sha256)?known?.video_review?.duration_seconds||0:m.video_review?.duration_seconds||m.probe?.duration_seconds||0);},0);
  // This hint only changes ordering. A source hash/duration never approves its

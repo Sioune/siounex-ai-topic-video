@@ -1,6 +1,6 @@
 import {candidateReviewBinding,currentCandidateOwnerReview,type CandidateReviewBinding,type CandidateReviewJob,type CandidateReviewReference} from './native-candidate-feedback-contract.mts';
 import {currentCandidateVoiceProvenance} from './native-candidate-voice-contract.mts';
-export const PENDING_CANDIDATE_ARCHIVE_JOB='job_c3adf563-321c-4bac-b807-b1e749681c82';
+export const PENDING_CANDIDATE_ARCHIVE_JOB='job_057c80a3-2fd3-4cb0-a0e8-eba1028905b7';
 export const PENDING_CANDIDATE_SCRIPT='d9d74b6682cc75f06575925b1b946038fb72ac37dd21225f61b55ba2c023de4a';
 export const PENDING_CANDIDATE_CONTRACT='65e245fe5e4d5babb9e881ad45b286f22255a5ed6a49c501f998ec1bf740ac61';
 type PendingCandidateArchiveBinding={revision:number;script_hash:string;mode_epoch:number;contract_hash:string};
@@ -8,9 +8,9 @@ type PendingCandidateArchiveBinding={revision:number;script_hash:string;mode_epo
 // Legacy/Library-only archive routes remain separate.
 const PENDING_CANDIDATE_ARCHIVE_BINDINGS:Readonly<Record<string,Readonly<PendingCandidateArchiveBinding>>>=Object.freeze({
  [PENDING_CANDIDATE_ARCHIVE_JOB]:Object.freeze({revision:3,script_hash:PENDING_CANDIDATE_SCRIPT,mode_epoch:0,contract_hash:PENDING_CANDIDATE_CONTRACT}),
- 'job_b7dcd6bf-682d-429f-9016-7c9f3df41c16':Object.freeze({revision:1,script_hash:'8580f6bbad4bdca0c07af05915e61ed734b3fd6c8d492e5c9a21ef92937594fa',mode_epoch:0,contract_hash:'670a348cda9d5941d4a7ac66ba00f1c0ce6388cb0d80fc6bdd595da7315bba6f'}),
- 'job_38fd8bfd-2949-4d26-8b67-d07a03e6f0b0':Object.freeze({revision:1,script_hash:'c1eb8ebb836302272fabc9b31f9db756ec076f2387bdb0b2ca13fbcf3a8ec5ab',mode_epoch:0,contract_hash:'9d2868f931b066b12f8d7d0a7cabdd9306a76c39ba3e3d86ab3b03db25dbdc27'}),
- 'job_ed3c8123-59ed-4948-9d99-fdb7067ee522':Object.freeze({revision:1,script_hash:'18050f4876ebf14998b69e2b9e183ab4b1332d6f0d4fae6e8030f27ee7e694d3',mode_epoch:0,contract_hash:'e8bc99b09a4df6745474336f3c5ab195d014f275ceabffd7158f29bb945059fd'}),
+ 'job_333991b2-aec2-49e4-a6a8-4db25ef78182':Object.freeze({revision:1,script_hash:'8580f6bbad4bdca0c07af05915e61ed734b3fd6c8d492e5c9a21ef92937594fa',mode_epoch:0,contract_hash:'670a348cda9d5941d4a7ac66ba00f1c0ce6388cb0d80fc6bdd595da7315bba6f'}),
+ 'job_5718e752-211d-4eb6-ab68-d4cbeb656a78':Object.freeze({revision:1,script_hash:'c1eb8ebb836302272fabc9b31f9db756ec076f2387bdb0b2ca13fbcf3a8ec5ab',mode_epoch:0,contract_hash:'9d2868f931b066b12f8d7d0a7cabdd9306a76c39ba3e3d86ab3b03db25dbdc27'}),
+ 'job_c8479fb7-d765-4d73-a829-ffe47829d797':Object.freeze({revision:1,script_hash:'18050f4876ebf14998b69e2b9e183ab4b1332d6f0d4fae6e8030f27ee7e694d3',mode_epoch:0,contract_hash:'e8bc99b09a4df6745474336f3c5ab195d014f275ceabffd7158f29bb945059fd'}),
 });
 export function pendingCandidateArchiveBinding(id:unknown):Readonly<PendingCandidateArchiveBinding>|null{
  return typeof id==='string'&&Object.prototype.hasOwnProperty.call(PENDING_CANDIDATE_ARCHIVE_BINDINGS,id)?PENDING_CANDIDATE_ARCHIVE_BINDINGS[id]:null;
@@ -25,7 +25,7 @@ export function pendingCandidateArchiveJobMatches(j:{id?:string;is_test?:unknown
 // These same four frozen private jobs may return materials only after their
 // exact current video has a genuine owner approval. No other job is enrolled.
 export const postVideoArchiveJobMatches=pendingCandidateArchiveJobMatches;
-export const SITE_ARCHIVE_JOBS=['job_1c2556b8-53d5-4dc0-8d7a-faec60fa36ba','job_79fcd694-545b-4423-971c-984d95b5511c'];
+export const SITE_ARCHIVE_JOBS=['job_52beebd8-45f2-431b-a18b-185b00be4618','job_bd0c0018-208e-46a2-a795-a61b1f269f83'];
 export const SITE_ARCHIVE_PART_SIZE=524288;
 export const SITE_ARCHIVE_MAX_BYTES=50*1024*1024;
 // Frozen editable runtimes include the actual renderer, complete source audio,

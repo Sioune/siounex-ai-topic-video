@@ -1,5 +1,6 @@
 'use client';
 import ContentMotionStatus from './content-motion-status';
+import WorkInProgressVideo from './work-in-progress-video';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from './ui/dialog';
 import LocalReviewDraftPreview,{currentLocalReviewDraft} from './local-review-draft';
 import {currentLocalPostVideoArchives} from '@/lib/local-post-video-archives.mts';
@@ -82,7 +83,7 @@ function anchorPanel(id:string):ProductionPanel|null{
 }
 const labels:Record<string,string>={cancelled:'已取消制作',completed:'交付已核验',waiting_executor:'等待执行器领取',running:'执行器已领单',awaiting_review:'等待节点审核',approved:'口播稿已批准',failed:'执行失败',paused:'已暂停，需要决定',awaiting_ai:'等待AI审核',awaiting_human:'等待人工审核',ai_running:'AI正在审核',pending:'等待前一节点',revise:'已打回返工'};
 const nodes:Record<string,string>={source:'来源与事实核验',script:'口播稿与分镜',cover:'封面',video:'成片画面与声音',promotion:'宣发文案',delivery:'交付检查'};
-const ordinaryVoiceArchiveJobs=new Set(['job_1c2556b8-53d5-4dc0-8d7a-faec60fa36ba','job_79fcd694-545b-4423-971c-984d95b5511c']);
+const ordinaryVoiceArchiveJobs=new Set(['job_52beebd8-45f2-431b-a18b-185b00be4618','job_bd0c0018-208e-46a2-a795-a61b1f269f83']);
 export function currentProductionMilestone(job:ProductionJob,node:string){return(job.milestones||[]).filter(m=>m.node===node&&m.revision===job.revision&&m.mode_epoch===job.mode_epoch&&!['invalidated','superseded'].includes(m.status)).sort((a,b)=>b.artifact_version-a.artifact_version)[0];}
 export function localCoverPreparationStatus(job:ProductionJob){
  const current=currentLocalReviewDraft(job);if(!current||current.milestone.status==='revise'||!['approved','completed'].includes(job.status)||job.approved_revision!==job.revision||currentProductionMilestone(job,'cover'))return null;
@@ -211,22 +212,29 @@ export default function ProductionDesk(){
  const [showTests,setShowTests]=useState(false);const [intakeTopic,setIntakeTopic]=useState<string|null>(null);
  const [jobs,setJobs]=useState<ProductionJobSummary[]>([]),[selected,setSelected]=useState<ProductionJob|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false),[note,setNote]=useState(''),[listLoading,setListLoading]=useState(true);
  const [cancelTarget,setCancelTarget]=useState<ProductionJobSummary|null>(null),[cancelReason,setCancelReason]=useState('');
+ const selectedRef=useRef<ProductionJob|null>(null),lastConfirmedUrl=useRef<string|null>(null);selectedRef.current=selected;
  const reads=useRef<{sequence:number;controller:AbortController|null;promise:Promise<void>|null}>({sequence:0,controller:null,promise:null});
  // Navigation and writes supersede old reads; the timer shares this same
  // single flight. An old response can never replace a newly selected job.
- const refresh=useCallback((id?:string,replace=true):Promise<void>=>{
+ const refresh=useCallback((id?:string,replace=true,includeList=true,releaseAfterDetail=false):Promise<void>=>{
   if(!replace&&reads.current.promise)return reads.current.promise;
   reads.current.controller?.abort();const controller=new AbortController(),sequence=++reads.current.sequence;reads.current.controller=controller;
   const current=()=>!controller.signal.aborted&&reads.current.sequence===sequence;
-  const list=api(undefined,undefined,controller.signal).then(d=>{if(current()){setJobs(d.jobs);setListLoading(false);if(!id)setLoading(false);}});
-  const detail=id?api(undefined,id,controller.signal).then(d=>{if(current()){setSelected(d.job);setLoading(false);}}):Promise.resolve();
-  const promise=Promise.all([list,detail]).then(()=>{if(current())setError('');}).catch(e=>{if(current())throw e;}).finally(()=>{if(current()){setLoading(false);setListLoading(false);reads.current.promise=null;}});
-  reads.current.promise=promise;return promise;
+  const list=includeList?api(undefined,undefined,controller.signal).then(d=>{if(current()){setJobs(d.jobs);setListLoading(false);if(!id)setLoading(false);}}):Promise.resolve();
+  const detail=id?api(undefined,id,controller.signal).then(d=>{if(current()){setSelected(d.job);lastConfirmedUrl.current=window.location.pathname+window.location.search+window.location.hash;setLoading(false);}},e=>{if(current()){const previous=selectedRef.current;if(previous&&previous.id!==id){const url=lastConfirmedUrl.current||window.location.pathname+'?job='+encodeURIComponent(previous.id);history.replaceState(null,'',url);navigationSearch.current=window.location.search;}setError(e instanceof Error?e.message:'读取失败');setLoading(false);}throw e;}):Promise.resolve();
+  let listFailed=false;
+  if(releaseAfterDetail&&id)void list.catch(e=>{listFailed=true;if(current()){setListLoading(false);setError(previous=>previous||'任务列表更新失败；可重新读取。'+(e instanceof Error?e.message:''));}});
+  const split=!!(releaseAfterDetail&&id);
+  const promise=(split?detail:Promise.all([list,detail])).then(()=>{if(current()&&!listFailed)setError('');}).catch(e=>{if(current())throw e;}).finally(()=>{if(current()){if(!id)setLoading(false);if(!split){setListLoading(false);reads.current.promise=null;}}});
+  // Unlock after detail, but keep the flight alive while the list is pending.
+  // Background polling shares it; explicit navigation or writes may supersede it.
+  const flight=split?Promise.allSettled([list,detail]).then(()=>{}).finally(()=>{if(current())reads.current.promise=null;}):promise;
+  reads.current.promise=flight;return promise;
  },[]);
  useEffect(()=>{const update=()=>{if(navigationSearch.current===window.location.search)return;navigationSearch.current=window.location.search;setLoading(true);const params=new URLSearchParams(window.location.search);setIntakeTopic(params.get('topic'));const id=params.get('job');if(!id)setSelected(null);refresh(id||undefined).catch(e=>setError(e.message));};queueMicrotask(update);window.addEventListener('popstate',update);return ()=>window.removeEventListener('popstate',update)},[refresh]);
 
  useEffect(()=>()=>{reads.current.sequence++;reads.current.controller?.abort();},[]);
- useEffect(()=>{if(!selected?.id||busy)return;let alive=true;const id=selected.id;const timer=window.setInterval(()=>{if(document.hidden)return;refresh(id,false).catch(e=>{if(alive)setError('状态更新失败，连接可能中断；旧状态不是正在执行的证明。可点重新读取。'+(e instanceof Error?e.message:''));});},8000);return()=>{alive=false;window.clearInterval(timer);};},[selected?.id,busy,refresh]);
+ useEffect(()=>{if(!selected?.id||busy||loading)return;let alive=true;const id=selected.id;const timer=window.setInterval(()=>{if(document.hidden)return;refresh(id,false).catch(e=>{if(alive)setError('状态更新失败，连接可能中断；旧状态不是正在执行的证明。可点重新读取。'+(e instanceof Error?e.message:''));});},8000);return()=>{alive=false;window.clearInterval(timer);};},[selected?.id,busy,loading,refresh]);
  const choosePanel=useCallback((next:ProductionPanel)=>{setPanel(next);setVisitedPanels(current=>({jobId:selected?.id||null,panels:current.jobId===selected?.id?[...new Set([...current.panels,next])]:[next]}));},[selected?.id]);
  const activePanel=visitedPanels.jobId===selected?.id?panel:'review';
  const panelMounted=(value:ProductionPanel)=>activePanel===value||visitedPanels.jobId===selected?.id&&visitedPanels.panels.includes(value);
@@ -239,9 +247,9 @@ export default function ProductionDesk(){
  },[choosePanel]);
  useEffect(()=>{let initial:ProductionPanel='review';try{initial=anchorPanel(decodeURIComponent(window.location.hash.slice(1)))||'review'}catch{}choosePanel(initial);const frame=requestAnimationFrame(revealHash);window.addEventListener('hashchange',revealHash);return()=>{cancelAnimationFrame(frame);window.removeEventListener('hashchange',revealHash)}},[selected?.id,revealHash,choosePanel]);
 
- async function load(id:string){setBusy(true);setLoading(true);setError('');try{history.pushState(null,'','?job='+encodeURIComponent(id));navigationSearch.current=window.location.search;await refresh(id);setNote('');}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
- async function action(body:unknown){if(busy)return;setBusy(true);setError('');try{await api(body);await refresh(selected?.id);setNote('')}catch(e){await refresh(selected?.id).catch(()=>{});setError((e as Error).message)}finally{setBusy(false)}}
- async function confirmCancellation(){if(!cancelTarget||busy)return;setBusy(true);setError('');try{await api({action:'cancel_production',id:cancelTarget.id,revision:cancelTarget.revision,mode_epoch:cancelTarget.mode_epoch,reason:cancelReason});setCancelTarget(null);setCancelReason('');await refresh(selected?.id);}catch(e){await refresh(selected?.id).catch(()=>{});setError((e as Error).message);}finally{setBusy(false);}}
+ async function load(id:string){setBusy(true);setLoading(true);setError('');lastConfirmedUrl.current=window.location.pathname+window.location.search+window.location.hash;try{history.pushState(null,'','?job='+encodeURIComponent(id));navigationSearch.current=window.location.search;await refresh(id,true,false);setNote('');}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ async function action(body:unknown){if(busy)return;setBusy(true);setError('');let saved=false;try{await api(body);saved=true;await refresh(selected?.id,true,true,true);setNote('')}catch(e){if(!saved)await refresh(selected?.id,true,true,true).catch(()=>{});setError(saved?'操作已保存，但详情更新失败；可重新读取。'+(e as Error).message:(e as Error).message)}finally{setBusy(false)}}
+ async function confirmCancellation(){if(!cancelTarget||busy)return;setBusy(true);setError('');let saved=false;try{await api({action:'cancel_production',id:cancelTarget.id,revision:cancelTarget.revision,mode_epoch:cancelTarget.mode_epoch,reason:cancelReason});saved=true;setCancelTarget(null);setCancelReason('');await refresh(selected?.id,true,true,true);}catch(e){if(!saved)await refresh(selected?.id,true,true,true).catch(()=>{});setError(saved?'操作已保存，但详情更新失败；可重新读取。'+(e as Error).message:(e as Error).message);}finally{setBusy(false);}}
  const receipts=selected?.reviews?.filter(r=>r.decision==='external_delivery'&&r.revision===selected.revision)||[];
  const candidateOwnerReview=selected?currentCandidateOwnerReview(selected):null;
  const candidateReviewSummary=selected?candidateOwnerReviewSummary(selected):null;
@@ -296,7 +304,7 @@ export default function ProductionDesk(){
     {listLoading?<p role="status">正在读取制作任务…</p>:error&&!visibleJobs.length?<p>任务列表未能读取，请重新尝试。</p>:<><ProductionTaskGroups jobs={visibleJobs} selectedId={selected?.id||null} busy={busy} onSelect={load} onCancel={job=>{setCancelReason('');setCancelTarget(job);}}/>{!visibleJobs.length&&<div className="production-list-empty"><a className="text-link" href="/">从选题库开始</a></div>}</>}
    </aside>
    <article className="production-result" aria-busy={loading||busy} onClickCapture={event=>{if(event.target instanceof Element&&event.target.closest('a[href^="#"]'))requestAnimationFrame(revealHash)}}>
-    {loading?<div className="production-loading" role="status"><p>正在读取任务与已保存的成果…</p><div/><div/><div/></div>:selected?.status==='cancelled'?<section className="production-cancelled-record"><span className="production-status">已取消制作</span><h2>{JSON.parse(selected.source_snapshot).title}</h2><p>此任务已退出制作队列，后续自然轮不会继续取材或制作。</p><p>取消原因：{String(selected.reviews?.find(r=>r.decision==='production_cancelled')?.note||'本人取消制作')}</p><p>已有稿件、成果和记录继续保留。</p><LocalReviewDraftPreview job={selected}/>{selected.drafts?.map(d=><details key={d.revision}><summary>已保存稿件 v{d.revision}</summary><pre className="production-saved-script">{JSON.parse(d.content).script}</pre></details>)}<HistoricalDiagnostics key={'diagnostics-'+selected.id} job={selected} cancelled/></section>:selected?<>
+    {loading&&<div className="production-loading" role="status"><p>正在读取任务与已保存的成果…</p><div/><div/><div/></div>}<div hidden={loading} inert={loading?true:undefined}>{selected?.status==='cancelled'?<section className="production-cancelled-record"><span className="production-status">已取消制作</span><h2>{JSON.parse(selected.source_snapshot).title}</h2><p>此任务已退出制作队列，后续自然轮不会继续取材或制作。</p><p>取消原因：{String(selected.reviews?.find(r=>r.decision==='production_cancelled')?.note||'本人取消制作')}</p><p>已有稿件、成果和记录继续保留。</p><LocalReviewDraftPreview job={selected}/>{selected.drafts?.map(d=><details key={d.revision}><summary>已保存稿件 v{d.revision}</summary><pre className="production-saved-script">{JSON.parse(d.content).script}</pre></details>)}<HistoricalDiagnostics key={'diagnostics-'+selected.id} job={selected} cancelled/></section>:selected?<>
      <header className="production-current"><div className="production-current-meta"><span className="production-status">{detailStatus}</span><span>口播 v{selected.revision}{selected.is_test?' · 隔离验收测试':''}</span></div><h2>{JSON.parse(selected.source_snapshot).title}</h2><p className="production-saved-mode">当前已保存：{productionModeLabel(selected.review_mode)}{busy?' · 正在处理操作，等待保存结果':''}</p>
       {(selected.facts||localReviewSummary)&&<p className="production-current-summary">{cloneExecutionBlocked?'普通版首次审片已通过；当前本人换声受阻，尚未完成声音版二审。首次批准保留，按下方具体失败继续原请求，无需重新首审。':localReviewRework?localReviewSummary:postVideoMaterialsStatus==='交付已完成'?'本版成片、双封面、宣发和完整交付包已完成审核并归档。发布状态另行记录。':postVideoMaterialsStatus==='等待交付审核'?'本版成片、双封面与宣发已通过；完整交付包已归档，等待交付审核。':postVideoMaterialsStatus?'本版成片已通过。封面与宣发分别按当前节点审核；文件归档不代替质量认可或发布登记。':localReviewSummary|| (pendingArchivedReviewStatus?'完整成片已归档并回传当前审核节点，等待本人审片。后续制作按本次审核结果继续。':candidateOwnerReview?.reviewed_voice_kind==='owner-cloned'&&archivedVideoStatus?'本人声音版已确认；当前成片、交付包与正式节点已回传，发布状态另行记录。':candidateReviewSummary?candidateReviewSummary+'；正式视频节点和发布状态另行记录。':selected.facts?.summary)}</p>}
       {!cliRecovery&&!mediaProgress&&!localReviewDraft&&!archivedVideoStatus&&!pendingArchivedReviewStatus&&!postVideoMaterialsStatus&&(pendingCandidateSummary||executionDisplay(selected).message)&&(!candidateReviewSummary||executionDisplay(selected).activeLease||executionDisplay(selected).expired)&&<p className="production-current-summary" role="status">{pendingCandidateSummary||executionDisplay(selected).message}</p>}
@@ -310,7 +318,7 @@ export default function ProductionDesk(){
       {stoppedMessage&&!mediaReworkRecovery&&<a className="production-current-task" href="#production-recovery">查看暂停原因与恢复操作 →</a>}
      </header>
      <Tabs value={activePanel} onValueChange={value=>choosePanel(value as ProductionPanel)} className="production-tabs">
-      <ContentMotionStatus job={selected}/><TabsList variant="line" className="production-panel-tabs" aria-label="制作内容"><TabsTrigger value="review">稿件与审阅</TabsTrigger><TabsTrigger value="media">素材与制作</TabsTrigger><TabsTrigger value="delivery">交付与版本</TabsTrigger></TabsList>
+      <ContentMotionStatus job={selected}/><WorkInProgressVideo jobId={selected.id}/><TabsList variant="line" className="production-panel-tabs" aria-label="制作内容"><TabsTrigger value="review">稿件与审阅</TabsTrigger><TabsTrigger value="media">素材与制作</TabsTrigger><TabsTrigger value="delivery">交付与版本</TabsTrigger></TabsList>
       <TabsContent value="review" forceMount hidden={activePanel!=='review'} data-production-panel="review" className="production-panel">{panelMounted('review')&&<>
        <SourceInput key={'source-'+selected.id+'-'+selected.revision+'-'+selected.mode_epoch} job={selected} onSaved={j=>setSelected(current=>current?.id===j.id?j:current)}/>
        {content&&draft&&<><ScriptView job={selected} draft={draft} content={content}><ScriptFeedback key={selected.id+'-'+draft.revision+'-'+selected.mode_epoch} job={selected} onSaved={j=>setSelected(current=>current?.id===j.id?j:current)}/><details className="script-lock-options"><summary>使用完整原稿锁稿</summary><ScriptLock key={'lock-'+selected.id+'-'+draft.revision+'-'+selected.mode_epoch} job={selected} onSaved={j=>setSelected(current=>current?.id===j.id?j:current)}/></details></ScriptView></>}
@@ -367,7 +375,7 @@ export default function ProductionDesk(){
       <HistoricalDiagnostics key={'diagnostics-'+selected.id} job={selected}/>
       <div className="production-notice">站内待办由已配置的执行器按周期检查；原生视频仍需具备工具的制作会话接手。领取、准备和成片回传分别记录，人工审核不会自行通过。缺连续实演素材或定时Library归档能力时，媒体制作暂停；封面AI审核须实际看图。成片声音和连续画面理解仍待人工，不会把技术解码当作听过或看懂。</div>
      </details>
-    </>:error?<div className="production-empty"><h2>任务暂时未能读取</h2><p>已保存的稿件和审核记录仍保留。可重新读取后继续。</p></div>:<div className="production-empty"><h2>{visibleJobs.length?'选择一项任务，开始审阅':'把一个选题带到这里'}</h2><p>{visibleJobs.length?'从左侧选择任务，查看当前稿件、制作状态与交付版本。':'在选题库确认制作后，这里会保存稿件、审阅意见和真实成果。'}</p>{!visibleJobs.length&&<a className="text-link" href="/">去选题库挑选题</a>}</div>}
+    </>:error?<div className="production-empty"><h2>任务暂时未能读取</h2><p>已保存的稿件和审核记录仍保留。可重新读取后继续。</p></div>:<div className="production-empty"><h2>{visibleJobs.length?'选择一项任务，开始审阅':'把一个选题带到这里'}</h2><p>{visibleJobs.length?'从左侧选择任务，查看当前稿件、制作状态与交付版本。':'在选题库确认制作后，这里会保存稿件、审阅意见和真实成果。'}</p>{!visibleJobs.length&&<a className="text-link" href="/">去选题库挑选题</a>}</div>}</div>
    </article>
   </div>
  </div>;

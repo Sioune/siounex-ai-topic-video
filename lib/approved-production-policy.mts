@@ -8,8 +8,8 @@ export const APPROVED_PRODUCTION_OWNER_INSTRUCTION={
  instruction:'把这些卡点统一交给V3彻底修复，尤其已审稿进入制作和换声失败自动接续。能自动恢复直接推进成片待我审核，AI崇祯继续暂停，人工节点保留，不靠手工补单个作品。',
  new_paid_authorization:false,publication_authorization:false,quality_approved:false
 } as const;
-export const LEGACY_APPROVED_PRODUCTION_JOB='job_9ef39025-d92e-4770-82d0-05881451c5df';
-export const OWNER_HELD_PRODUCTION_JOBS=['job_3c14fe6f-44b0-472c-8455-e75040b695bb','job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'] as const;
+export const LEGACY_APPROVED_PRODUCTION_JOB='job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf';
+export const OWNER_HELD_PRODUCTION_JOBS=['job_3fc559eb-354e-48e3-a718-8a89b2e6e170','job_e13e8b19-aa0a-4840-abc9-333eefc91b05'] as const;
 const hash=(v:any)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 export function currentApprovedText(j:any){
  if(!j||j.is_test||OWNER_HELD_PRODUCTION_JOBS.some(id=>id===j.id)||!['node','auto'].includes(j.review_mode)||j.status!=='approved'||j.error||j.revision<1||j.approved_revision!==j.revision||!hash(j.approved_hash)||!hash(j.contract_hash)||!Number.isSafeInteger(j.mode_epoch)||j.mode_epoch<0)return false;

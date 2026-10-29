@@ -15,3 +15,11 @@ export function isFixedOutroSegment(segment:Segment,index:number,allSegments:Seg
  return Number.isFinite(start)&&Number.isFinite(end)&&Number.isFinite(previousEnd)&&start>0&&end>start&&end<=60&&end-start<=4.1&&Math.abs(previousEnd-start)<.001&&/(?:沿用|复用|保留|既有|固定).{0,16}片尾/u.test(segment.visual)&&/无(?:新增)?旁白|不(?:新增|添加)旁白/u.test(segment.sound);
 }
 export function bodyStoryboard<T extends Segment>(storyboard:T[]):T[]{return storyboard.filter((segment,index)=>!isFixedOutroSegment(segment,index,storyboard));}
+/** Text review only: the final body row may retain a silent real-video closing.
+ * It stays in bodyStoryboard and the production timeline/material checks. */
+export function isSilentClosingSegment(segment:Segment,index:number,storyboard:Segment[]):boolean{
+ const body=storyboard.map((s,i)=>({s,i})).filter(({s,i})=>!isFixedOutroSegment(s,i,storyboard));
+ if(body.at(-1)?.i!==index||index<1||isFixedOutroSegment(segment,index,storyboard)||typeof segment?.narration!=='string'||segment.narration.trim()||typeof segment.visual!=='string'||!segment.visual.trim()||typeof storyboard[index-1]?.narration!=='string'||!String(storyboard[index-1].narration).trim())return false;
+ const start=Number(segment.start),end=Number(segment.end),previousEnd=Number(storyboard[index-1].end),next=storyboard[index+1];
+ return Number.isFinite(start)&&Number.isFinite(end)&&Number.isFinite(previousEnd)&&start>0&&end>start&&end<=60&&Math.abs(previousEnd-start)<.001&&(!next||Math.abs(Number(next.start)-end)<.001);
+}

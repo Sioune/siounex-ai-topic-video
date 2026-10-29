@@ -6,7 +6,7 @@ import templateCatalog from '../production/template-catalog.json';
 import {db} from './store';
 import {hash,text,ProductionError} from './production-contract';
 import {latestPublished,selectTemplate,validateTemplate,templateAssetsAvailable,type Publication,type SeriesSelection,type SeriesTemplate} from './series-contract';
-const PROTECTED='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee';
+const PROTECTED='job_e13e8b19-aa0a-4840-abc9-333eefc91b05';
 const defaultTemplates=templateCatalog as SeriesTemplate[];
 // Keep template/history changes out of both ordinary and native preparation
 // leases without introducing a series -> media -> production import cycle.

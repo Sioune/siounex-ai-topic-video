@@ -62,7 +62,7 @@ export function qualityManifestIssues(m:any,c:{script_hash:string;script:string;
  return p;
 }
 export function qualityReceiptIssues(job:any,operation:any,artifact:any,receipt:any){
- if(job.is_test||job.id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'||operation.node!=='video')return[];
+ if(job.is_test||job.id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05'||operation.node!=='video')return[];
  const plan=JSON.parse(operation.plan),p:string[]=[],r=artifact?.qa?.production_principles,ref=plan.inputs.find((i:any)=>i.role==='production_quality');
  if(!(ref? r?.manifest_file_sha256===ref.sha256:r?.evidence_stage==='post-render'&&r?.operation_input_hash===operation.input_hash&&r?.job_id===job.id&&r?.mode_epoch===operation.mode_epoch&&/^[a-f0-9]{64}$/.test(r?.manifest_file_sha256))||r?.schema!=='actual-production-principles-qa-v1'||r.principles_version!==PRODUCTION_PRINCIPLES_VERSION||r.machine_checks_passed!==true||r.quality_approved!==false||r.publication!==false||r.video_sha256!==artifact.sha256||r.script_hash!==operation.script_hash||!Array.isArray(r.issues)||r.issues.length)p.push('Missing matching actual four-principle QA report');
  // The operation freezes the selected original. A later default must not rewrite an old operation.

@@ -1,8 +1,9 @@
 {
   "schema": "owner-private-native-production-runtime-v1",
-  "project_id": "appgprj_6ac65bafa2a48191a4283cb34ebd5e11",
-  "owner_anchor_job_id": "job_b98cdfdf-7c37-438c-890c-3463bd42d7ed",
+  "project_id": "appgprj_8f3ab93a1fb6107ad01eef60d3bb28f2",
+  "owner_anchor_job_id": "job_ea5571a3-1437-4d09-acd1-ad576666b7a6",
   "allowed_actions": [
+    "owner_feedback_continue",
     "studio_preview_generation_read",
     "studio_preview_generation_effect",
     "studio_preview_generation_claim",
@@ -70,6 +71,14 @@
     "review_output_recover",
     "review_recover",
     "review_result",
+    "retry",
+    "owner_text_review_retry",
+    "owner_text_review_output_recover",
+    "wip_video_start",
+    "wip_video_part",
+    "wip_video_finish",
+    "wip_video_read",
+    "wip_video_read_part",
     "series_refresh_legacy_history",
     "site_archive_confirm",
     "site_archive_finalize",
@@ -89,5 +98,5 @@
   "publication_actions": false,
   "new_job_creation": false,
   "automatic_mutation_retry": false,
-  "executor_release": "workstation-flow-v24"
+  "executor_release": "workstation-flow-v27"
 }

@@ -3,8 +3,8 @@ import {bindingMatches,scopeBinding} from './media-continuation-contract';
 import {legacyApprovedProductionCandidate} from './approved-production-policy.mts';
 
 export const PREPARATION_REGISTRATION_EXCLUSIONS=[
- 'job_9ef39025-d92e-4770-82d0-05881451c5df',
- 'job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'
+ 'job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf',
+ 'job_e13e8b19-aa0a-4840-abc9-333eefc91b05'
 ] as const;
 const hash=(value:unknown)=>typeof value==='string'&&/^[a-f0-9]{64}$/.test(value);
 const preparationStages=new Set(['media_inventory','media_inputs']);

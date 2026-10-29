@@ -1,7 +1,7 @@
 import {currentCandidateVoiceProvenance,effectiveCandidateVoiceKind,type CandidateVoiceJob} from './native-candidate-voice-contract.mts';
 export const CANDIDATE_OWNER_REVIEW_DECISION='reported_owner_candidate_feedback';
 export const CANDIDATE_OWNER_REVIEW_SCHEMA='owner-native-candidate-review-v1';
-export const CANDIDATE_REVIEW_EXCLUDED_JOBS=['job_9ef39025-d92e-4770-82d0-05881451c5df','job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'];
+export const CANDIDATE_REVIEW_EXCLUDED_JOBS=['job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf','job_e13e8b19-aa0a-4840-abc9-333eefc91b05'];
 export type CandidateReviewBinding={revision:number;script_hash:string;mode_epoch:number;contract_hash:string;candidate_id:string;candidate_sha256:string;project_id:string;timeline_id:string};
 export type NativeCandidateOwnerReview={id:string;binding:CandidateReviewBinding;decision:'approved'|'rework-requested';quote:string;reported_at:string;source_thread_id:string|null;sequence:number;source:'owner-oral-report';reviewed_voice_kind:'ordinary-temporary'|'owner-cloned';voice_provenance_id?:string;website_button_clicked:false;formal_milestone_approved:false;quality_approved:false;publication_authorized:false;new_paid_calls:0};
 export type CandidateReviewJob=CandidateVoiceJob;

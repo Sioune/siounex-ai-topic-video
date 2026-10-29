@@ -1,3 +1,4 @@
+import {continuationSql,continuationLimitSql} from './owner-feedback-continuation.mts';
 import {currentJobV6Outro} from './outro-upgrade-contract.mts';
 import {isCompletedPrivateReturnHandoff,completedPrivateReturnCandidate} from './private-return-selection.mts';
 import {isTitleRuntimeRecoveryCandidate} from './private-title-recovery-selection.mts';
@@ -20,6 +21,7 @@ import {nextAutomaticPrivatePreparation} from './automatic-private-production';
 import {legacyApprovedProductionCandidate} from './approved-production-policy.mts';
 import {cliFailureReconciliationBinding} from './cli-reconciliation-selection.mts';
 import {nextNativePreparationHandoff,listWaitingNativePreparationHandoffs} from './native-preparation-handoff';
+import {isMaterialAcquisitionResumeCandidate} from './private-material-acquisition-selection.mts';
 import {INTAKE_TEXT_GUARD_SQL} from './production-intake';
 import {CURRENT_FEEDBACK_GUARD_SQL} from './script-feedback-contract';
 import {db} from './store';
@@ -33,11 +35,11 @@ import {readProvidedSource} from './source-input';
 import {materializedResearch} from './research';
 import {materializedOriginal} from './originals';
 import {CURRENT_PREPARATION_QUEUE_SQL,PREPARATION_REGISTRATION_EXCLUSIONS,PREPARATION_REGISTRATION_SQL,preparationRegistrationBinding} from './preparation-registration-contract.mts';
-const excludedJob='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee';
+const excludedJob='job_e13e8b19-aa0a-4840-abc9-333eefc91b05';
 // Explicit owner instruction: AI Chongzhen remains paused until the owner
 // provides the real opposite-edict gameplay comparison. This exact hold is
 // independent of generic missing-media state and preserves every old receipt.
-export const OWNER_PAUSED_PRODUCTION_JOB_IDS=['job_3c14fe6f-44b0-472c-8455-e75040b695bb'] as const;
+export const OWNER_PAUSED_PRODUCTION_JOB_IDS=['job_3fc559eb-354e-48e3-a718-8a89b2e6e170'] as const;
 // Selection is read-only. Actual claim/review/operation CAS remains authoritative.
 export async function nextWork(testId?:string,excludeIds:string[]=[]){
  if(excludeIds.length>64||excludeIds.some(id=>!/^job_[a-f0-9-]{36}$/.test(id)))throw new ProductionError('跳过范围无效',400);
@@ -60,9 +62,9 @@ export async function nextWork(testId?:string,excludeIds:string[]=[]){
  const transport=(await db().prepare(`SELECT j.id FROM production_jobs j WHERE j.id!=? AND ${testId?'j.is_test=1 AND j.id=?':'j.is_test=0'} ${exclude} AND j.status IN ('paused','failed') AND j.review_mode='auto' AND substr(j.error,1,length('CLI_RATE_LIMITED'))='CLI_RATE_LIMITED' ORDER BY j.updated_at,j.id LIMIT 16`).bind(excludedJob,...(testId?[testId]:[]),...skipIds).all<{id:string}>()).results;
  for(const row of transport){const job=await getJob(row.id),binding=cliTransportRecoveryCandidate(job);if(binding)return{job,kind:binding.review_milestone_id?'review':'text',milestone_id:binding.review_milestone_id||undefined,cli_transport_recovery:binding,automatic_trigger:false,execution_started:false,new_model_calls:0};}
  // Reconcile already completed review output before starting slow media work.
- const interrupted=(await db().prepare(`SELECT j.id FROM production_jobs j WHERE j.id!=? AND ${testId?'j.is_test=1 AND j.id=?':'j.is_test=0'} ${exclude} AND j.status='paused' AND j.review_mode='auto' AND (substr(j.error,1,length('Cannot approve script with blocked text preflight:'))='Cannot approve script with blocked text preflight:' OR j.error='NATIVE_PRODUCTION_TOOL_FAILED') AND j.ai_calls>=1 AND j.reworks<=2 ORDER BY j.updated_at,j.id LIMIT 16`).bind(excludedJob,...(testId?[testId]:[]),...skipIds).all<{id:string}>()).results;
+ const interrupted=(await db().prepare(`SELECT j.id FROM production_jobs j WHERE j.id!=? AND ${testId?'j.is_test=1 AND j.id=?':'j.is_test=0'} ${exclude} AND j.status='paused' AND j.review_mode='auto' AND (substr(j.error,1,length('Cannot approve script with blocked text preflight:'))='Cannot approve script with blocked text preflight:' OR j.error='NATIVE_PRODUCTION_TOOL_FAILED') AND j.ai_calls>=1 AND (j.reworks<=2 OR ${continuationSql('j')}) ORDER BY j.updated_at,j.id LIMIT 16`).bind(excludedJob,...(testId?[testId]:[]),...skipIds).all<{id:string}>()).results;
  for(const row of interrupted){const job=await getJob(row.id),m=reviewOutputRecoveryCandidate(job);if(m)return {job,kind:'review-output-reconciliation',milestone_id:m.id,reconciliation_only:true,automatic_trigger:false,new_model_calls:0};}
- if(!testId){const waiting=await listWaitingNativePreparationHandoffs(skipIds);for(const native of waiting){if(!nativeReconciliationHolds(native.reconciliation)&&(isWorkstationWaitCandidate(native)||isPreproductionNarrationCandidate(native)||isTitleRuntimeRecoveryCandidate(native)||isCaptionPaginationCandidate(native)||isFrameBudgetRecoveryCandidate(native)||native.binding?.scope==='private-video'&&native.base_pending_video&&native.status==='claimed'&&Number.isSafeInteger(native.lease_until)&&Number(native.lease_until)>0&&Number(native.lease_until)<=Date.now()))return {job:await getJob(native.job_id),kind:'native-preparation-handoff',native_preparation:native,reconciliation_only:true,automatic_trigger:false,execution_started:false,new_paid_calls:0};}}
+ if(!testId){const waiting=await listWaitingNativePreparationHandoffs(skipIds);for(const native of waiting){if(!nativeReconciliationHolds(native.reconciliation)&&(isMaterialAcquisitionResumeCandidate(native)||isWorkstationWaitCandidate(native)||isPreproductionNarrationCandidate(native)||isTitleRuntimeRecoveryCandidate(native)||isCaptionPaginationCandidate(native)||isFrameBudgetRecoveryCandidate(native)||native.binding?.scope==='private-video'&&native.base_pending_video&&native.status==='claimed'&&Number.isSafeInteger(native.lease_until)&&Number(native.lease_until)>0&&Number(native.lease_until)<=Date.now()))return {job:await getJob(native.job_id),kind:'native-preparation-handoff',native_preparation:native,reconciliation_only:true,automatic_trigger:false,execution_started:false,new_paid_calls:0};}}
  if(!testId&&!excludeIds.length){const voice=await nextVoiceReplacement();if(voice&&!skipIds.includes(voice.job.id)&&!PREPARATION_REGISTRATION_EXCLUSIONS.some(id=>id===voice.job.id))return voice;}
  if(!testId){const auto=await nextAutomaticPrivatePreparation(skipIds);if(auto)return auto;}
  const preparation=await db().prepare(`SELECT s.id,s.job_id FROM production_stages s JOIN production_jobs j ON j.id=s.job_id JOIN app_state a ON a.key='media_scope_v1:'||j.id WHERE j.id!=? AND ${testId?'j.is_test=1 AND j.id=?':'j.is_test=0'} ${exclude} AND ${CURRENT_PREPARATION_QUEUE_SQL} ORDER BY s.updated_at,s.id LIMIT 1`).bind(excludedJob,...(testId?[testId]:[]),...skipIds).first<{id:string;job_id:string}>();if(preparation)return {job:await getJob(preparation.job_id),kind:'preparation',stage_id:preparation.id,automatic_trigger:false};
@@ -78,8 +80,8 @@ export async function nextWork(testId?:string,excludeIds:string[]=[]){
  for(const promo of reconcile){const job=await reconcilablePromo(promo.id);if(job)return{job,kind:'promotion-package',package_id:promo.id,reconciliation_only:true,waiting_for:'original-completed-result-readback',automatic_trigger:false};}
  if(!testId){const post=await nextPostVideoPreparation(skipIds);if(post)return post;}
  const row=await db().prepare(`SELECT id FROM production_jobs j WHERE id!=? AND ${testId?'is_test=1 AND id=?':'is_test=0'} ${exclude} AND (
- ((status='waiting_executor' OR (status='running' AND lease_until<?)) AND ${cliContentCountSql('j','generation')}<6 AND reworks<=2 AND ${cliReadySql()} AND ${INTAKE_TEXT_GUARD_SQL} AND ${CURRENT_FEEDBACK_GUARD_SQL})
- OR(review_mode='auto' AND status IN ('awaiting_review','approved') AND ${cliReadySql()} AND ${CURRENT_FEEDBACK_GUARD_SQL} AND ${cliContentCountSql('j','review')}<8 AND EXISTS(SELECT 1 FROM production_milestones m WHERE m.job_id=j.id AND m.revision=j.revision AND m.mode_epoch=j.mode_epoch AND m.status='awaiting_ai' AND m.node IN ('source','script','cover','promotion','delivery')))
+ ((status='waiting_executor' OR (status='running' AND lease_until<?)) AND ${cliContentCountSql('j','generation')}<${continuationLimitSql('j','generation')} AND (reworks<=2 OR ${continuationSql('j')}) AND ${cliReadySql()} AND ${INTAKE_TEXT_GUARD_SQL} AND ${CURRENT_FEEDBACK_GUARD_SQL})
+ OR(review_mode='auto' AND status IN ('awaiting_review','approved') AND ${cliReadySql()} AND ${CURRENT_FEEDBACK_GUARD_SQL} AND ${cliContentCountSql('j','review')}<${continuationLimitSql('j','review')} AND EXISTS(SELECT 1 FROM production_milestones m WHERE m.job_id=j.id AND m.revision=j.revision AND m.mode_epoch=j.mode_epoch AND m.status='awaiting_ai' AND m.node IN ('source','script','cover','promotion','delivery')))
  OR(review_mode='auto' AND status IN ('awaiting_review','approved') AND ${cliReadySql()} AND ${CURRENT_FEEDBACK_GUARD_SQL} AND EXISTS(SELECT 1 FROM production_milestones m WHERE m.job_id=j.id AND m.revision=j.revision AND m.mode_epoch=j.mode_epoch AND m.status='ai_running' AND m.review_until<? AND m.node IN ('source','script','cover','promotion','delivery')))
  OR(status='approved' AND EXISTS(SELECT 1 FROM production_operations o WHERE o.job_id=j.id AND o.revision=j.revision AND o.script_hash=j.approved_hash AND o.mode_epoch=j.mode_epoch AND ${CURRENT_MEDIA_OPERATION_SQL} AND (o.status='queued' OR(o.status IN ('running','prepared') AND o.lease_until<? AND json_extract(o.checkpoint,'$.phase') LIKE 'local-files-ready%' AND json_array_length(json_extract(o.checkpoint,'$.files'))>0))))
  ) ORDER BY COALESCE((SELECT MAX(r.created_at) FROM production_reviews r WHERE r.job_id=j.id AND r.decision='execution_request' AND r.revision=j.revision AND json_extract(r.note,'$.binding.mode_epoch')=j.mode_epoch),'') DESC,created_at,id LIMIT 1`).bind(excludedJob,...(testId?[testId]:[]),...skipIds,Date.now(),Date.now(),Date.now()).first<{id:string}>();

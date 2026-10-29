@@ -8,7 +8,7 @@ import {readHiddenJsonInput} from './hidden-json-input.mjs';
 const readInput=()=>readHiddenJsonInput(process.stdin,{prompt:'Ready for media executor JSON on hidden stdin.'});
 const input=await readInput();
 const config=JSON.parse(input),origin=config.origin||'https://siounex-ai-topic-library.siounexzhao.chatgpt.site';if(origin!=='https://siounex-ai-topic-library.siounexzhao.chatgpt.site'&&!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin))throw Error('Unexpected destination');
-if(config.job_id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw Error('Claude owner-voice work is isolated in its original task; do not duplicate it');
+if(config.job_id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05')throw Error('Claude owner-voice work is isolated in its original task; do not duplicate it');
 async function call(body){const r=await fetch(origin+'/api/executor',{method:'POST',headers:{'Content-Type':'application/json','OAI-Sites-Authorization':`Bearer ${config.token}`},body:JSON.stringify(body),redirect:'error',signal:AbortSignal.timeout(30000)});return executorResponse(r)}
 const job=(await call({action:'read',id:config.job_id})).job;
 const proposed=config.operation_id?JSON.parse(job.operations.find(o=>o.id===config.operation_id)?.plan||'{}'):JSON.parse(fs.readFileSync(config.plan_file,'utf8'));if((config.node==='video'||job.operations.find(o=>o.id===config.operation_id)?.node==='video')&&!proposed.test_only){const ready=await checkToolDemonstration(job,{demonstration_check:proposed.demonstration_check});if(ready.blocked){console.log(JSON.stringify({status:'media-materials-blocked',problems:ready.problems,claimed:false}));process.stdin.destroy();process.exit(0);}}

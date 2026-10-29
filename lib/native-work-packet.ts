@@ -1,3 +1,4 @@
+import {ownerFeedbackContinuation} from './owner-feedback-continuation.mts';
 import {db} from './store';
 import {getJob} from './production';
 import {hash,ProductionError} from './production-contract';
@@ -28,7 +29,7 @@ export async function readNativeWorkPacket(id:string,owner?:string){
  try{scope=await nativeScopeContext(j)}catch(e){blockers.push((e as Error).message)}
  if(j.review_mode!=='node')blockers.push('原生成片须交人工审阅；本人切到人工模式并确认当前范围后再回传。');
  if(j.is_test)blockers.push('隔离验收任务不属于正式原生制作交接。');
- if(j.reworks>2)blockers.push('已达返工预算，需要本人另行处理；接收回执不会重置计数。');
+ if(j.reworks>2&&!ownerFeedbackContinuation(j))blockers.push('已达返工预算，需要本人另行处理；接收回执不会重置计数。');
  if(j.publication_reports?.length)blockers.push('已登记发布的任务保留原交付；不改写已发布视频。');
  if(latest?.status==='revise'&&!external){try{revision=await nativeOwnerRevisionContext(j)}catch(e){blockers.push((e as Error).message)}}
  else if(!['approved'].includes(j.status)&&!external)blockers.push('当前需先完成人工审核或恢复决定。');

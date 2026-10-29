@@ -9,7 +9,8 @@ const parsed=(v:any)=>{try{return typeof v==='string'?JSON.parse(v):v}catch{retu
 // all raw bytes in the original log/hash and reject every other non-JSON row.
 export function cliRejectionEvents(eventLog:string){
  const rows=String(eventLog).split(/\r?\n/).filter(s=>s.trim());let prefix=0;
- if(rows.length&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,9}Z ERROR codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit$/.test(rows[0]))prefix=1;
+ const startup=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,9}Z ERROR (?:codex_models_manager::manager: failed to refresh available models: timeout waiting for child process to exit|codex_skills_extension::host_service: failed to install system skills: io error while remove existing system skills dir: (?:拒绝访问。 \(os error 5\)|目录不是空的。 \(os error 145\)))$/;
+ const seen=new Set<string>();while(prefix<rows.length&&startup.test(rows[prefix])){const kind=rows[prefix].replace(/^\S+ ERROR /,'');if(seen.has(kind))break;seen.add(kind);prefix++;}
  const events=rows.slice(prefix).map(parsed);
  return{events,complete:events.length>0&&events.every(Boolean)&&(!prefix||events[0]?.type==='thread.started'&&events[1]?.type==='turn.started'),startup_diagnostic_count:prefix};
 }

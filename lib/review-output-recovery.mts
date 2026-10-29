@@ -1,11 +1,11 @@
-import {isFixedOutroSegment} from './storyboard-segments.mts';
+import {isFixedOutroSegment,isSilentClosingSegment} from './storyboard-segments.mts';
 import {cliContentBudget,CLI_CONTENT_LIMITS} from './cli-content-budget.mts';
 const digest=(v:unknown)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 export function reviewOutputRecoveryCandidate(j:any){
  const budget=cliContentBudget(j);
  // This reuses one already completed result and consumes no new call. Keep
  // raw counters intact; only the accepted zero-result ledger is discounted.
- if(j.review_mode!=='auto'||j.status!=='paused'||!Number.isInteger(j.ai_calls)||j.ai_calls<1||budget.content_ai_calls>CLI_CONTENT_LIMITS.aiCalls||j.reworks>CLI_CONTENT_LIMITS.reworks||!Number.isInteger(j.attempt)||budget.content_attempts>CLI_CONTENT_LIMITS.attempts||j.publication_reports?.length||j.lease_hash||j.lease_until!=null)return null;
+ if(j.review_mode!=='auto'||j.status!=='paused'||!Number.isInteger(j.ai_calls)||j.ai_calls<1||budget.content_ai_calls>budget.review_limit||j.reworks>budget.reworks_limit||!Number.isInteger(j.attempt)||budget.content_attempts>budget.attempt_limit||j.publication_reports?.length||j.lease_hash||j.lease_until!=null)return null;
  // A completed source review can be reused after an internal transport failure.
  // The exact original invocation must still be the current paused node; no
  // later user or system review decision may supersede the recorded failure.
@@ -17,7 +17,7 @@ export function reviewOutputRecoveryCandidate(j:any){
  const match=/^Cannot approve script with blocked text preflight: segments\[(\d+)\] 缺文字或具体可见画面$/.exec(j.error||'');if(!match)return null;
  const m=j.milestones?.filter((m:any)=>m.revision===j.revision&&m.node==='script').sort((a:any,b:any)=>b.artifact_version-a.artifact_version)[0];
  if(!m||m.status!=='paused'||m.mode_epoch!==j.mode_epoch||!m.invocation_id||m.review_token_hash||m.review_until!=null)return null;
- try{const report=JSON.parse(m.report),artifact=JSON.parse(m.artifact),index=Number(match[1]),story=artifact.storyboard,s=story?.[index];if(report.decision!=='pause'||report.reason!==j.error||!report.operation_id||!Array.isArray(story)||!isFixedOutroSegment(s,index,story)||typeof s.narration!=='string'||s.narration.trim()||typeof s.visual!=='string'||!s.visual.trim())return null;
+ try{const report=JSON.parse(m.report),artifact=JSON.parse(m.artifact),index=Number(match[1]),story=artifact.storyboard,s=story?.[index];if(report.decision!=='pause'||report.reason!==j.error||!report.operation_id||!Array.isArray(story)||!(isFixedOutroSegment(s,index,story)||isSilentClosingSegment(s,index,story))||typeof s.narration!=='string'||s.narration.trim()||typeof s.visual!=='string'||!s.visual.trim())return null;
   if(!j.reviews?.some((r:any)=>r.revision===j.revision&&r.content_hash===m.artifact_hash&&r.decision==='ai_review_error'&&r.reviewer==='codex-cli'&&r.note===m.report))return null;
   return m;
  }catch{return null;}

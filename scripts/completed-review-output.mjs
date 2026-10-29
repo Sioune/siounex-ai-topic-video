@@ -1,6 +1,8 @@
 // Reconcile immutable completed CLI evidence only. No model, network, or writes.
 import fs from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';
 import {reviewOutputRecoveryCandidate} from '../lib/review-output-recovery.mts';
+import {cliRejectionEvents} from '../lib/cli-failure-contract.mts';
+import {projectPreviousTextReviewPrompt} from './text-review-skill-context.mjs';
 const sha=v=>createHash('sha256').update(v).digest('hex'),canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 const marker='机器预检（不是语义批准，text_preflight与制作就绪独立）：',endMarker='\n不能用补报道署名';
 function replacePreflight(prompt,value){const start=prompt.indexOf(marker),end=prompt.indexOf(endMarker,start);if(start<0||end<0)throw Error('COMPLETED_REVIEW_PREFLIGHT_BOUNDARY_MISSING');return prompt.slice(0,start+marker.length)+JSON.stringify(value)+prompt.slice(end);}
@@ -10,7 +12,7 @@ export function reviewExecutionBinding(job,milestone,claim){return {job_id:job.i
 function checkedFile(file){const stat=fs.lstatSync(file);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>3000000)throw Error('COMPLETED_REVIEW_FILE_UNSAFE');return fs.readFileSync(file);}
 function terminalEvidence(dir,r,output){const processFile=path.join(dir,'cli-process/cli-process-exit.json'),eventFile=path.join(dir,'cli-process/cli-events.log'),processBytes=checkedFile(processFile),events=checkedFile(eventFile),p=JSON.parse(processBytes);
  if(p.error_code!=='CLI_COMPLETED'||p.exit_code!==0||p.result_unknown!==false||p.output_present!==true||p.timed_out||p.signal||p.spawn_error||p.termination_unconfirmed||p.tool_events!==0||p.output_sha256!==sha(output)||p.event_log_sha256!==sha(events)||canonical(r.cli_process)!==canonical(p))throw Error('COMPLETED_REVIEW_PROCESS_NOT_PROVEN');
- const parsed=events.toString('utf8').split(/\r?\n/).filter(Boolean).map(line=>JSON.parse(line));if(!parsed.some(e=>e.type==='turn.completed')||parsed.some(e=>/tool|command_execution|file_change|web_search/.test(String(e.type)+' '+String(e.item?.type))))throw Error('COMPLETED_REVIEW_TOOL_OR_TERMINAL_UNKNOWN');
+ const decoded=cliRejectionEvents(events.toString('utf8')),parsed=decoded.events;if(!decoded.complete||!parsed.some(e=>e.type==='turn.completed')||parsed.some(e=>/tool|command_execution|file_change|web_search/.test(String(e.type)+' '+String(e.item?.type))))throw Error('COMPLETED_REVIEW_TOOL_OR_TERMINAL_UNKNOWN');
  return {p,process_sha:sha(processBytes),events_sha:sha(events)};
 }
 export function findCompletedReviewOutput({root,job,milestone,currentPrompt,frontstage,choices,sourceHashes,imageHashes}){
@@ -19,7 +21,7 @@ export function findCompletedReviewOutput({root,job,milestone,currentPrompt,fron
  function inspect(dir,file){
   if(!['output.json','prompt.txt','cli-process/cli-process-exit.json','cli-process/cli-events.log'].every(name=>fs.existsSync(path.join(dir,name))))return;
   const execution=checkedFile(file),r=JSON.parse(execution);if(r.artifact_json_hash!==sha(milestone.artifact)||r.exit_code!==0)return;
-  const promptBytes=checkedFile(path.join(dir,'prompt.txt')),prompt=promptBytes.toString('utf8');if(milestone.node==='source'?prompt!==currentPrompt:!prompt.includes(marker)||replacePreflight(prompt,frontstage)!==currentPrompt)return;
+  const promptBytes=checkedFile(path.join(dir,'prompt.txt')),prompt=promptBytes.toString('utf8');if(milestone.node!=='source'&&!prompt.includes(marker))return;const comparable=milestone.node==='source'?prompt:replacePreflight(prompt,frontstage);if(comparable!==currentPrompt&&projectPreviousTextReviewPrompt(comparable,job,milestone.node)!==currentPrompt)return;
   const output=checkedFile(path.join(dir,'output.json')),key=sha(prompt+'\nreview-evidence-schema-v3\n'+JSON.stringify(choices)),proof=terminalEvidence(dir,r,output);
   if(r.prompt_sha256!==key||r.output_sha256!==sha(output)||proof.p.prompt_sha256!==sha(prompt)||canonical(r.source_hashes)!==canonical(sourceHashes)||canonical(r.image_hashes||[])!==canonical(imageHashes))throw Error('COMPLETED_REVIEW_FROZEN_INPUT_CHANGED');
   if(r.review_binding){if(!sameBinding(r.review_binding,job,milestone))throw Error('COMPLETED_REVIEW_JOB_BINDING_CHANGED');if(milestone.node==='source'){const intent=JSON.parse(checkedFile(path.join(dir,'review-execution-intent.json')));if(intent.schema!=='review-execution-intent-v1'||!sameBinding(intent.binding,job,milestone)||intent.prompt_sha256!==sha(prompt)||intent.schema_sha256!==sha(checkedFile(path.join(dir,'schema.json'))))throw Error('COMPLETED_REVIEW_INTENT_CHANGED');}}
