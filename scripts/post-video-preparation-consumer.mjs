@@ -29,6 +29,24 @@ export function postVideoLocalSources(job,plan,{root=process.cwd()}={}){
   if(video.size_bytes!==plan.base_video.size_bytes||project_archive&&(project_archive.sha256!==plan.project_archive?.sha256||project_archive.size_bytes!==plan.project_archive?.size_bytes))throw Error('POST_VIDEO_ARCHIVE_BINDING_CHANGED');
   return{video,project_archive,producer_project};
  }
+ // The normal owner-feedback correction has its own genuine result record and
+ // project identity. It is not a private-review producer receipt.
+ if(!cloneId&&plan.delivery_mode==='results-only'){
+  const corrections=path.resolve(root,'.sites-runtime/authorized-inputs',job.id,'revision-'+job.revision,'owner-feedback-correction');
+  if(fs.existsSync(corrections))for(const entry of fs.readdirSync(corrections,{withFileTypes:true}).filter(d=>d.isDirectory()&&/^[a-f0-9]{64}$/.test(d.name))){
+   const resultFile=path.join(corrections,entry.name,'correction-result.json');if(!fs.existsSync(resultFile))continue;
+   const r=JSON.parse(fs.readFileSync(resultFile,'utf8'));if(r.schema!=='owner-feedback-correction-result-v1'||r.input_hash!==entry.name||r.video_generated!==true||r.audio_generated!==true||!Array.isArray(r.missing)||r.missing.length||r.files?.find(f=>f.role==='video')?.sha256!==plan.base_video.sha256)continue;
+   if(['revision','script_hash','mode_epoch','contract_hash'].some(k=>r.binding?.[k]!==plan.binding[k])||r.binding?.scope_id!==plan.scope_id)throw Error('POST_VIDEO_CORRECTION_BINDING_CHANGED');
+   const get=role=>{const list=r.files.filter(f=>f.role===role);if(list.length!==1)throw Error('POST_VIDEO_CORRECTION_ROLE_CHANGED');return exactFile(list[0],root)},video=get('video'),producer_project=get('project'),correctionReceipt=get('render_receipt'),voice=get('voice'),p=JSON.parse(producer_project.bytes.toString('utf8'));
+   if(video.size_bytes!==plan.base_video.size_bytes||plan.binding.project_id!=='local:'+producer_project.sha256||plan.binding.timeline_id!=='local:'+correctionReceipt.sha256||p.schema!=='owner-feedback-correction-project-v1'||p.job_id!==job.id||canonical(p.binding)!==canonical(r.binding)||p.original_voice_sha256!==voice.sha256)throw Error('POST_VIDEO_CORRECTION_IDENTITY_CHANGED');
+   for(const originalDir of fs.readdirSync(parent,{withFileTypes:true}).filter(d=>d.isDirectory()&&/^[a-f0-9]{64}$/.test(d.name))){
+    const f=path.join(parent,originalDir.name,'producer-receipt.json');if(!fs.existsSync(f))continue;const original=JSON.parse(fs.readFileSync(f,'utf8')),ref=original.files?.find(x=>x.role==='project');
+    if(ref?.sha256!==p.original_project_sha256||original.files?.find(x=>x.role==='video')?.sha256!==p.original_video_sha256||original.files?.find(x=>x.role==='voice')?.sha256!==p.original_voice_sha256)continue;
+    const original_producer_project=exactFile(ref,root);return{video,project_archive:null,producer_project,original_producer_project};
+   }
+   throw Error('POST_VIDEO_CORRECTION_ORIGINAL_PROJECT_MISSING');
+  }
+ }
  throw Error('POST_VIDEO_CURRENT_LOCAL_RECEIPT_MISSING');
 }
 const releaseExpectations=plan=>({...(plan.delivery_mode?{delivery_mode:plan.delivery_mode}:{}),job_id:plan.job_id,binding:plan.binding,video:plan.base_video,project_archive:plan.project_archive,files:plan.files,promo_content_hash:plan.promo_content_hash,release_policy:plan.release_policy});
