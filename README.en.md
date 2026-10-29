@@ -4,7 +4,7 @@
 
 A source snapshot of an AI-assisted workflow for researching topics, preparing scripts, selecting media, editing and reviewing short videos, and organizing delivery materials. Human review remains part of the process.
 
-> **Scope:** This is a V330 source snapshot from October 28, 2026, for developers and creators to study and extend. It is not a turnkey hosted service or a complete production backup. The production workspace remains private. Production data, private videos, credentials, runtime state, and external service accounts are not included.
+> **Scope:** This source snapshot was updated on October 29, 2026, for study and extension. It is not a complete production backup. The update excludes private production data, credentials and videos; Site and task identifiers in the updated files are synthetic examples. See the [update notes](docs/handoff/update-2026-10-29.md).
 
 ![Conceptual topic-to-video workflow](docs/workflow.svg)
 
