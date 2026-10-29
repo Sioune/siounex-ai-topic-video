@@ -1,6 +1,7 @@
 import {reviewMotionFeedback} from './content-motion-feedback-review.mjs';
 import {reviewMotionRepeats} from './content-motion-repeat-review.mjs';
 import fs from 'node:fs';import path from 'node:path';
+import {randomUUID} from 'node:crypto';
 import sharp from 'sharp';
 import {CONTENT_MOTION_POLICY as policy,MOTION_REPORT_SCHEMA,MOTION_REPEAT_REVIEW_CONTRACT,motionSha as sha,motionCanonical as canonical,motionShotIssues,motionReportIssues,observationIntervals} from '../lib/content-motion-contract.mts';
 import {nodeStageLayout} from '../production/unified-runtime/node-stage-profiles.mjs';
@@ -25,6 +26,22 @@ export const actualMotionReviewSchema=obj({shots:{type:'array',items:obj({index:
 // unchecked, and only a complete clean review may create a passing report.
 export async function motionReviewWave(plans,execute){return Promise.allSettled(plans.map(execute));}
 export function motionSampleFrames(shot){const n=shot.end_frame-shot.start_frame;return n<=3?Array.from({length:n},(_,i)=>shot.start_frame+i):[...new Set([.18,.5,.82].map(t=>Math.min(shot.end_frame-1,shot.start_frame+Math.floor(n*t))))];}
+// Decode the source frame once for both views. Existing partial samples keep
+// the old one-output recovery path, and generated files are never overwritten.
+export async function extractMotionSample({frame,video,layout,png,gray,command=defaultCommand}){
+ const crop=`crop=${layout.width}:${layout.height}:${layout.x}:${layout.y},scale=640:360`;
+ if(!fs.existsSync(png)&&!fs.existsSync(gray)){
+  const nonce=randomUUID(),p=png+'.'+nonce+'.png',g=gray+'.'+nonce+'.gray';
+  try{
+   await command('ffmpeg',['-nostdin','-hide_banner','-v','error','-ss',String(frame/30),'-i',video,'-filter_complex_threads','1','-filter_complex',`[0:v]${crop},format=rgb24,split=2[png][g];[g]scale=160:90,format=gray[gray]`,'-map','[png]','-frames:v','1','-n',p,'-map','[gray]','-frames:v','1','-f','rawvideo','-n',g],180000);
+   if(!fs.existsSync(p)||!fs.existsSync(g)||fs.statSync(g).size!==160*90)throw Error('MOTION_SAMPLE_INCOMPLETE');
+   fs.linkSync(p,png);fs.linkSync(g,gray);
+  }finally{for(const f of [p,g])if(fs.existsSync(f))fs.unlinkSync(f);}
+ }else{
+  if(!fs.existsSync(png))await command('ffmpeg',['-nostdin','-hide_banner','-v','error','-ss',String(frame/30),'-i',video,'-vf',crop,'-frames:v','1','-n',png],180000);
+  if(!fs.existsSync(gray))await command('ffmpeg',['-nostdin','-hide_banner','-v','error','-i',png,'-vf','scale=160:90,format=gray','-frames:v','1','-f','rawvideo','-n',gray],180000);
+ }
+}
 export function motionRecipeContext(shots,inspection,batch){const recipes=[...new Set(batch.map(s=>s.recipe_index))],current=new Set(batch.map(s=>s.index));return recipes.flatMap(recipe_index=>{const related=shots.filter(s=>s.recipe_index===recipe_index);if(related.every(s=>current.has(s.index)))return [];return [0,Math.floor(related.length/2),related.length-1].map(i=>related[i]).filter((s,i,a)=>a.findIndex(v=>v.index===s.index)===i).map(s=>({recipe_index,index:s.index,file:inspection[s.index].samples[Math.floor(inspection[s.index].samples.length/2)].file}));});}
 export function knownTextCardGaps(observations,shots){
  return observations.filter(o=>o.text_only===true||o.classification==='text-only').map(o=>{const s=shots.find(s=>s.index===o.index);if(!s)fail('MOTION_ACTUAL_FRAME_REVIEW_REQUIRED');return{code:'MOTION_EXPORTED_TEXT_CARD',classification:'text-only',shot:o.index,task_index:s.task_index,source_sha256:s.source_sha256,source_start_frame:s.source_start_frame,source_end_frame:s.source_start_frame+s.end_frame-s.start_frame,detail:'第'+(s.task_index+1)+'段，'+(s.start_frame/30).toFixed(1)+'–'+(s.end_frame/30).toFixed(1)+'秒实际为禁止的文字镜头：'+String(o.what_changed||'').slice(0,1200)+'；保留原稿和完整音轨，替换该镜头。'};});
@@ -122,8 +139,7 @@ async function inspectExport({job,project,video,project_sha256,output_dir},{comm
  for(const shot of shots){const frames=motionSampleFrames(shot);if(!frames.length)fail('MOTION_TIMELINE_GAP');
   const samples=[];for(const [i,frame]of frames.entries()){
    const stem=path.join(dir,`shot-${shot.index}-${i}`),png=stem+'.png',gray=stem+'.gray',g=layout.source;
-   if(!fs.existsSync(png))await command('ffmpeg',['-nostdin','-hide_banner','-v','error','-ss',String(frame/30),'-i',video.path||video.file,'-vf',`crop=${g.width}:${g.height}:${g.x}:${g.y},scale=640:360`,'-frames:v','1','-n',png],180000);
-   if(!fs.existsSync(gray))await command('ffmpeg',['-nostdin','-hide_banner','-v','error','-i',png,'-vf','scale=160:90,format=gray','-frames:v','1','-f','rawvideo','-n',gray],180000);
+   await extractMotionSample({frame,video:video.path||video.file,layout:g,png,gray,command});
    samples.push({frame,file:png,sha256:sha(fs.readFileSync(png)),gray_sha256:sha(fs.readFileSync(gray)),pixels:fs.readFileSync(gray)});
   }
   const measurements=samples.slice(1).map((s,i)=>pixelMotion(samples[i].pixels,s.pixels,{mechanism:shot.kind==='mechanism'}));
