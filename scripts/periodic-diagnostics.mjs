@@ -55,9 +55,8 @@ const canonical=value=>JSON.stringify(value,(_,x)=>x&&typeof x==='object'&&!Arra
 const validStationJob=id=>typeof id==='string'&&/^job_[a-f0-9-]{36}$/.test(id);
 const stationCount=n=>Number.isSafeInteger(n)&&n>=0&&n<=2048;
 export function safeWorkstationSnapshot(value){
- // Old runs truthfully contain the original five stations. Do not invent a
- // copy station for their historical observations.
- const names=value?.stations&&!Object.hasOwn(value.stations,'copy')?PRODUCTION_STATIONS.filter(name=>name!=='copy'):PRODUCTION_STATIONS;
+ // Historical runs predate copy and narration stations; retain their actual snapshots.
+ const names=PRODUCTION_STATIONS.filter(name=>!['copy','narration'].includes(name)||Object.hasOwn(value?.stations||{},name));
  if(!value||!names.every(name=>{
   const s=value.stations?.[name];return s&&s.capacity===1&&(s.active===null||validStationJob(s.active))&&Array.isArray(s.waiting)&&s.waiting.length<=16&&s.waiting.every(validStationJob)&&[0,1].includes(s.max_active)&&['started','finished','failed','deferred'].every(k=>stationCount(s[k]));
  })||!['active_count','waiting_count','max_active'].every(k=>stationCount(value[k]))||value.active_count>names.length||value.max_active>names.length||typeof value.observed_parallel!=='boolean')return null;
@@ -77,7 +76,7 @@ export function writePeriodicWorkstationSnapshot(runId,value){
 export function readPeriodicWorkstationPhase(runId){
  if(!runId)return null;
  try{const file=path.join(runDirectory(runId),'workstation-current.json'),stat=fs.lstatSync(file);if(stat.isSymbolicLink()||!stat.isFile()||stat.size>32000)return null;const state=JSON.parse(fs.readFileSync(file,'utf8')),snapshot=safeWorkstationSnapshot(state.workstations);if(state.schema!=='production-workstation-current-v1'||state.run_id!==runId||!snapshot)return null;
-  const labels={preparation:'备料',voice:'配音',render:'合成',assets:'封面材料',archive:'回站',copy:'专稿'},active=Object.entries(snapshot.stations).filter(([,station])=>station.active!==null).map(([name])=>labels[name]);
+  const labels={preparation:'备料',voice:'本人声音配音',narration:'普通旁白',render:'合成',assets:'封面材料',archive:'回站',copy:'专稿'},active=Object.entries(snapshot.stations).filter(([,station])=>station.active!==null).map(([name])=>labels[name]);
   return active.length||snapshot.waiting_count?'工位占用：'+(active.join('、')||'无')+'；排队 '+snapshot.waiting_count+' 项':'工位已空闲；核对后续任务';
  }catch{return null;}
 }

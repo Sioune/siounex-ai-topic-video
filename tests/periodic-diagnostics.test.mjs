@@ -74,3 +74,9 @@ test('promotion completion and confirmed 429 return statuses survive safe per-jo
 test('correlation is bounded to owned run directory and successful business failure changes scheduler exit status',()=>{
  const id='2000-01-01T00-00-00.000Z-00000000-0000-0000-0000-000000000001';writePeriodicResult(id,{phase:'failed',failure:{code:'CLI_FAILED_OR_DEADLINE'}});const r=JSON.parse(fs.readFileSync('.sites-runtime/periodic-runs/'+id+'/autonomous-pass-result.json'));assert.equal(r.run_id,id);assert.equal(r.failure.code,'CLI_FAILED_OR_DEADLINE');assert.throws(()=>writePeriodicResult('../../escape',{}));const wrapper=fs.readFileSync('scripts/native-scheduled-worker.mjs','utf8');assert.ok(wrapper.includes('process.exitCode=2'));assert.ok(wrapper.includes('runId:run_id'));assert.ok(fs.readFileSync('scripts/bounded-workflow-child.mjs','utf8').includes('periodic_run_id:runId'));
 });
+
+test('historical six-station snapshots remain readable without inventing narration',()=>{
+ const stations=createProductionWorkstations();const current=stations.snapshot();delete current.stations.narration;
+ assert.deepEqual(safeWorkstationSnapshot(current),current);assert.equal(Object.hasOwn(safeWorkstationSnapshot(current).stations,'narration'),false);
+ delete current.stations.copy;assert.deepEqual(safeWorkstationSnapshot(current),current);
+});

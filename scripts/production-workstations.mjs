@@ -1,6 +1,6 @@
 // One finite worker owns these in-process queues. Persistent job claims and
 // unknown-result reconciliation remain the responsibility of each consumer.
-export const PRODUCTION_STATIONS=Object.freeze(['preparation','voice','render','assets','archive','copy']);
+export const PRODUCTION_STATIONS=Object.freeze(['preparation','voice','render','assets','archive','copy','narration']);
 export const PRODUCTION_STATION_MIN_BUDGET_MS=60000;
 const MAX_TIMER_MS=2147483647;
 const failure=code=>Object.assign(Error(code),{code});
