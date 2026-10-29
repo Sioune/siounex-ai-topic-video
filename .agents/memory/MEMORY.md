@@ -1,0 +1,2 @@
+- [Migration runtime pitfalls](migration-runtime.md) — Vite import-order and SQLite batch semantics differ from the imported host.
+- [Public product direction](public-product-direction.md) — 用户要求从 Codex Sites 私人系统转向通用认证，业务能力支持 BYOK 或自有 GPT 桥接。

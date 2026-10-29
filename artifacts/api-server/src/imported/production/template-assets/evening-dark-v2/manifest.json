@@ -1,0 +1,112 @@
+{
+  "schema": "owner-approved-stage-template-source-v1",
+  "template_id": "evening-dark",
+  "template_version": 1,
+  "runtime": "evening-dark-v2",
+  "layout_profile": "approved-node-stage-v2",
+  "layout_identity": {
+    "profile": "approved-node-stage-v2",
+    "version": "subtitle-breathing-room-v1",
+    "sha256": "675c8c8626e438ef8f1952ab45dcc5a34f0af28ec55fbb8c3c63a830e31191b4"
+  },
+  "time_slot": "18:00",
+  "timezone": "Asia/Shanghai",
+  "body_tone": "dark",
+  "outro": {
+    "version": "v5",
+    "variant": "light",
+    "frames": 119,
+    "fps": 30,
+    "preserve_original_audio": true
+  },
+  "approval_evidence": "2026-10-22 本人认可浅底视觉方向，要求深浅两版一起下移字幕并增加上下留白；已按 source.y=474、caption.y=1136、chapter.y=1228 修订预览，本人要求全面修复并固化早08浅底/晚18深底。此模板认可不代替每条内容人工审核。",
+  "files": [
+    {
+      "path": "production/unified-runtime/mechanism-v1.json",
+      "sha256": "a0735d1ce0709ecc419d337094a291c542e72b08a0172a1a3de021ab774ef174",
+      "size_bytes": 2123
+    },
+    {
+      "path": "production/unified-runtime/font-profile-windows.json",
+      "sha256": "d6776958956ec4a3103f9923a1139a10363460ac97262985657586ae0c417c0e",
+      "size_bytes": 682
+    },
+    {
+      "path": "production/unified-runtime/render-v9.mjs",
+      "sha256": "943cd032ec7e8a06d472eb225e0c196365766d0fbf5098d5ed3938ac99e8372d",
+      "size_bytes": 19004
+    },
+    {
+      "path": "production/unified-runtime/stage-themes.mjs",
+      "sha256": "09d3c94c4a96958a347b340a539487e520060baa39de9947e56a8d44f52e2c9c",
+      "size_bytes": 5562
+    },
+    {
+      "path": "production/unified-runtime/node-stage-layout.mjs",
+      "sha256": "1ac739924199aa5e5b0794d0a5aa2fae1dfcdc16c2aa0f20fbf110fcca6c7d27",
+      "size_bytes": 4768
+    },
+    {
+      "path": "production/unified-runtime/node-stage-profiles.mjs",
+      "sha256": "3347a016293be40049624b573d7da3b353f6b8dc62a993e5c3991aa82273714f",
+      "size_bytes": 516
+    },
+    {
+      "path": "production/unified-runtime/node-stage-layout-v2.json",
+      "sha256": "675c8c8626e438ef8f1952ab45dcc5a34f0af28ec55fbb8c3c63a830e31191b4",
+      "size_bytes": 1771
+    },
+    {
+      "path": "production/unified-runtime/concat-video.mjs",
+      "sha256": "4016bb70080f56dfe15060b5c5ea3741ca9e5dbc62e9cadb1602f4536a1b8079",
+      "size_bytes": 6911
+    },
+    {
+      "path": "production/unified-runtime/title-layout.mjs",
+      "sha256": "d7d6ba62d57416a5eae8781ba15039a75cd516ffe7737d613139147f6f3681b3",
+      "size_bytes": 5081
+    },
+    {
+      "path": "production/unified-runtime/time-format.mjs",
+      "sha256": "08c239f19542b4e01180515591cf19ff11690a1ae98fb75e725b749fc7f16648",
+      "size_bytes": 429
+    },
+    {
+      "path": "production/template-layout-identity.json",
+      "sha256": "712c065de39034e4c13913061b39f6e1d6b723511edbb9093789a85aff7fb0e5",
+      "size_bytes": 165
+    },
+    {
+      "path": "production/outro-v5-assets.json",
+      "sha256": "2d1fec147d7b1c98705983325cdae3c001bd76613def8d28620e30a619e38248",
+      "size_bytes": 2685
+    },
+    {
+      "path": "production/template-assets/shared/source-package.json",
+      "sha256": "1f37f15e20e89f8b4ad701ea2225dfb6ad6370edfe63a848f31968eb89dc9026",
+      "size_bytes": 2249
+    },
+    {
+      "path": "production/template-assets/shared/source-package-lock.json",
+      "sha256": "2e2d182c5353526d7605747e1675d21272cba3e6c1cef17b0c1f41aa28232949",
+      "size_bytes": 504496
+    },
+    {
+      "path": "production/assets/outro-v5/outro_v5_light.mp4",
+      "sha256": "ecf340df7c4335e7264fae5c3b4a9c0525f57e2625ead3468cf0866e7de443f1",
+      "size_bytes": 7273934
+    }
+  ],
+  "external_requirements": {
+    "node": ">=22",
+    "sharp": "version pinned by package-lock.json",
+    "ffmpeg": "libass, libx264 and ffprobe available on PATH",
+    "fonts": "Font bytes must match font-profile-windows.json; fonts are not redistributed"
+  },
+  "scope": "New production selections only; preserve frozen older projects, media, approvals and release packages.",
+  "source_dependency_snapshot": {
+    "package_json": "production/template-assets/shared/source-package.json",
+    "package_lock_json": "production/template-assets/shared/source-package-lock.json",
+    "scope": "Exact original source-build dependency snapshots. These files are not the executor host package configuration and must never overwrite host package.json/package-lock.json; validate the installed host environment separately."
+  }
+}

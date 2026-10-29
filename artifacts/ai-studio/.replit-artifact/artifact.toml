@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "怎么用好AI · 选题库"
+description = "私人 AI 选题与视频制作工作台，保留资料采集、选题研究、制作和发布管理流程。"
+version = "1.0.0"
+id = "artifacts/ai-studio"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22936
+
+[services.development]
+run = "pnpm --filter @workspace/ai-studio run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ai-studio", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ai-studio/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22936"
+BASE_PATH = "/"

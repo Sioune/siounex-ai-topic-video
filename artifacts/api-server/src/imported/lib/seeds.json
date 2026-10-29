@@ -1,0 +1,174 @@
+[
+  {
+    "id": "google-playground-20261007",
+    "title": "说一句话，AI就能做出可以玩的小游戏？",
+    "sourceName": "Google 官方博客",
+    "sourceUrl": "https://blog.google/innovation-and-ai/technology/ai/playground-experimental-gaming-platform/",
+    "publishedAt": "2026-10-07",
+    "category": "可实操·游戏",
+    "summary": "Google发布实验性Playground，可通过文字描述生成、修改与分享浏览器游戏，支持部分类型的多人游戏。",
+    "hook": "把童年最离谱的游戏脑洞，现场变成一个能玩的关卡。",
+    "visualIdeas": [
+      "录屏展示一句提示到实际试玩",
+      "同一关卡连续修改重力、角色和规则"
+    ],
+    "evidenceCaveat": "首发面向美国18岁以上用户，创作权限按Google One会员分层开放；Unity Spark仍在测试，不能写成已经全面开放或永久免费。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_videos/PLAYGROUND_CREATE_SCRATCH.mp4",
+    "primaryMediaType": "video",
+    "freshness": "新近"
+  },
+  {
+    "id": "mit-instructmesh-20261001",
+    "title": "AI画的杯子装不了水？这次能改完再打印",
+    "sourceName": "MIT News / MIT CSAIL",
+    "sourceUrl": "https://news.mit.edu/2026/instructmesh-tool-lets-users-repair-ai-3d-models-then-fabricate-them-1001",
+    "publishedAt": "2026-10-01",
+    "category": "视觉·3D制作",
+    "summary": "InstructMesh把3D生成与语言模型结合，用户可选中局部、用自然语言修复设计，再制造实物。研究展示龙形杯、贝壳口哨等作品。",
+    "hook": "AI做出的东西，终于不只是看着能用？拿一个杯子来验货。",
+    "visualIdeas": [
+      "龙形杯从模型修改到实物的对照",
+      "用简单动画解释好看与能装水的区别"
+    ],
+    "evidenceCaveat": "属于研究系统；新闻发布于10月1日，不应据此声称当天首次公开。用户测试结果仅适用于该研究设计，尚未确认人人可直接使用的公开产品。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://www.youtube.com/watch?v=CYf9aR0sVf0",
+    "primaryMediaType": "official-embedded-video",
+    "freshness": "新近"
+  },
+  {
+    "id": "hf-open-tts-20260930",
+    "title": "AI配音别只看榜单，用耳朵做一次中文盲测",
+    "sourceName": "Hugging Face 官方博客",
+    "sourceUrl": "https://huggingface.co/blog/open-tts-leaderboard",
+    "publishedAt": "2026-09-30",
+    "category": "听觉·可实操",
+    "summary": "Open TTS Leaderboard集中比较开源多语言语音模型，提供可听样本、语音克隆筛选，以及准确度、速度和说话人相似度指标。",
+    "hook": "这几段AI中文，哪一段最像真人？先听，再揭晓模型。",
+    "visualIdeas": [
+      "对相同中文文本播放A/B样本",
+      "分别打分自然度、情绪和读错字，最后对照榜单"
+    ],
+    "evidenceCaveat": "客观指标不等于好听或像真人，英文排名不能直接代表中文；试听入口已找到，单独音频文件和再利用许可待核实，投票需登录。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://huggingface.co/spaces/hf-audio/open_tts_leaderboard",
+    "primaryMediaType": "interactive-audio-demo",
+    "freshness": "新近"
+  },
+  {
+    "id": "mit-ataraxos-20260930",
+    "title": "看不见你的棋子，AI为什么还能赢？",
+    "sourceName": "MIT News",
+    "sourceUrl": "https://news.mit.edu/2026/game-playing-ai-stratego-new-champ-0930",
+    "publishedAt": "2026-09-30",
+    "category": "趣味·游戏研究",
+    "summary": "Ataraxos结合自我对弈与落子前规划，在隐藏棋子身份的Stratego中战胜顶尖人类玩家，研究还测试了Hanabi与斗地主等游戏。",
+    "hook": "如果双方棋子都盖着，AI还能靠什么赢你？",
+    "visualIdeas": [
+      "自制盖住身份的棋盘动画",
+      "先让观众猜一步，再解释AI如何估计风险"
+    ],
+    "evidenceCaveat": "不要说成AI首次学会Stratego；此前已有DeepNash。游戏结果不能直接证明现实谈判或军事决策能力。当前仅找到官方配图。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://news.mit.edu/sites/default/files/images/202609/MIT-SuperHumanStratego-01-press.jpg",
+    "primaryMediaType": "image",
+    "freshness": "新近"
+  },
+  {
+    "id": "google-diffusion-controller-20260929",
+    "title": "让蜥蜴戴上墨镜，AI为什么总听漏一句？",
+    "sourceName": "Google Research",
+    "sourceUrl": "https://research.google/blog/how-diffusion-controller-unifies-and-simplifies-ai-image-generation/",
+    "publishedAt": "2026-09-29",
+    "category": "视觉·研究解读",
+    "summary": "Diffusion Controller研究用附加控制网络引导图像生成，试图同时改善提示遵循和画面质量，官方提供猫、鸟、蜥蜴的对照图。",
+    "hook": "我只要求蜥蜴戴墨镜，为什么AI不是忘了墨镜，就是画崩了脸？",
+    "visualIdeas": [
+      "对照有无墨镜与脸部失真的示例",
+      "用方向盘比喻生成过程中不断纠偏"
+    ],
+    "evidenceCaveat": "主要实验基于Stable Diffusion v1.4；不能说成已能给任意商业闭源图片API安装的通用插件，也不能把单项胜率当全部质量指标。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://storage.googleapis.com/gweb-research2023-media/images/DiffusionController1_VisualMatrix.width-1250.jpg",
+    "primaryMediaType": "image",
+    "freshness": "新近"
+  },
+  {
+    "id": "google-video-codirector-20260924",
+    "title": "AI拍到第十分钟，主角还能不换脸吗？",
+    "sourceName": "Google Research",
+    "sourceUrl": "https://research.google/blog/coherent-long-form-video-generation/",
+    "publishedAt": "2026-09-24",
+    "category": "视觉·AI影片",
+    "summary": "Google介绍多智能体视频研究，利用分镜与视觉记忆保持跨镜头的人物、道具和场景连续性，并展示十分钟影片及修复前后对照。",
+    "hook": "先找穿帮：为什么AI一切镜头，拉小提琴的人就变了？",
+    "visualIdeas": [
+      "官方小提琴与钢琴演奏者的前后对照",
+      "跨多个时间点比对主角衣服、道具和场景"
+    ],
+    "evidenceCaveat": "这是多篇研究框架与示例，不是已普遍开放的一键十分钟电影产品；稳定性提升不能写成所有视频都不会穿帮。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://storage.googleapis.com/gweb-research2023-media/media/AI-video-co-director4_violinist.mp4",
+    "primaryMediaType": "video",
+    "additionalMediaUrl": "https://www.youtube.com/watch?v=jaLZK8Zb6Kc",
+    "freshness": "新近"
+  },
+  {
+    "id": "google-suncatcher-20260924",
+    "title": "把AI送进太空，真能解决用电难题吗？",
+    "sourceName": "Google 官方博客 / Google Research",
+    "sourceUrl": "https://blog.google/innovation-and-ai/models-and-research/google-research/google-project-suncatcher-facts/",
+    "publishedAt": "2026-09-24",
+    "category": "好奇心·太空",
+    "summary": "Project Suncatcher公布太空计算测试进展与视频系列，准备借原型卫星测试TPU，同时讨论辐射、散热和星间连接难题。",
+    "hook": "太空里阳光多，但没有空气，AI芯片怎么散热？",
+    "visualIdeas": [
+      "卫星、太阳能板与地面机房对照",
+      "用动画解释真空中不能依靠空气对流散热"
+    ],
+    "evidenceCaveat": "长期研究计划，原文说安排首次在轨测试，不能写成太空AI数据中心已经建成；电力潜力不等于经济可行性已证实。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://www.youtube.com/watch?v=o1JK79jszqo",
+    "primaryMediaType": "official-embedded-video",
+    "freshness": "新近"
+  },
+  {
+    "id": "google-gemini-tts-20260923",
+    "title": "给AI一句导演指令，能配出一条龙的声音？",
+    "sourceName": "Google 官方博客 / Gemini Audio",
+    "sourceUrl": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-8-text-to-speech/",
+    "publishedAt": "2026-09-23",
+    "category": "听觉·角色创作",
+    "summary": "Gemini 3.8 TTS支持用文字设计角色音色、逐句安排表演与双人对话，官方展示DJ、机械机器人和日语龙角色的声音。",
+    "hook": "同一句台词，让AI分别当DJ、机器人和一条龙。",
+    "visualIdeas": [
+      "三种角色音色连播",
+      "同一句话比较耳语、叹气与夸张表演"
+    ],
+    "evidenceCaveat": "以官方演示为依据，实际地区、账号和费用需实测；声音复制需要权利与同意验证，并有地区限制，不能随意克隆真人。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_videos/AudioWaveform-Blue_JapaneseDragon.mp4",
+    "primaryMediaType": "audio-demo-video",
+    "freshness": "新近"
+  },
+  {
+    "id": "google-notebook-video-20260915",
+    "title": "把一篇难懂的资料，变成60秒动画课？",
+    "sourceName": "Google 官方博客 / Gemini Notebook",
+    "sourceUrl": "https://blog.google/innovation-and-ai/products/gemini-notebook/new-study-tools-september-2026/",
+    "publishedAt": "2026-09-15",
+    "category": "可实操·学习",
+    "summary": "Gemini Notebook宣布约60秒的Short Video Overviews，用讲解与教育动画呈现资料，支持80多种语言，并新增学习互动功能。",
+    "hook": "不让AI凭空编，给它一篇资料，看它能不能做成一分钟动画。",
+    "visualIdeas": [
+      "原文段落与生成动画并排",
+      "逐项核对动画是否漏掉条件或编出事实"
+    ],
+    "evidenceCaveat": "不同功能分批开放，实时语音首批限Ultra等账号；不要将公告中的所有功能写成人人已可用。学生优惠存在资格与自动续费条件，不宜顺带宣称无条件免费。",
+    "mediaAvailability": "已找到",
+    "primaryMediaUrl": "https://storage.googleapis.com/gweb-uniblog-publish-prod/original_videos/Gemini_Notebook_BTS__Short_Video_Overviews.mp4",
+    "primaryMediaType": "video",
+    "freshness": "新近"
+  }
+]

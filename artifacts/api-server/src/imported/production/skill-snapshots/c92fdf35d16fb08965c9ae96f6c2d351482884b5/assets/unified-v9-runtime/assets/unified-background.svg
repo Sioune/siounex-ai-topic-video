@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1920" viewBox="0 0 1080 1920">
+<defs>
+ <linearGradient id="room" x1="0" y1="0" x2="0.8" y2="1"><stop stop-color="#f8fafc"/><stop offset=".45" stop-color="#dbe4ec"/><stop offset="1" stop-color="#adbfcc"/></linearGradient>
+ <radialGradient id="light"><stop stop-color="#ffffff" stop-opacity=".98"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
+ <linearGradient id="titanium" x1="0" y1="0" x2="1" y2=".76"><stop stop-color="#788f9f"/><stop offset=".11" stop-color="#c9d5de"/><stop offset=".28" stop-color="#f9fcff"/><stop offset=".44" stop-color="#a7bbc9"/><stop offset=".53" stop-color="#f7fbff"/><stop offset=".68" stop-color="#d7e2e9"/><stop offset=".82" stop-color="#829ead"/><stop offset="1" stop-color="#edf4f8"/></linearGradient>
+ <linearGradient id="frame" x1="0" y1="0" x2=".82" y2="1"><stop stop-color="#ffffff"/><stop offset=".16" stop-color="#c8d4de"/><stop offset=".43" stop-color="#f4f8fb"/><stop offset=".63" stop-color="#a1b5c4"/><stop offset=".74" stop-color="#f8fbfe"/><stop offset="1" stop-color="#8aa5b8"/></linearGradient>
+ <linearGradient id="glass" x1="0" y1="0" x2=".95" y2="1"><stop stop-color="#f7fbfe" stop-opacity=".94"/><stop offset=".48" stop-color="#dce8ef" stop-opacity=".86"/><stop offset="1" stop-color="#eaf2f7" stop-opacity=".95"/></linearGradient>
+ <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#fbffff"/><stop offset=".45" stop-color="#c8d7e0"/><stop offset=".8" stop-color="#f7ffff"/><stop offset="1" stop-color="#6e92a8"/></linearGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#eff5f9"/><stop offset=".3" stop-color="#a8bdcc"/><stop offset=".53" stop-color="#f7fbfd"/><stop offset=".8" stop-color="#b1c5d3"/><stop offset="1" stop-color="#6f8ba0"/></linearGradient>
+ <filter id="soft"><feGaussianBlur stdDeviation="46"/></filter>
+ <filter id="shadow" x="-40%" y="-40%" width="180%" height="200%"><feDropShadow dx="0" dy="26" stdDeviation="24" flood-color="#446375" flood-opacity=".28"/></filter>
+ <filter id="ringShadow" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="16" dy="26" stdDeviation="15" flood-color="#456476" flood-opacity=".28"/></filter>
+ <filter id="micro"><feTurbulence type="fractalNoise" baseFrequency=".47" numOctaves="2" seed="9"/><feColorMatrix type="saturate" values="0"/><feComponentTransfer><feFuncA type="linear" slope=".026"/></feComponentTransfer></filter>
+</defs>
+<rect width="1080" height="1920" fill="url(#room)"/>
+<ellipse cx="170" cy="330" rx="930" ry="740" fill="url(#light)"/>
+<ellipse cx="850" cy="1540" rx="710" ry="650" fill="#6bafca" opacity=".08" filter="url(#soft)"/>
+
+<!-- Broad glass ribbons and distant architectural shadows, never source UI. -->
+<path d="M-270 690 C80 530 170 1760 -160 1970" fill="none" stroke="url(#titanium)" stroke-width="115" opacity=".48"/>
+<path d="M1130 470 C1540 880 1420 1460 1050 1700" fill="none" stroke="url(#titanium)" stroke-width="130" opacity=".65"/>
+<path d="M1120 470 C1530 870 1420 1440 1040 1680" fill="none" stroke="#faffff" stroke-width="2" opacity=".8"/>
+<rect width="1080" height="1920" filter="url(#micro)" opacity=".48"/>
+</svg>

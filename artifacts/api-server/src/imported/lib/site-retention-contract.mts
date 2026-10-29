@@ -1,0 +1,6 @@
+export type ArchiveRetentionFacts={rule:'current-final-per-role';status:'pending'|'partial'|'complete'|'failed'|'protected';deleted:{site_archive_id:string;sha256:string;deleted_at:string;current_archive_id:string;policy_id:string}[];protected:{site_archive_id:string;reason:string}[];pending_count:number;last_error?:string};
+export function archiveRetentionFacts(reviews:Record<string,unknown>[]=[]):ArchiveRetentionFacts|undefined{
+ const rows=reviews.filter(r=>r.decision==='site_retention_status_v1').flatMap(r=>{try{const v=JSON.parse(String(r.note));return v.rule==='current-final-per-role'?[{...v,at:String(r.created_at)}]:[]}catch{return[]}}).sort((a,b)=>b.at.localeCompare(a.at));
+ if(!rows.length)return;rows.sort((a,b)=>b.at.localeCompare(a.at)||Number(b.sequence||0)-Number(a.sequence||0));const current=rows[0],deleted=reviews.filter(r=>r.decision==='site_archive_deleted_v1').flatMap(r=>{try{const v=JSON.parse(String(r.note));return v.status==='deleted'&&v.physical_absence_verified===true?[{site_archive_id:v.site_archive_id,sha256:v.sha256,deleted_at:v.deleted_at,current_archive_id:v.current_archive_id,policy_id:v.policy_id}]:[]}catch{return[]}});
+ return{rule:'current-final-per-role',status:current.status,deleted,protected:current.protected||[],pending_count:current.pending_count||0,...(current.last_error?{last_error:current.last_error}:{})};
+}

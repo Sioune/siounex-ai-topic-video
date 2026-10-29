@@ -1,0 +1,27 @@
+import {db,siteArchiveBucket} from './store';
+import {ProductionError} from './production-contract';
+import {outroV6Migration} from './outro-upgrade-contract.mts';
+import {createHash} from 'node:crypto';
+const sha=(b:Uint8Array|string)=>createHash('sha256').update(b).digest('hex');
+export const upgradeKey=(owner:string,m:any)=>'outro_v6_upgrade_v1:'+owner+':'+m.job_id+':'+m.source.sha256;
+const partKey=(owner:string,m:any,n:number)=>'outro-v6-upgrade/'+sha(owner)+'/'+m.file.sha256+'/part-'+n;
+export async function activeV6Upgrade(owner:string,m:any){const row=await db().prepare('SELECT value FROM app_state WHERE key=?').bind(upgradeKey(owner,m)).first<{value:string}>();if(!row)return false;const a=JSON.parse(row.value);return a.owner_id===owner&&a.job_id===m.job_id&&a.source_sha256===m.source.sha256&&a.video_sha256===m.file.sha256&&a.manifest_sha256===m.manifest_sha256;}
+export async function validateV6StagedBytes(owner:string,m:any){const hash=createHash('sha256');let size=0;for(let n=0;n<m.file.parts.length;n++){const part=await siteArchiveBucket().get(partKey(owner,m,n));if(!part)throw new ProductionError('V6成片文件尚未回传完整',409);const bytes=new Uint8Array(await part.arrayBuffer());if(bytes.length!==Math.min(m.file.part_size,m.file.size_bytes-n*m.file.part_size)||sha(bytes)!==m.file.parts[n])throw new ProductionError('V6成片分片校验失败',409);hash.update(bytes);size+=bytes.length;}if(size!==m.file.size_bytes||hash.digest('hex')!==m.file.sha256)throw new ProductionError('V6完整成片校验失败',409);return{sha256:m.file.sha256,size_bytes:size,full_private_readback_verified:true};}
+export async function stageV6OutroParts(owner:string,b:any){
+ const m=outroV6Migration(b.job_id);if(!m||!Array.isArray(b.parts)||b.parts.length<1||b.parts.length>4)throw new ProductionError('V6换尾文件或分片参数无效',400);
+ const j=await db().prepare('SELECT id FROM production_jobs WHERE id=? AND owner_id=? AND is_test=0 AND revision=? AND mode_epoch=? AND contract_hash=? AND approved_hash=?').bind(m.job_id,owner,m.revision,m.mode_epoch,m.contract_hash,m.script_hash).first();if(!j)throw new ProductionError('V6文件的任务所有权或原稿已变化',409);
+ const receipts=[];for(const p of b.parts){if(!Number.isSafeInteger(p.part)||p.part<0||p.part>=m.file.parts.length||typeof p.chunk_base64!=='string'||p.chunk_base64.length>349528)throw new ProductionError('V6文件分片无效',400);const bytes=Buffer.from(p.chunk_base64,'base64');if(bytes.toString('base64')!==p.chunk_base64||bytes.length!==Math.min(m.file.part_size,m.file.size_bytes-p.part*m.file.part_size)||sha(bytes)!==m.file.parts[p.part])throw new ProductionError('V6分片与已核验技术替换成片不符',409);const key=partKey(owner,m,p.part),prior=await siteArchiveBucket().get(key);if(prior){if(sha(new Uint8Array(await prior.arrayBuffer()))!==m.file.parts[p.part])throw new ProductionError('V6既有分片不可改写',409);}else await siteArchiveBucket().put(key,bytes);receipts.push({part:p.part,sha256:m.file.parts[p.part],size_bytes:bytes.length,replayed:!!prior});}
+ return{job_id:m.job_id,parts:receipts,staging_only:true,no_external_action:true,no_media_generation:true};
+}
+export async function derivedV6ArchiveMetadata(id:string,sid:string,owner:string,sourceReader:(id:string,sid:string,owner:string)=>Promise<any>){
+ const m=outroV6Migration(id,sid);if(!m||m.file.site_archive_id!==sid)return null;
+ if(!await activeV6Upgrade(owner,m))throw new ProductionError('V6换尾成片尚未完成回站核验',409);
+ const activeRow=await db().prepare('SELECT value FROM app_state WHERE key=?').bind(upgradeKey(owner,m)).first<{value:string}>(),record=JSON.parse(activeRow!.value);
+ const source=await sourceReader(id,m.source.archive_id,owner);if(source.file.sha256!==m.source.sha256||source.file.role!=='video'||source.binding.revision!==m.revision||source.binding.mode_epoch!==m.mode_epoch||source.binding.script_hash!==m.script_hash||source.binding.contract_hash!==m.contract_hash)throw new ProductionError('V6技术替换与原审阅视频不符',409);
+ return{...source,confirmed_at:record.upgraded_at||source.confirmed_at,site_archive_id:sid,file:{...source.file,file_name:m.file.file_name,size_bytes:m.file.size_bytes,sha256:m.file.sha256,duration:m.file.duration_seconds},materialized_sha256:m.file.sha256,manifest_sha256:m.manifest_sha256,part_size:524288,part_count:Math.ceil(m.file.size_bytes/524288)};
+}
+export async function derivedV6ArchiveFile(id:string,sid:string,owner:string,sourceReader:(id:string,sid:string,owner:string)=>Promise<any>,range?:{offset:number;length:number}){
+ const archive=await derivedV6ArchiveMetadata(id,sid,owner,sourceReader);if(!archive)return null;const m=outroV6Migration(id,sid),offset=range?.offset??0,length=range?.length??m.file.size_bytes,last=offset+length;
+ if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(length)||offset<0||length<=0||last>m.file.size_bytes)throw new ProductionError('文件Range无效',416);let n=Math.floor(offset/m.file.part_size);
+ const body=new ReadableStream<Uint8Array>({async pull(controller){try{if(n*m.file.part_size>=last){controller.close();return}const index=n++,part=await siteArchiveBucket().get(partKey(owner,m,index));if(!part)throw Error('V6 archive part missing');const bytes=new Uint8Array(await part.arrayBuffer());if(sha(bytes)!==m.file.parts[index])throw Error('V6 archive part changed');controller.enqueue(bytes.slice(Math.max(0,offset-index*m.file.part_size),Math.min(bytes.length,last-index*m.file.part_size)));if(n*m.file.part_size>=last)controller.close();}catch(e){controller.error(e)}}});return{archive,body};
+}

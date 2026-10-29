@@ -1,0 +1,140 @@
+{
+  "schema": "siounex-restored-source-qa-v1",
+  "scope": "Fresh directory extracted from source ZIP; fixed-version media restored locally; two bounded preview renders only",
+  "tested_source_zip_sha256": "72a64f991878f22782a7c4c200acc62279edd0a23620c032f933aa5f5a5d6d02",
+  "run_member_hashes": {
+    "render-v9.mjs": "905abe893db15e72973dd5b34e0a6ac71dd3422c639ae936a7e22f9fb55611a0",
+    "restore-assets.py": "7c0c18c05f1eaaca2a93f9bc2c99f77a957f990ad67ffe98d64669d4334fa676",
+    "examples/claude-v9.json": "14ca86ebf0582309f6537226146c9ed386353f05b5e38676c0bc386ebf397549",
+    "mechanism-v1.json": "a0735d1ce0709ecc419d337094a291c542e72b08a0172a1a3de021ab774ef174"
+  },
+  "checks": [
+    {
+      "name": "check-opening",
+      "inputs_verified": true,
+      "fonts_verified": true,
+      "frames": 1636,
+      "fps": 30,
+      "chapters": 4,
+      "history_single_round": true,
+      "history_window": [
+        23,
+        33.8
+      ],
+      "node": "v24.14.0",
+      "sharp": "0.35.4",
+      "paid_calls": 0,
+      "scope": "bounded preview",
+      "global_body_range": [
+        0,
+        3
+      ],
+      "rendered_frames": 90,
+      "TTS_calls": 0,
+      "source_master_hash_unchanged": true,
+      "published_video_modified": false,
+      "history_schedule_from_case": true,
+      "preview_time_did_not_reset_chapter_or_pointer": true,
+      "output_video_sha256": "d1cfa7f1af926a68722c99777b4804d79a1579490d4e30eef3a5ac6343beb076",
+      "dependencies": {
+        "node": "v24.14.0",
+        "sharp": "0.35.4",
+        "ffmpeg": "ffmpeg version 8.1.1-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers\r"
+      },
+      "decoded": true,
+      "width": 1080,
+      "height": 1920,
+      "ssim_against_pinned_v9": {
+        "complete_source": 0.993631,
+        "continuous_chapter": 0.999853,
+        "history_or_filmstrip": 0.996883
+      }
+    },
+    {
+      "name": "check-history",
+      "inputs_verified": true,
+      "fonts_verified": true,
+      "frames": 1636,
+      "fps": 30,
+      "chapters": 4,
+      "history_single_round": true,
+      "history_window": [
+        23,
+        33.8
+      ],
+      "node": "v24.14.0",
+      "sharp": "0.35.4",
+      "paid_calls": 0,
+      "scope": "bounded preview",
+      "global_body_range": [
+        22.9,
+        34
+      ],
+      "rendered_frames": 333,
+      "TTS_calls": 0,
+      "source_master_hash_unchanged": true,
+      "published_video_modified": false,
+      "history_schedule_from_case": true,
+      "preview_time_did_not_reset_chapter_or_pointer": true,
+      "output_video_sha256": "7bb904d2cf89e1fbe6fc42bca4c363105717b903eefcd389ea88a45b94ac4835",
+      "dependencies": {
+        "node": "v24.14.0",
+        "sharp": "0.35.4",
+        "ffmpeg": "ffmpeg version 8.1.1-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers\r"
+      },
+      "decoded": true,
+      "width": 1080,
+      "height": 1920,
+      "ssim_against_pinned_v9": {
+        "complete_source": 0.993503,
+        "continuous_chapter": 0.992425,
+        "history_or_filmstrip": 0.995501
+      }
+    }
+  ],
+  "restoration": {
+    "master_sha256": "56113f21fa38021da3ecad44be8e8e407d292110fc3cd090c0d608a057cd8cc3",
+    "master_same_inode_as_materialized_file": true,
+    "Library_id": "libfile_7cd6310c62948191b7358238328fe072",
+    "file_id": "file_0000000016f081f7aee772fd63df4bad",
+    "version": 10,
+    "archive_verified": true,
+    "members_verified": 4,
+    "network_calls": 0,
+    "published_source_modified": false
+  },
+  "source_hash_after": "56113f21fa38021da3ecad44be8e8e407d292110fc3cd090c0d608a057cd8cc3",
+  "mechanisms": {
+    "history_actual_global_frames": [
+      690,
+      798,
+      906,
+      1014
+    ],
+    "window_is_case_only": true,
+    "full_width_chapter_global_time": true,
+    "continuous_subpixel_pointer": true,
+    "opening_reuses_actual_source_frames": [
+      0,
+      89
+    ]
+  },
+  "paid_calls": 0,
+  "new_narration_calls": 0,
+  "published_video_replaced": false,
+  "legacy_A2_replaced": false,
+  "fonts_redistributed": false,
+  "dependencies_installed_in_this_task": false,
+  "untested": [
+    "new full-mode render",
+    "new topic assets and timeline",
+    "clean machine dependency install",
+    "Mac/Linux",
+    "platform publication"
+  ],
+  "publication": {
+    "user_self_reported_time": "2026-10-10T20:22:00+08:00",
+    "platform_verified": false
+  },
+  "visual_review": "Reviewed actual 360x640 opening and six-cue phone montage: unified background, complete main plane, full-width chapters, three authentic cards once, filmstrip resumes at true 33.8s global time; no audio listening in these silent previews"
+}

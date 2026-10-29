@@ -1,0 +1,127 @@
+{
+  "brand": "怎么用好AI",
+  "tagline": "让AI真正用起来",
+  "spoken_outro": "关注我，AI有新招，用起来才重要。",
+  "services": [
+    "实战培训",
+    "战略诊断",
+    "产品共创",
+    "经营陪跑",
+    "内容生产",
+    "工具方法"
+  ],
+  "canvas": [
+    720,
+    1280
+  ],
+  "main_frame": {
+    "x": 36,
+    "y": 160,
+    "width": 648,
+    "height": 864
+  },
+  "subtitle": {
+    "font_px": 48,
+    "max_lines": 2,
+    "inner_bottom_region_px": 140
+  },
+  "bottom_safe_px": 256,
+  "pip_diameter_px": 148,
+  "outro_seconds": 4,
+  "variants": [
+    "dark",
+    "light"
+  ],
+  "total_duration_limit_seconds": 60,
+  "duration_limit_scope": "final complete export including opening, transitions, body and existing outro",
+  "covers": {
+    "required_default_ratios": [
+      "3:4",
+      "4:3"
+    ],
+    "composition": "independent layout for portrait and landscape; no stretching or clipped titles",
+    "preserve_other_optional_ratios": true,
+    "completeness_rule": "either required ratio missing fails publicity package completeness QA",
+    "required_brand_text": "怎么用好AI",
+    "brand_scope": "all delivered cover ratios",
+    "brand_hierarchy": "refined and legible secondary branding; do not overpower title or obscure story",
+    "brand_qa": "per-final-file visual or OCR evidence bound by SHA256; manual image review still required",
+    "brand_is_not_internal_version_or_debug_label": true
+  },
+  "current_outro": {
+    "creative_version": "v5",
+    "policy_version": "outro-v5-20261021",
+    "resource_manifest": "resource-manifest.json",
+    "selection_map": {
+      "dark_main_background": "reusable_outro_light",
+      "light_main_background": "reusable_outro_dark"
+    },
+    "canvas": [
+      1080,
+      1920
+    ],
+    "fps": 30,
+    "frames": 119,
+    "duration_seconds": 3.966667,
+    "budget_seconds": 4,
+    "playback_rate": 1,
+    "original_audio": "Preserve complete original AAC track, 3.95 seconds at original rate; do not replace during body voice cloning.",
+    "resources": {
+      "light": {
+        "file_name": "outro_v5_light.mp4",
+        "project_path": "production/assets/outro-v5/outro_v5_light.mp4",
+        "package_path": "assets/outros-v5-20261021/outro_v5_light.mp4",
+        "sha256": "ecf340df7c4335e7264fae5c3b4a9c0525f57e2625ead3468cf0866e7de443f1",
+        "size_bytes": 7273934,
+        "duration_seconds": 3.966667,
+        "video_duration_seconds": 3.966667,
+        "container_duration_seconds": 3.966667,
+        "audio_duration_seconds": 3.95,
+        "frames": 119,
+        "fps": 30,
+        "width": 1080,
+        "height": 1920,
+        "audio_codec": "aac",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "source": "Owner attachment C:/Users/赵元章/Desktop/outro_v5_light.mp4",
+        "verification": {
+          "full_decode": "passed",
+          "decoded_frames": 119,
+          "original_bytes_preserved": true,
+          "visual_frame_review": "1.5-second actual frame inspected",
+          "actual_listening": false,
+          "new_render_id": null
+        }
+      },
+      "dark": {
+        "file_name": "outro_v5_dark.mp4",
+        "project_path": "production/assets/outro-v5/outro_v5_dark.mp4",
+        "package_path": "assets/outros-v5-20261021/outro_v5_dark.mp4",
+        "sha256": "01044eeb40bceb91925a0053bdc3701ead2153cfcc59b09439168965a1c8dc2b",
+        "size_bytes": 5811012,
+        "duration_seconds": 3.966667,
+        "video_duration_seconds": 3.966667,
+        "container_duration_seconds": 3.966667,
+        "audio_duration_seconds": 3.95,
+        "frames": 119,
+        "fps": 30,
+        "width": 1080,
+        "height": 1920,
+        "audio_codec": "aac",
+        "sample_rate_hz": 48000,
+        "channels": 2,
+        "source": "Owner attachment C:/Users/赵元章/Desktop/outro_v5_dark.mp4",
+        "verification": {
+          "full_decode": "passed",
+          "decoded_frames": 119,
+          "original_bytes_preserved": true,
+          "visual_frame_review": "1.5-second actual frame inspected",
+          "actual_listening": false,
+          "new_render_id": null
+        }
+      }
+    }
+  },
+  "outro_seconds_semantics": "Conservative production budget; actual current v5 is 119 frames at 30fps, not 120 frames."
+}

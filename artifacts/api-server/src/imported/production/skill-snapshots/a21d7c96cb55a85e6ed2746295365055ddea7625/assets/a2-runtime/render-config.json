@@ -1,0 +1,202 @@
+{
+  "template": "siounex-a2-silver-history-v1",
+  "title": "车去哪儿？",
+  "module_label": "往期精选 · 主页可看",
+  "body": {
+    "path": "example-inputs/approved-body-container.mp4",
+    "sha256": "db36a06d09055f976d22e87c8fe606bced4d58189b34df52c7e7671b1e0cb00e",
+    "bytes": 8811711,
+    "frames": 1636,
+    "complete_source_plane": [
+      60,
+      530,
+      960,
+      540
+    ],
+    "complete_content_confirmed": true,
+    "original_source_content_rectangle": [
+      0,
+      0,
+      1280,
+      720
+    ]
+  },
+  "audio_master": {
+    "path": "example-inputs/approved-personal-audio-master.mp4",
+    "sha256": "8b9f49866030eb51ca30e613adffe7297962146ca1f201b669aba73bf856a0a8",
+    "bytes": 9827900,
+    "original_video_start": 0.021029
+  },
+  "outro": {
+    "path": "example-inputs/original-dark-outro-normalized.mp4",
+    "sha256": "f7a9efa24c8de9f8bf1e5f41c22aac99c8d5db2184d3e81f834548b2902d85f7",
+    "bytes": 233299
+  },
+  "background": {
+    "path": "assets/background.png",
+    "sha256": "b341f1694978c994f4d3b4792306c794d06b1faddf9408c314871b60c03ed1a2",
+    "bytes": 1078906
+  },
+  "alignment": "alignment.json",
+  "fonts": {
+    "bold": {
+      "family": "Microsoft YaHei",
+      "path": "C:/Windows/Fonts/msyhbd.ttc",
+      "sha256": "4508821b3dffe01f0ef5e5326a3e60df705a44633858811f67b6982dce3f6ee6",
+      "bytes": 16883552,
+      "redistributed": false
+    },
+    "regular": {
+      "family": "Microsoft YaHei",
+      "path": "C:/Windows/Fonts/msyh.ttc",
+      "sha256": "d79c55e68b1131eea0cc1c47be4f572d964f28c682e143db2ad09c1e4cb07a3f",
+      "bytes": 19704352,
+      "redistributed": false
+    },
+    "numeric": {
+      "family": "Segoe UI Semibold",
+      "path": "C:/Windows/Fonts/seguisb.ttf",
+      "sha256": "6c3fd894b19950b10c34bf64069ef821eaf2f58f959146306fee5b367472e501",
+      "bytes": 974760,
+      "redistributed": false
+    }
+  },
+  "history": [
+    {
+      "id": "dragon",
+      "title": "AI做的杯子，\n主打滴水不进？",
+      "lookpoint": "龙盘上了，杯口却没开。",
+      "published_confirmed": true,
+      "published_confirmation": "User confirmed these previous works were published; archive text and cover bytes were read locally. No live platform claim.",
+      "cover": {
+        "path": "example-inputs/history-dragon.png",
+        "sha256": "6906b6319e3399cc0f9fa43c8c3de2c96a4232322815cf27f61bbd03fe9fd4c0",
+        "bytes": 2529424,
+        "provenance": {
+          "archive_library_file_id": "libfile_931abfe731448191936196814597a214",
+          "archive_file_id": "file_00000000dec881f7990b9e952f20c33c",
+          "archive_sha256": "23d1d5cc0da944c3588cc7807006636e5877804a69c0e6103e8b82e9cb11ca3e",
+          "member": "04_龙杯_成片封面宣发包/龙杯_故事封面_V2_3比4_审阅.png",
+          "cover_sha256": "6906b6319e3399cc0f9fa43c8c3de2c96a4232322815cf27f61bbd03fe9fd4c0"
+        }
+      }
+    },
+    {
+      "id": "animals",
+      "title": "AI偷听动物群聊",
+      "lookpoint": "叫声与行为对照，AI找规律。",
+      "published_confirmed": true,
+      "published_confirmation": "User confirmed these previous works were published; archive text and cover bytes were read locally. No live platform claim.",
+      "cover": {
+        "path": "example-inputs/history-animals.png",
+        "sha256": "d775a45ff9fca349f14823eb23ab68a23a85f1b2fae50155c6df3b6909d76dab",
+        "bytes": 2593153,
+        "provenance": {
+          "archive_library_file_id": "libfile_f80177f96e40819199939b83c52bba93",
+          "archive_file_id": "file_000000009e28820cbad75f876a1ee948",
+          "archive_sha256": "426f35c9c577db30dd39d3ae3052bda9893de9912b45f7a24f46dcbc78e9ead9",
+          "member": "03_AI偷听动物群聊_成片封面宣发包/AI偷听动物群聊_3比4封面_v2.png",
+          "cover_sha256": "d775a45ff9fca349f14823eb23ab68a23a85f1b2fae50155c6df3b6909d76dab"
+        }
+      }
+    },
+    {
+      "id": "latte",
+      "title": "这杯拿铁，\n居然能玩？",
+      "lookpoint": "挪杯子接配料，接对就加分。",
+      "published_confirmed": true,
+      "published_confirmation": "User confirmed these previous works were published; archive text and cover bytes were read locally. No live platform claim.",
+      "cover": {
+        "path": "example-inputs/history-latte.png",
+        "sha256": "5d7041c1cf658e7046cf99dd2fe126ab275926618b41b38db6d159d1302075ff",
+        "bytes": 2252323,
+        "provenance": {
+          "archive_library_file_id": "libfile_3bbf587af280819197e5a9ee999a4bf7",
+          "archive_file_id": "file_00000000344481fb9a5aec1bc28e322c",
+          "archive_sha256": "615e93694168c50d476e1300dd2eaa373a562b9a25d52774fdae223f12acfc8d",
+          "member": "05_Playground拿铁UbeRush_成片封面宣发包/ube_rush_story_cover_v2.png",
+          "cover_sha256": "5d7041c1cf658e7046cf99dd2fe126ab275926618b41b38db6d159d1302075ff"
+        }
+      }
+    }
+  ],
+  "layout": {
+    "canvas": [
+      1080,
+      1920
+    ],
+    "enclosure": [
+      9,
+      132,
+      1062,
+      1040
+    ],
+    "source": {
+      "x": 28,
+      "y": 368,
+      "width": 1024,
+      "height": 576
+    },
+    "title": {
+      "x": 66,
+      "y": 190,
+      "size": 120
+    },
+    "caption": {
+      "x": 540,
+      "y": 1132,
+      "normal_size": 76,
+      "numeric_size": 128,
+      "suffix_size": 90
+    },
+    "history": {
+      "x": 28,
+      "y": 1310,
+      "width": 1024,
+      "height": 348
+    },
+    "history_deck": [
+      28,
+      1230,
+      1024,
+      440
+    ],
+    "bottom_safe_space": 250
+  },
+  "carousel": {
+    "opening_static_seconds": 6,
+    "transition_seconds": 0.8,
+    "hold_seconds": 4,
+    "protected_ranges": [
+      [
+        0,
+        3.1
+      ],
+      [
+        8.72,
+        14
+      ],
+      [
+        51.7,
+        54.53333333333333
+      ]
+    ],
+    "easing": "smoothstep"
+  },
+  "next_episode": {
+    "confirmed": false,
+    "visible": false,
+    "title": null
+  },
+  "approval": {
+    "layout": true,
+    "script": true,
+    "audio": true,
+    "layout_evidence": "Sentinel_6f8263fcd1f88191b43ad8aa19ef7a11",
+    "script_revision": 3,
+    "script_hash": "9233c54d50e27cffd1d5b9dcf18c7e104aed437a6d71446edafa65c8442d678e",
+    "skill_rules_revision": "c98ad90fffa96070b55d03708a0470d5c09ff44b",
+    "full_export_approval_pending": true
+  },
+  "output_dir": "rendered"
+}

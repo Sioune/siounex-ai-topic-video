@@ -1,0 +1,57 @@
+{
+  "schema": "siounex-source-package-manifest-v1",
+  "members": {
+    "render-v9.mjs": {
+      "sha256": "905abe893db15e72973dd5b34e0a6ac71dd3422c639ae936a7e22f9fb55611a0",
+      "bytes": 13057
+    },
+    "restore-assets.py": {
+      "sha256": "7c0c18c05f1eaaca2a93f9bc2c99f77a957f990ad67ffe98d64669d4334fa676",
+      "bytes": 2445
+    },
+    "README.md": {
+      "sha256": "38b02e037e1bf6a6d1da05c7eac62755be589ead9d2600dde07fa3db8fc5edac",
+      "bytes": 4707
+    },
+    "package.json": {
+      "sha256": "f469fd4d2e1d25409c21a106bac18f849701bf1920072b6fbf0698224b3f0069",
+      "bytes": 275
+    },
+    "font-profile-windows.json": {
+      "sha256": "d6776958956ec4a3103f9923a1139a10363460ac97262985657586ae0c417c0e",
+      "bytes": 682
+    },
+    "mechanism-v1.json": {
+      "sha256": "a0735d1ce0709ecc419d337094a291c542e72b08a0172a1a3de021ab774ef174",
+      "bytes": 2123
+    },
+    "examples/claude-v9.json": {
+      "sha256": "14ca86ebf0582309f6537226146c9ed386353f05b5e38676c0bc386ebf397549",
+      "bytes": 6548
+    },
+    "media-resources.json": {
+      "sha256": "ab88d63906695991537efd1763af94b7f0879cbb1ee6407e6c85f22ab052deb9",
+      "bytes": 4223
+    },
+    "assets/unified-background.svg": {
+      "sha256": "f47da50169429f9cffbfb17ae7b10e03a7ade5ba0408ac7621837d51b9f7d98e",
+      "bytes": 3219
+    },
+    "assets/claude-captions.ass": {
+      "sha256": "345297301993d8c41fad4de5ccf318da1c7fa0bb253b655225a12fc0afa776f9",
+      "bytes": 3949
+    },
+    "verification/restored-preview-qa.json": {
+      "sha256": "a1f2531a9323ea94bf1062471c2702b5112f781216d2303bae2b4df4e68daf24",
+      "bytes": 4772
+    }
+  },
+  "excluded": [
+    "media",
+    "fonts",
+    "credentials",
+    "browser profiles",
+    "signed transfer payloads",
+    "local rendering outputs"
+  ]
+}

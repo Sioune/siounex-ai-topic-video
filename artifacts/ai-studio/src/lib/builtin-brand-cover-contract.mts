@@ -1,0 +1,6 @@
+import policy from '../production/cover-brand-policy.json' with {type:'json'};
+export function builtinBrandCover(c:any,request:any,original:any,role:string){
+ const p=c.builtin_edit,source=original?.covers.find((x:any)=>x.role===role),parts=String(p?.output_file||'').split(/[\\/]/),name=parts.at(-1),thread=parts.at(-2),uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+ if(!source||p?.schema!=='builtin-imagegen-brand-edit-v1'||p.tool!=='image_gen.imagegen'||p.request_id!==request.request_id||p.role!==role||p.parent_cover_sha256!==source.sha256||p.logo_sha256!==policy.logo.sha256||p.reference_sha256!==policy.reference.sha256||p.output_sha256!==c.sha256||p.output_file!==c.source_file||parts.at(-3)!=='generated_images'||!uuid.test(thread||'')||name!==(c.native_output_id+'.png')||!uuid.test(String(c.native_output_id||'').slice(5))||!String(c.native_output_id).startsWith('exec-')||c.host_thread_id!==thread||!/^[a-f0-9]{64}$/.test(p.tool_output_hint_sha256)||c.generation_id!==null)throw Error('POST_VIDEO_BRAND_EDIT_SOURCE_CHANGED');
+ return{provenance_kind:'builtin-imagegen-brand-edit-v1',generation_id:null,source_file:p.output_file,native_output_id:c.native_output_id,host_thread_id:thread,builtin_edit:p};
+}

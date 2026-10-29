@@ -1,0 +1,154 @@
+{
+  "schema": "siounex-template-policy-v1",
+  "policy": "morning-light-evening-dark-v1",
+  "effective_date": "2026-10-22",
+  "timezone": "Asia/Shanghai",
+  "selection": {
+    "mode": "owner-serial-alternating",
+    "method": "alternating_approved",
+    "sequence_field": "production_sequence",
+    "cursor_scope": "owner",
+    "sequence_rule": "owner historical maximum production_sequence plus one; choose the opposite tone of the previous saved choice",
+    "idempotent_retry": true,
+    "freeze_at_creation": true,
+    "reserve_specific_publication_date": false
+  },
+  "templates": [
+    {
+      "key": "morning-light@1",
+      "id": "morning-light",
+      "version": 1,
+      "runtime": "morning-light-v1",
+      "tone": "light",
+      "time_slot": "08:00",
+      "outro_variant": "dark",
+      "outro_version": "v6"
+    },
+    {
+      "key": "evening-dark@1",
+      "id": "evening-dark",
+      "version": 1,
+      "runtime": "evening-dark-v2",
+      "tone": "dark",
+      "time_slot": "18:00",
+      "outro_variant": "light",
+      "outro_version": "v6"
+    }
+  ],
+  "layout": {
+    "profile": "approved-node-stage-v2",
+    "identity_path": "production/template-layout-identity.json",
+    "source_rectangle": [
+      28,
+      474,
+      1024,
+      576
+    ],
+    "caption_center": [
+      540,
+      1136
+    ],
+    "caption_normal_size": 76,
+    "chapter_rectangle": [
+      0,
+      1228,
+      1080,
+      62
+    ],
+    "history_rectangle": [
+      64,
+      1304,
+      952,
+      236
+    ],
+    "minimum_bottom_clearance": 380
+  },
+  "classification": {
+    "schema": "template-publishing-slot-v1",
+    "fields": [
+      "timezone",
+      "time",
+      "selection_sequence",
+      "policy"
+    ],
+    "planned_date_required": false,
+    "frozen_from": "actual final video QA and approved complete package"
+  },
+  "warehouse": {
+    "mode": "category-fifo",
+    "classify_after_human_reviews": true,
+    "ordering": [
+      "delivery_approved_at",
+      "id"
+    ],
+    "missing_category": "leave slot empty; do not substitute the other category",
+    "preparation_and_submission": "reuse the same frozen package_id",
+    "recolor_or_rerender_at_publication": false
+  },
+  "human_reviews": {
+    "count": 2,
+    "stages": [
+      "ordinary-narration-first-review",
+      "owner-cloned-voice-final-review"
+    ],
+    "template_approval_replaces_content_review": false
+  },
+  "outro": {
+    "version": "v5",
+    "frames": 119,
+    "fps": 30,
+    "duration_seconds": 3.966667,
+    "audio_duration_seconds": 3.95,
+    "preserve_original_frames_rate_and_audio": true,
+    "body_audio_must_end_before_outro": true
+  },
+  "legacy": {
+    "frozen_projects_and_packages": "Preserve body/template/approvals; explicit2026-10-24 V6 technical tail replacement applies to all unpublished packages. Published originals remain immutable.",
+    "rerender_reapprove_republish_or_backfill_classification": false,
+    "historical_random_selection": "readable and recoverable; no longer the default for new production"
+  },
+  "scope": "Policy and source identity record; deployment, actual media acceptance and platform submission require their own real receipts.",
+  "duration": {
+    "policy": "measured-body-tempo-fit-v1",
+    "final_max_seconds": 60,
+    "auto_body_tempo_max_measured_total_seconds": 70,
+    "threshold_inclusive": true,
+    "measurement_basis": "Current complete retained measured narration timeline plus the exact bound original outro and any other fixed occupancy; use actual frames/durations, never estimated word count, nominal storyboard seconds or an earlier untreated recording instead.",
+    "within_final_cap": "preserve existing speed",
+    "over_60_through_70": "reuse complete existing narration in the normal queue; pitch-preserving additional body tempo fit to a complete final result at most 60 seconds; do not additionally shorten the approved script",
+    "above_70": "existing script-shortening and renewed review workflow",
+    "body_only": true,
+    "preserve_pitch": true,
+    "preserve_complete_approved_words_and_final_syllables": true,
+    "extra_tempo_formula": "measured_body_seconds / (60 - exact_fixed_seconds), using actual frame/packaging constraints so the final complete file passes <=60 seconds",
+    "legacy_tempo_cap_is_not_authorization_limit": true,
+    "historical_default_tempo_caps": [
+      1.25,
+      1.3
+    ],
+    "required_speed_record": [
+      "existing_speed",
+      "additional_speed",
+      "cumulative_speed"
+    ],
+    "normal_source_video_speed": true,
+    "bgm_playback_rate": 1,
+    "outro_playback_rate": 1,
+    "outro_original_frames": 119,
+    "preserve_outro_original_audio": true,
+    "new_speech_calls": 0,
+    "normal_queue_only": true,
+    "manual_single_media_rerun": false,
+    "retain_two_human_reviews": true,
+    "frozen_warehouse_packages_and_published_works": "Warehouse: owner-authorized V6 tail-only derivative, same body/copy approval and FIFO. Published works: preserve, no republication."
+  },
+  "owner_outro_upgrade_20261024": {
+    "version": "v6",
+    "scope": "all-unpublished-including-warehouse",
+    "preserve_body_and_approved_copy": true,
+    "preserve_current_human_review_state": true,
+    "preserve_warehouse_fifo": true,
+    "published_or_submitted_unknown": "keep-real-original-package-no-repost",
+    "catalog": "production/outro-v6-assets.json"
+  }
+}

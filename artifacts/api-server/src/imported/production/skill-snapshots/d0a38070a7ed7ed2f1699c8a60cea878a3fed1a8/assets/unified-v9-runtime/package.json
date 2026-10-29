@@ -1,0 +1,15 @@
+{
+  "name": "siounex-unified-v9-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "sharp": "0.35.4"
+  },
+  "scripts": {
+    "check": "node render-v9.mjs examples/claude-v9.json --check"
+  }
+}

@@ -1,0 +1,19 @@
+.original-desk .original-layout { display:grid; grid-template-columns:minmax(15rem,19rem) minmax(0,1fr); gap:1.5rem; align-items:start; }
+.original-desk .original-history { margin-top:0; }
+.original-desk .original-form { margin-top:0; border:0; padding:0; background:transparent; }
+.original-desk .original-form > label { display:block; margin:1.25rem 0 .5rem; font-size:.9375rem; font-weight:550; line-height:1.8; }
+.original-desk .original-form > label:first-child { margin-top:0; }
+.original-desk .original-form > label > input,.original-desk .original-form > label > textarea { margin-top:.5rem; }
+.original-desk .original-file { display:block; width:100%; margin:.5rem 0 1rem; font:inherit; font-size:.875rem; color:var(--studio-muted); }
+.original-desk .original-text { white-space:pre-wrap; overflow-wrap:anywhere; font:inherit; font-size:1rem; line-height:1.95; margin:.75rem 0 0; }
+.original-desk .original-meta { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin:1.25rem 0; }
+.original-desk .original-meta > div { border:1px solid var(--studio-line); border-radius:.625rem; padding:1rem; }
+.original-desk .original-meta dt { font-size:.8125rem; color:var(--studio-muted); margin-bottom:.5rem; }
+.original-desk .original-meta dd { margin:0; font-size:.9375rem; line-height:1.8; }
+.original-desk .original-raw { margin-top:1.5rem; padding:1rem 1.25rem; border:1px solid var(--studio-line); border-radius:.625rem; }
+.original-desk .original-raw summary { cursor:pointer; min-height:2.75rem; line-height:2.75rem; font-weight:600; }
+.original-desk .original-hash { color:var(--studio-muted); font-size:.8125rem; line-height:1.8; overflow-wrap:anywhere; }
+.original-desk .original-history-note { margin-top:1.5rem; border-top:1px solid var(--studio-line); padding-top:1rem; }
+.original-desk .original-history-note h3 { font-size:1rem; margin:0 0 .5rem; }
+.original-desk .original-history-note p { margin:0; white-space:pre-wrap; color:var(--studio-muted); line-height:1.9; }
+@media(max-width:1000px){.original-desk .original-layout{grid-template-columns:minmax(0,1fr)}.original-desk .original-layout[data-selected=true] .research-result{grid-row:1}.original-desk .original-meta{grid-template-columns:minmax(0,1fr)}}

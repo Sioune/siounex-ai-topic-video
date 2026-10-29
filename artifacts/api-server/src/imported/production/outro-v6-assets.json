@@ -1,0 +1,73 @@
+{
+  "schema": "owner-outro-assets-v1",
+  "version": "v6",
+  "policy_version": "outro-v6-20261024",
+  "registered_at": "2026-10-23T17:38:58.754Z",
+  "authorization": "本人2026-10-24提供深浅V6并要求全部尚未发布视频含片仓升级；只替换片尾，保留正文、原审核与发布分工，不重发已发布作品。",
+  "selection": {
+    "dark_main_background": "light",
+    "light_main_background": "dark",
+    "mixed": "Choose opposite to dominant background near the body ending."
+  },
+  "scope": "All unpublished current videos, including reviewed warehouse inventory; published history and already submitted/unknown publication packages remain on their real original identity pending reconciliation.",
+  "budget_seconds": 4,
+  "preserve_original_audio": true,
+  "playback_rate": 1,
+  "body_bgm_overlay": false,
+  "variants": {
+    "light": {
+      "file_name": "outro_v6_light.mp4",
+      "project_path": "production/assets/outro-v6/outro_v6_light.mp4",
+      "package_path": "assets/outros-v6-20261024/outro_v6_light.mp4",
+      "sha256": "8bd2594187817fe35e1bdc6b98bb293433e69a0bbb61daf1bb4d54ae4bac43d1",
+      "size_bytes": 6362203,
+      "duration_seconds": 3.966667,
+      "video_duration_seconds": 3.966667,
+      "container_duration_seconds": 3.966667,
+      "audio_duration_seconds": 3.946,
+      "frames": 119,
+      "fps": 30,
+      "width": 1080,
+      "height": 1920,
+      "audio_codec": "aac",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "source": "Owner attachment C:/Users/赵元章/Desktop/outro_v6_light.mp4",
+      "verification": {
+        "full_decode": "passed",
+        "decoded_frames": 119,
+        "original_bytes_preserved": true,
+        "visual_frame_review": "Actual frames 0,30,60,90,118 inspected",
+        "actual_listening": false,
+        "new_render_id": null
+      }
+    },
+    "dark": {
+      "file_name": "outro_v6_dark.mp4",
+      "project_path": "production/assets/outro-v6/outro_v6_dark.mp4",
+      "package_path": "assets/outros-v6-20261024/outro_v6_dark.mp4",
+      "sha256": "61d0303c205af81b50dc08c0303f2cf6910325934d2c80bb0c466f61f8efe507",
+      "size_bytes": 5079905,
+      "duration_seconds": 3.966667,
+      "video_duration_seconds": 3.966667,
+      "container_duration_seconds": 3.966667,
+      "audio_duration_seconds": 3.946,
+      "frames": 119,
+      "fps": 30,
+      "width": 1080,
+      "height": 1920,
+      "audio_codec": "aac",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "source": "Owner attachment C:/Users/赵元章/Desktop/outro_v6_dark.mp4",
+      "verification": {
+        "full_decode": "passed",
+        "decoded_frames": 119,
+        "original_bytes_preserved": true,
+        "visual_frame_review": "Actual frames 0,30,60,90,118 inspected",
+        "actual_listening": false,
+        "new_render_id": null
+      }
+    }
+  }
+}

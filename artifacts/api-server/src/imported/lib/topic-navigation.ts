@@ -1,0 +1,13 @@
+// Small serializable navigation state; no topic records or personal data live here.
+export const NAV_KEY = '__topicLibraryNavigationV1';
+export const defaultView = {q:'',category:'all',time:'all',material:'all',sort:'date',tab:'all'};
+export type ListView = typeof defaultView;
+export type ListSnapshot = {view:ListView;limit:number;scrollY:number;focusId:string|null};
+export type TopicNavigationEntry = {version:1;entryId:string;kind:'list'|'detail';topicId:string|null;parentListId:string|null;list:ListSnapshot};
+const categoryValues=['all','视觉影像','声音音乐','互动体验','好奇脑洞','AI实用','行业动态'];
+const options:Record<Exclude<keyof ListView,'q'>,string[]>={category:categoryValues,time:['all','7','30','90','longtail','unknown'],material:['all','已找到素材','有演示线索','待核实'],sort:['date','score'],tab:['all','saved','rejected','produced','legacy']};
+export function validTopicId(id:unknown):id is string{return typeof id==='string'&&/^t_[a-f0-9]{24}$/.test(id)}
+export function viewFromUrl(url:URL):ListView{const view={...defaultView};view.q=(url.searchParams.get('q')||'').slice(0,200);for(const key of Object.keys(options) as (keyof typeof options)[]){const value=url.searchParams.get(key);if(value&&options[key].includes(value))view[key]=value}return view}
+export function navigationUrl(current:string,view:ListView,topicId:string|null){const url=new URL(current);for(const key of Object.keys(defaultView) as (keyof ListView)[]){if(view[key]===defaultView[key])url.searchParams.delete(key);else url.searchParams.set(key,view[key])}if(topicId)url.searchParams.set('topic',topicId);else url.searchParams.delete('topic');return url.pathname+url.search+url.hash}
+export function readEntry(state:unknown):TopicNavigationEntry|null{if(!state||typeof state!=='object')return null;const e=(state as Record<string,unknown>)[NAV_KEY] as TopicNavigationEntry|undefined;if(!e||e.version!==1||typeof e.entryId!=='string'||!['list','detail'].includes(e.kind)||!e.list||typeof e.list!=='object')return null;if(!Number.isFinite(e.list.scrollY)||!Number.isFinite(e.list.limit))return null;if(e.kind==='detail'&&!validTopicId(e.topicId))return null;if(e.kind==='list'&&e.topicId!==null)return null;if(e.parentListId!==null&&typeof e.parentListId!=='string')return null;if(!e.list.view||typeof e.list.view!=='object'||Object.keys(defaultView).some(k=>typeof e.list.view[k as keyof ListView]!=='string'))return null;return e}
+export function snapshot(view:ListView,limit:number,scrollY:number,focusId:string|null=null):ListSnapshot{return {view:{...view},limit:Math.max(18,Math.min(1500,Math.floor(limit))),scrollY:Math.max(0,scrollY),focusId:validTopicId(focusId)?focusId:null}}

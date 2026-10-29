@@ -1,0 +1,94 @@
+{
+  "schema": "siounex-unified-mechanism-v1",
+  "fps": 30,
+  "background": "assets/unified-background.svg",
+  "background_sha256": "f47da50169429f9cffbfb17ae7b10e03a7ade5ba0408ac7621837d51b9f7d98e",
+  "layout": {
+    "canvas": [
+      1080,
+      1920
+    ],
+    "source": {
+      "x": 28,
+      "y": 368,
+      "width": 1024,
+      "height": 576
+    },
+    "title": {
+      "x": 66,
+      "y": 190,
+      "size": 120
+    },
+    "caption": {
+      "x": 540,
+      "y": 1132,
+      "normal_size": 76,
+      "numeric_size": 128,
+      "suffix_size": 90
+    },
+    "chapter": {
+      "x": 0,
+      "y": 1216,
+      "width": 1080,
+      "height": 66,
+      "safe_text_side_margin": 52
+    },
+    "filmstrip": {
+      "x": 52,
+      "y": 1376,
+      "width": 976,
+      "height": 116
+    },
+    "history": {
+      "x": 52,
+      "y": 1334,
+      "width": 976,
+      "height": 332
+    }
+  },
+  "chapter": {
+    "font_size": 40,
+    "future": [
+      "#a9becd",
+      "#91a9ba",
+      "#7f9bad"
+    ],
+    "revealed": [
+      "#f4fcff",
+      "#dfedf6",
+      "#bed9e8"
+    ],
+    "mechanism": "one global time reveal, duration-proportional chapters, past stays clear, future grey, no tab jump or reset",
+    "feather_pixels": 2
+  },
+  "pointer": {
+    "rgb": [
+      88,
+      118,
+      139
+    ],
+    "opacity": 0.62,
+    "coverage_width_pixels": 2,
+    "position": "1+(filmstrip_width-2)*global_body_time/body_duration",
+    "coverage": "clip(1.5-abs(X+0.5-position),0,1)",
+    "cap": false,
+    "halo": false,
+    "shadow": false,
+    "brightness_animation": false,
+    "integer_moving_overlay": false
+  },
+  "history_policy": {
+    "mode": "single-round",
+    "schedule": "required per project, bind to actual narration and new test evidence; no global twenty-second default",
+    "each_episode_once": true,
+    "mutually_exclusive_with_filmstrip": true,
+    "resume": "jump directly to current true body time, no replay or catch-up",
+    "chapter_continues_when_hidden": true
+  },
+  "safety": {
+    "web_worker_rendering": false,
+    "media_generation": false,
+    "paid_calls": false,
+    "public_publication": false
+  }
+}

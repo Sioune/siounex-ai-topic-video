@@ -1,0 +1,306 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-10",
+  "recovery": "Resolve Library IDs in the same authorized account; inspect actual version and metadata before downloading. Recheck local hints before use; they are only verified copies in one workspace, not portable paths. If the required existing outro cannot be recovered, report the missing variant and request the original file; do not regenerate, recolor or invent a substitute.",
+  "resources": [
+    {
+      "role": "reusable_outro_dark",
+      "library_file_id": "libfile_6f9e35a276848191b45781c59852837a",
+      "version": 0,
+      "backing_file_id": "file_0000000013f081f596894008e1210749",
+      "filename": "怎么用好AI_动态片尾_A深色_4秒.mp4",
+      "duration_seconds": 4,
+      "status": "user_confirmed_existing_outro_for_reuse",
+      "design_status": "user_approved_static_v3",
+      "variant": "dark",
+      "reuse": "Reuse this existing dark outro for a light-background main video.",
+      "reuse_confirmation": "User explicitly reconfirmed both existing variants for direct reuse with inverse light/dark selection on 2026-10-09; this does not authorize remaking or recoloring.",
+      "verification": {
+        "checked_at_utc": "2026-10-09T03:08:29Z",
+        "library_version": 0,
+        "size_bytes": 219235,
+        "sha256": "b7c8c94cd2231d5526beb32063653551856c19b1cd20cf561cb6dc2e48e6b286",
+        "duration_seconds": 4,
+        "dimensions": [
+          720,
+          1280
+        ],
+        "fps": 24,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "full_decode": "passed",
+        "visual_variant_check": "1-second frame inspected; matches named light/dark design",
+        "local_path_hint": "verified_brand_outros/怎么用好AI_动态片尾_A深色_4秒.mp4",
+        "local_path_scope": "Current workspace copy verified at the timestamp above; recheck availability. Library IDs remain authoritative across environments."
+      }
+    },
+    {
+      "role": "reusable_outro_light",
+      "library_file_id": "libfile_e47076178094819192bf79934c46ca29",
+      "version": 2,
+      "backing_file_id": "file_000000002b5c822fb4a808f53c42d102",
+      "filename": "怎么用好AI_动态片尾_B浅色_4秒.mp4",
+      "duration_seconds": 4,
+      "status": "user_confirmed_existing_outro_for_reuse",
+      "design_status": "user_approved_static_v3",
+      "variant": "light",
+      "reuse": "Reuse this existing light outro for a dark-background main video.",
+      "reuse_confirmation": "User explicitly reconfirmed both existing variants for direct reuse with inverse light/dark selection on 2026-10-09; this does not authorize remaking or recoloring.",
+      "verification": {
+        "checked_at_utc": "2026-10-09T03:08:29Z",
+        "library_version": 2,
+        "size_bytes": 202890,
+        "sha256": "af1444d53d62c9476a9ae928ac57a9e696c7cffacc4a3294850f624285540a4f",
+        "duration_seconds": 4,
+        "dimensions": [
+          720,
+          1280
+        ],
+        "fps": 24,
+        "video_codec": "h264",
+        "audio_codec": "aac",
+        "full_decode": "passed",
+        "visual_variant_check": "1-second frame inspected; matches named light/dark design",
+        "local_path_hint": "verified_brand_outros/怎么用好AI_动态片尾_B浅色_4秒.mp4",
+        "local_path_scope": "Current workspace copy verified at the timestamp above; recheck availability. Library IDs remain authoritative across environments."
+      }
+    },
+    {
+      "role": "completed_video_example",
+      "library_file_id": "libfile_4babb42510288191baa4a3bdf4effe93",
+      "version": 17,
+      "backing_file_id": "file_000000007718820c9dd76f7c270313ed",
+      "filename": "AI_SI_JI_视频原型_V18.mp4",
+      "duration_seconds": 62.916667,
+      "status": "delivered_pending_user_review",
+      "reuse": "Example only. Do not reuse its topic, news claims, script, source footage or total duration automatically in a new video."
+    },
+    {
+      "role": "a2_silver_history_template",
+      "status": "actual_source_integrated_windows_restore_smoke_verified",
+      "config": "a2-silver-history.template.json",
+      "rules": "../references/a2-silver-history.md",
+      "library_file_id": "libfile_aee174c0b49c8191a45f600e4aa79049",
+      "source_bundle_resource_id": "libfile_aee174c0b49c8191a45f600e4aa79049",
+      "source_thread_id": "01a123bd-acf2-767d-8bef-9d2aa036e000",
+      "local_manifest_path_hint": "C:/Users/赵元章/Documents/Codex/2026-10-10/task-2/work/claude/design-refinement/silver-history-v2/manifest.json",
+      "local_path_scope": "Historical locator only; portable Library packages and bundled source now provide recovery. Any computer access still requires current authorization.",
+      "sample_filenames": [
+        "Claude-A2-冷银舞台-往期精选实效图.png",
+        "Claude-A2-往期精选-9秒无声动效样片.mp4"
+      ],
+      "sample_duration_seconds": 8.966,
+      "sample_audio_tracks": 0,
+      "verification_status": "Original source archive downloaded and member SHA-256 verified in cloud. Actual source integrated. Windows ZIP restore/input check/90-frame smoke passed as reported by source task. Full template command, new-topic run and Mac/Linux unverified.",
+      "reuse": "Restore indexed media beside bundled a2-runtime source; read A2 rules and replace project-specific config before new work. Current renderer keeps next-episode preview hidden.",
+      "example_media_resource_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+      "source_runtime": "a2-runtime/render-a2.mjs",
+      "source_package": {
+        "status": "succeeded",
+        "library_file_id": "libfile_aee174c0b49c8191a45f600e4aa79049",
+        "file_id": "file_00000000997481f792afc3a938f9b01d",
+        "file_name": "Siounex-A2-冷银往期模板-源码-v1.zip",
+        "current_version_number": 0,
+        "file_size_bytes": 1091449,
+        "sha256": "b90f3295baac1579620fb359d68ae42f6ab0e53e9a7e23306b3eb2a8cd680297"
+      },
+      "example_media_package": {
+        "status": "succeeded",
+        "library_file_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+        "file_id": "file_0000000095548230900df003a2f8e798",
+        "file_name": "Siounex-A2-Claude示例-真实素材-v1.zip",
+        "current_version_number": 0,
+        "file_size_bytes": 32174328,
+        "sha256": "322aa45fdf9151fa8190aa0b10ec981fec24edf8fc661f58bfbf40aa73fb21c1"
+      },
+      "verification": {
+        "actual_check_passed": true,
+        "actual_90_frame_template_export_passed": true,
+        "first90_SSIM": 0.999946,
+        "zip_integrity_passed": true,
+        "zip_restore_local_check_and_smoke_passed": true,
+        "restored_smoke_matches_original": true,
+        "full_template_command_tested": false,
+        "new_topic_full_run_tested": false,
+        "Mac_Linux_verified": false
+      },
+      "original_sample_technical_qa": "Earlier 8.966-second sample final QA was not read back; later actual runtime and full export have separate checks."
+    },
+    {
+      "role": "unified_narrative_template",
+      "status": "actual_v9_runtime_integrated_bounded_windows_restore_verified",
+      "config": "unified-narrative.template.json",
+      "rules": "../references/unified-narrative.md",
+      "library_file_id": "libfile_ecc3fa4af2c48191bb985be7ed8dc603",
+      "source_bundle_resource_id": "libfile_ecc3fa4af2c48191bb985be7ed8dc603",
+      "source_thread_id": "01a123bd-acf2-767d-8bef-9d2aa036e000",
+      "local_receipt_hint": ".sites-runtime/claude-unified-v9-delivery.json",
+      "local_path_scope": "Historical task-2 receipt locator, not computer access permission.",
+      "legacy_a2_source_preserved": true,
+      "latest_project": {
+        "title": "表格看不懂？让它动起来！",
+        "engineering_version": "v9",
+        "full_video": {
+          "library_file_id": "libfile_7cd6310c62948191b7358238328fe072",
+          "version": 10,
+          "backing_file_id": "file_0000000016f081f7aee772fd63df4bad"
+        },
+        "cover": {
+          "library_file_id": "libfile_d2488610f58c8191ac0768af261785d5",
+          "creative_version": "v2"
+        },
+        "promotion": {
+          "library_file_id": "libfile_cc90a895e720819190b6439130075f75",
+          "creative_version": "v3"
+        },
+        "publication": {
+          "reported_at": "2026-10-10T20:22:00+08:00",
+          "source": "user self-report",
+          "online_exact_file_verified": false
+        }
+      },
+      "verification": {
+        "v9_full_decode": "passed per source task",
+        "audio_packets_and_timestamps_preserved": 2743,
+        "outro_decoded_frames_preserved": 120,
+        "continuous_chapter_frames_checked": 1636,
+        "playhead_frames_checked": 1312,
+        "mobile_motion_frames": 180,
+        "mobile_motion_duration_seconds": 6,
+        "mobile_motion_dropped_frames": 0,
+        "playhead_position_error_px_approx": 0.24,
+        "source": "latest source-task report read 2026-10-10; not rerun during skill update",
+        "retention_improvement_proven": false
+      },
+      "source_package": {
+        "library_file_id": "libfile_ecc3fa4af2c48191bb985be7ed8dc603",
+        "file_id": "file_000000003d7c81fdb3f5815d9ff86f1b",
+        "version": 0,
+        "filename": "Siounex-Unified-v9-template-source-v1.zip",
+        "bytes": 20293,
+        "sha256": "f918aaa728f6442128f79ea71071146cb728c365e189c2f234ed504d33cb2045"
+      },
+      "bundled_source_directory": "unified-v9-runtime",
+      "required_media": {
+        "published_v9": {
+          "library_file_id": "libfile_7cd6310c62948191b7358238328fe072",
+          "file_id": "file_0000000016f081f7aee772fd63df4bad",
+          "version": 10,
+          "file_name": "Claude-20辆车去哪了-A2一体布局审阅-v9.mp4",
+          "local_path": "media/published-v9.mp4",
+          "sha256": "56113f21fa38021da3ecad44be8e8e407d292110fc3cd090c0d608a057cd8cc3",
+          "bytes": 12696320,
+          "required": true,
+          "role": "existing actual v9 source plane and approved audio master; immutable pinned bytes"
+        },
+        "legacy_media_bundle": {
+          "library_file_id": "libfile_f63aab2beb44819180a8b8f52dffbf59",
+          "file_id": "file_0000000095548230900df003a2f8e798",
+          "version": 0,
+          "file_name": "Siounex-A2-Claude示例-真实素材-v1.zip",
+          "sha256": "322aa45fdf9151fa8190aa0b10ec981fec24edf8fc661f58bfbf40aa73fb21c1",
+          "bytes": 32174328,
+          "required": true,
+          "members": [
+            {
+              "member": "example-inputs/original-dark-outro-normalized.mp4",
+              "local_path": "media/original-dark-outro-normalized.mp4",
+              "sha256": "f7a9efa24c8de9f8bf1e5f41c22aac99c8d5db2184d3e81f834548b2902d85f7",
+              "bytes": 233299
+            },
+            {
+              "member": "example-inputs/history-dragon.png",
+              "local_path": "media/history-dragon.png",
+              "sha256": "6906b6319e3399cc0f9fa43c8c3de2c96a4232322815cf27f61bbd03fe9fd4c0",
+              "bytes": 2529424
+            },
+            {
+              "member": "example-inputs/history-animals.png",
+              "local_path": "media/history-animals.png",
+              "sha256": "d775a45ff9fca349f14823eb23ab68a23a85f1b2fae50155c6df3b6909d76dab",
+              "bytes": 2593153
+            },
+            {
+              "member": "example-inputs/history-latte.png",
+              "local_path": "media/history-latte.png",
+              "sha256": "5d7041c1cf658e7046cf99dd2fe126ab275926618b41b38db6d159d1302075ff",
+              "bytes": 2252323
+            }
+          ]
+        }
+      },
+      "fonts_bundled": false,
+      "source_integrity": {
+        "source_package": {
+          "library_file_id": "libfile_ecc3fa4af2c48191bb985be7ed8dc603",
+          "file_id": "file_000000003d7c81fdb3f5815d9ff86f1b",
+          "version": 0,
+          "filename": "Siounex-Unified-v9-template-source-v1.zip",
+          "bytes": 20293,
+          "sha256": "f918aaa728f6442128f79ea71071146cb728c365e189c2f234ed504d33cb2045"
+        },
+        "all_manifest_members_verified": true,
+        "verified_manifest_members": 11,
+        "run_member_hashes_match_packaged_code": true,
+        "verification_report_archive_note": "QA report tested_source_zip_sha256 identifies a prior test archive; final delivery ZIP includes QA/manifest. Final ZIP SHA and all indexed members were independently verified. Four recorded executed code/config hashes match this final source.",
+        "runtime_execution_during_skill_integration": false,
+        "original_files_preserved_byte_for_byte": true
+      },
+      "bounded_restore_verification": {
+        "windows": true,
+        "ranges_seconds": [
+          [
+            0,
+            3
+          ],
+          [
+            22.9,
+            34
+          ]
+        ],
+        "frames": [
+          90,
+          333
+        ],
+        "decoding_and_phone_visual_review": "passed per archived source-task QA; silent previews, no listening claim",
+        "source_and_fonts_hashes_verified": true,
+        "history_round_and_resume_verified": true,
+        "untested": [
+          "new full-mode render",
+          "new topic assets and timeline",
+          "clean machine dependency install",
+          "Mac/Linux",
+          "platform publication"
+        ]
+      }
+    }
+  ],
+  "external_dependencies": [
+    "authorized personal avatar video and voice",
+    "source footage and usage rights",
+    "music if requested",
+    "ffmpeg and ffprobe for local QA/render",
+    "current avatar-provider login and quota if generation is needed"
+  ],
+  "not_bundled": [
+    "voiceprint",
+    "credentials",
+    "full source footage",
+    "large video and audio files"
+  ],
+  "selection_rule": "Use the existing light 4-second brand outro after a dark-background main video, and the existing dark 4-second brand outro after a light-background main video. Preserve original wording, logo, timing and audio. Reuse the indexed files; do not regenerate, recolor or invent a variant when one is missing. Verify the actual contrast at the join in the final export.",
+  "source_templates": {
+    "dark": "outro-dark.svg",
+    "light": "outro-light.svg",
+    "provenance": "Approved outro_visual_options_v3 static designs; bundled lightweight templates, no private voice or avatar footage."
+  },
+  "project_recovery_hints": {
+    "outro_project": "deliverables/outro_how_to_use_ai_AB_v3",
+    "example_project": "deliverables/video_prototype_v18",
+    "portability_note": "Historical project-relative hints only; do not assume these exist in a new environment. Library IDs are the portable media recovery keys."
+  },
+  "selection_map": {
+    "dark_main_background": "reusable_outro_light",
+    "light_main_background": "reusable_outro_dark"
+  }
+}

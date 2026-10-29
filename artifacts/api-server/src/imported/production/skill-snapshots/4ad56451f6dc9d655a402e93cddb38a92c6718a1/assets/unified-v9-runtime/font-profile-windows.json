@@ -1,0 +1,23 @@
+{
+  "bold": {
+    "family": "Microsoft YaHei",
+    "path": "C:/Windows/Fonts/msyhbd.ttc",
+    "sha256": "4508821b3dffe01f0ef5e5326a3e60df705a44633858811f67b6982dce3f6ee6",
+    "bytes": 16883552,
+    "redistributed": false
+  },
+  "regular": {
+    "family": "Microsoft YaHei",
+    "path": "C:/Windows/Fonts/msyh.ttc",
+    "sha256": "d79c55e68b1131eea0cc1c47be4f572d964f28c682e143db2ad09c1e4cb07a3f",
+    "bytes": 19704352,
+    "redistributed": false
+  },
+  "numeric": {
+    "family": "Segoe UI Semibold",
+    "path": "C:/Windows/Fonts/seguisb.ttf",
+    "sha256": "6c3fd894b19950b10c34bf64069ef821eaf2f58f959146306fee5b367472e501",
+    "bytes": 974760,
+    "redistributed": false
+  }
+}

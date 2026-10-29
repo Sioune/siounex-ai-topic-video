@@ -1,0 +1,9 @@
+{
+  "frames": 90,
+  "inputs_verified": true,
+  "paid_calls": 0,
+  "sha256": "cc8339e57643949219b7c0d6351cb162cab5e8f9117f854dc30c1060481c6aca",
+  "first_90_frames_SSIM_vs_delivered_full": 0.999946,
+  "local_inputs_check_passed": true,
+  "full_template_command_tested": false
+}

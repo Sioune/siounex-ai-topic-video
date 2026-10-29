@@ -1,0 +1,6 @@
+import {identity,json} from '@/lib/api';
+import {ProductionError,text} from '@/lib/production-contract';
+import {readProductionPublication,publishProduction,ensureProductionCollections} from '@/lib/production-publication';
+const failure=(e:unknown)=>json({error:e instanceof Error?e.message:'发布登记未完成'},e instanceof ProductionError?e.status:503);
+export async function GET(req:Request){const owner=await identity(req);if(!owner)return json({error:'请登录后查看发布记录'},401);try{return json(await readProductionPublication(owner,text(new URL(req.url).searchParams.get('job_id'),100)));}catch(e){return failure(e);}}
+export async function POST(req:Request){const owner=await identity(req,true);if(!owner)return json({error:'请登录并从本站登记发布'},403);try{const raw=await req.text();if(raw.length>8000)throw new ProductionError('请求过大',400);let body:Record<string,unknown>;try{body=JSON.parse(raw);if(!body||typeof body!=='object'||Array.isArray(body))throw Error();}catch{throw new ProductionError('请求格式无效',400);}if(body.action==='ensure_collections')return json(await ensureProductionCollections(owner,body));if(body.action!=='publish')throw new ProductionError('发布登记操作无效',400);return json(await publishProduction(owner,body));}catch(e){return failure(e);}}

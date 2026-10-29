@@ -1,0 +1,138 @@
+[
+  {
+    "id": "deep-tech",
+    "version": 1,
+    "name": "深底科技 · 原商务候选（未认可）",
+    "tone": "dark",
+    "runtime": "deep-tech-v1",
+    "aesthetic_status": "pending",
+    "approval_evidence": null,
+    "preview_library_id": "libfile_9f7479d3cc5481919525885834dbcb8a",
+    "bundle": null,
+    "runtime_ready": true,
+    "features": [
+      "原商务方向已被用户要求返工",
+      "保留历史，不进入认可随机库"
+    ]
+  },
+  {
+    "id": "deep-tech",
+    "version": 2,
+    "name": "休闲科技 · 安全区修订前",
+    "tone": "dark",
+    "runtime": "casual-tech-v1",
+    "aesthetic_status": "pending",
+    "approval_evidence": null,
+    "preview_library_id": "libfile_b72e2c877dc881918a897eecc00b5b3f",
+    "bundle": null,
+    "runtime_ready": true,
+    "features": [
+      "用户认可方向，但要求上移字幕、横带和时间轴",
+      "保留修订前版本，不进入认可随机库"
+    ]
+  },
+  {
+    "id": "deep-tech",
+    "version": 3,
+    "name": "休闲科技 · 安全区修订",
+    "tone": "dark",
+    "runtime": "casual-tech-safe-v1",
+    "aesthetic_status": "user_approved",
+    "approval_evidence": "用户2026-10-11认可休闲科技方向：好很多…底部留空…整体往上移…其他没问题了，改完就安排生产。安全区修订已实际运行及几何检查通过：正文至少380px底部留白。仅模板方向认可，不是成片音画或发布批准。",
+    "preview_library_id": "libfile_b72e2c877dc881918a897eecc00b5b3f",
+    "bundle": {
+      "library_file_id": "libfile_2825e11fe9dc8191b1b8ef43edcbfe32",
+      "file_id": "file_0000000049ec8230b03490cbe6cd26e8",
+      "version": 0,
+      "sha256": "2cba5edba43c202c84be47af971cab3c1646d9e1a88a0adde10e63e97644e796"
+    },
+    "runtime_ready": true,
+    "features": [
+      "口语问题标题与暖色强调",
+      "完整横屏素材",
+      "76px手机大字幕",
+      "全幅羽化章节带",
+      "分隔圆角filmstrip",
+      "底部至少380px平台安全区",
+      "深底配已有浅色原版片尾"
+    ]
+  },
+  {
+    "id": "legacy-silver",
+    "version": 1,
+    "name": "旧银色 · 历史参照",
+    "tone": "light",
+    "runtime": "legacy-silver-v1",
+    "aesthetic_status": "pending",
+    "approval_evidence": null,
+    "preview_library_id": null,
+    "bundle": null,
+    "runtime_ready": true,
+    "features": [
+      "保留旧运行机制",
+      "功能曾通过，但审美不满意，不进入随机库"
+    ]
+  },
+  {
+    "id": "morning-light",
+    "version": 1,
+    "name": "晨光浅底 · 字幕留白修订",
+    "tone": "light",
+    "runtime": "morning-light-v1",
+    "layout_profile": "approved-node-stage-v2",
+    "time_slot": "08:00",
+    "timezone": "Asia/Shanghai",
+    "outro_variant": "dark",
+    "outro_version": "v6",
+    "aesthetic_status": "user_approved",
+    "approval_evidence": "2026-10-22 本人认可浅底视觉方向，要求深浅两版一起下移字幕并增加上下留白；已按 source.y=474、caption.y=1136、chapter.y=1228 修订预览，本人要求全面修复并固化早08浅底/晚18深底。此模板认可不代替每条内容人工审核。",
+    "preview_library_id": null,
+    "bundle": null,
+    "source_bundle": {
+      "manifest_path": "production/template-assets/morning-light-v1/manifest.json",
+      "sha256": "e3ba1c555acc058fe49c8425bea0e7bcc9a85daa9994e094cc46abab2e3e3bc2"
+    },
+    "runtime_ready": true,
+    "features": [
+      "沿用本人认可的同系列标题和主画面布局",
+      "完整1024×576横屏素材，不裁内容",
+      "76px手机大字幕，正文与章节之间各有留白",
+      "全幅常驻连续揭亮章节条",
+      "同槽真实往期卡与既有字号",
+      "底部380px平台安全区",
+      "08:00 固定浅色正文配原v5深色片尾",
+      "119帧原片尾与完整原声保留；每条内容仍需人工审核"
+    ]
+  },
+  {
+    "id": "evening-dark",
+    "version": 1,
+    "name": "夜间深底 · 字幕留白修订",
+    "tone": "dark",
+    "runtime": "evening-dark-v2",
+    "layout_profile": "approved-node-stage-v2",
+    "time_slot": "18:00",
+    "timezone": "Asia/Shanghai",
+    "outro_variant": "light",
+    "outro_version": "v6",
+    "aesthetic_status": "user_approved",
+    "approval_evidence": "2026-10-22 本人认可浅底视觉方向，要求深浅两版一起下移字幕并增加上下留白；已按 source.y=474、caption.y=1136、chapter.y=1228 修订预览，本人要求全面修复并固化早08浅底/晚18深底。此模板认可不代替每条内容人工审核。",
+    "preview_library_id": null,
+    "bundle": null,
+    "source_bundle": {
+      "manifest_path": "production/template-assets/evening-dark-v2/manifest.json",
+      "sha256": "ddbbab048cff86419fc2395182fccb560ef06fbed2a75d1caadaadb275dee1f5"
+    },
+    "runtime_ready": true,
+    "features": [
+      "沿用本人认可的同系列标题和主画面布局",
+      "完整1024×576横屏素材，不裁内容",
+      "76px手机大字幕，正文与章节之间各有留白",
+      "全幅常驻连续揭亮章节条",
+      "同槽真实往期卡与既有字号",
+      "底部380px平台安全区",
+      "18:00 固定深色正文配原v5浅色片尾",
+      "119帧原片尾与完整原声保留；每条内容仍需人工审核"
+    ]
+  }
+]

@@ -53,3 +53,9 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+artifacts/api-server/.runtime/
+/generated-artifacts/
+artifacts/api-server/src/imported/production/**/*.png
+artifacts/api-server/src/imported/production/**/*.mp4
+artifacts/api-server/src/imported/production/**/*.jpg
+artifacts/api-server/src/imported/production/**/*.woff2

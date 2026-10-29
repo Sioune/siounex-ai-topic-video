@@ -1,0 +1,49 @@
+{
+  "source_archive": {
+    "status": "succeeded",
+    "library_file_id": "libfile_aee174c0b49c8191a45f600e4aa79049",
+    "file_id": "file_00000000997481f792afc3a938f9b01d",
+    "file_name": "Siounex-A2-冷银往期模板-源码-v1.zip",
+    "current_version_number": 0,
+    "file_size_bytes": 1091449,
+    "sha256": "b90f3295baac1579620fb359d68ae42f6ab0e53e9a7e23306b3eb2a8cd680297"
+  },
+  "members": [
+    {
+      "path": "alignment.json",
+      "bytes": 8781,
+      "sha256": "ce5f18b768f812a6fccc68c3c64814c572f29b79e4cbb470742386b60095ffe2"
+    },
+    {
+      "path": "asset-registry.json",
+      "bytes": 5956,
+      "sha256": "40562e7521a86b31ca3c21c86465ca950ed6499d44d11ec30b4c437bae0eab7b"
+    },
+    {
+      "path": "render-a2.mjs",
+      "bytes": 10536,
+      "sha256": "730059edbb5c8c600f65786a64b5301306ed79a327337d5e55c7cd76344e8dc2"
+    },
+    {
+      "path": "render-config.json",
+      "bytes": 6346,
+      "sha256": "2e8142bf4be11d6fb50934b1199305dc6bc05411acd89670912c4a225a77e93a"
+    },
+    {
+      "path": "assets/background.png",
+      "bytes": 1078906,
+      "sha256": "b341f1694978c994f4d3b4792306c794d06b1faddf9408c314871b60c03ed1a2"
+    },
+    {
+      "path": "assets/background.svg",
+      "bytes": 5817,
+      "sha256": "761e5e775492466207d28c05fffee29c633e6a906812256b7f01916f264d67ba"
+    },
+    {
+      "path": "verification/template-smoke-qa.json",
+      "bytes": 276,
+      "sha256": "e28948fbe7b4a959f3e99bd51e22eb31552f9bf84f8aef32a62ee4b316b327be"
+    }
+  ],
+  "scope": "Unmodified actual runtime files; example config and alignment belong to Claude project, not future approval. Runtime dependency/source ZIP restoration tests were performed on Windows; this integration does not execute the renderer."
+}

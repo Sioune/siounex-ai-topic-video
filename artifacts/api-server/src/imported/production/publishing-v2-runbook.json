@@ -1,0 +1,186 @@
+{
+  "schema": "publishing-v2-frozen-preparation-operations-v3",
+  "site_project_id": "appgprj_6ac65bafa2a48191a4283cb34ebd5e11",
+  "site_origin": "https://siounex-ai-topic-library.siounexzhao.chatgpt.site",
+  "one_time_owner_exception_20261020": {
+    "authorization_reference": "本人在本对话明确要求：今天情况特殊，是第一次尝试，所以早间空档可补发，请继续；并确认使用 Chrome 补发。",
+    "scheduled_at": "2026-10-20T00:00:00Z",
+    "scope": "Only the original 2026-10-20 Beijing 08:00 empty slot and its current approved FIFO first reserve. Use the dedicated run_one_time_slot_makeup action with exact current release/review binding. Deployment alone does not grant or execute it.",
+    "constraints": "The server uses real time, records one non-renewable exact-version grant lasting at most 60 minutes and no later than today's 18:00, and rechecks it before actual submission. Preserve the original scheduled_at, ordinary no-catch-up policy, all form/material/account/anti-duplicate guards and WeChat security_blocked. Never substitute a virtual now, a second reserve or a new grant to retry unknown results. Actual publication and collection anchors still require real platform receipts."
+  },
+  "schedule": {
+    "timezone": "Asia/Shanghai",
+    "slots": [
+      "08:00",
+      "18:00"
+    ],
+    "fifo": "current delivery approval time",
+    "collection_windows_hours": [
+      24,
+      48
+    ],
+    "preparation_beijing": [
+      "07:00",
+      "17:00"
+    ],
+    "final_wakeup_beijing": [
+      "07:55",
+      "17:55"
+    ],
+    "collection_policy": "Approximate next day and day after; normal lateness is allowed. Store the real observation time and currently visible cumulative values; unknown stays null. Do not invent a historical sample or resample for tiny timing/value differences."
+  },
+  "owner_cover_preference_20261020": {
+    "platform": "bilibili",
+    "authorization_reference": "本人在明确获知B站4:3封面正常转为16:9后会裁掉底部品牌和AI画面声明后，明确答复：这不重要，不用理会，继续即可。",
+    "rule": "Historical frozen packages retain the original authorization for normal Bilibili 16:9 cropping of their approved 4:3 cover; record any real clipping honestly and keep the platform AI-content declaration selected. The newer bottom-lockup-20261023 policy supersedes this clipping preference for newly branded covers: retain the full 怎么用好AI plus logo group and readable title/subject, using an approved ratio-specific arrangement or fit/pad when needed. Existing in-flight Huang materials remain unchanged; do not regenerate or repost that package. No platform-required disclosure or mandatory control is waived."
+  },
+  "platform_form_facts_20261020": {
+    "douyin": "The actual topic picker inserts separate non-editable data-mention=# controls. Select exact topics through that picker, inventory both 3:4 and 4:3 cover slots, and verify that upload completion did not restore unwanted defaults.",
+    "bilibili": "The tag 日语学习 is topic-only: the custom-tag input rejects it. Use 搜索更多话题, search the exact phrase, select the exact official topic and confirm. It then appears as a real topic chip alongside ordinary tags. Initial auto category/music and filename-derived tags must be replaced. Current form has 4:3 homepage and 16:9 personal-space cover previews; apply the owner's crop preference above without inventing unseen controls.",
+    "kuaishou": "The native topic control explicitly permits at most 4 topics. Use the actual # key to open native search, wait for the exact full query result, click it and inspect at-tag-item/data-tag-name. Bulk plain hashtag text is not selected topic evidence. Its single 作品描述 field contains the approved title first, then the approved body; do not invent a separate title field. Current source-approved refund/GLM drafts still have 5 tags and are not covered by the Japanese-card-only confirmation.",
+    "one_time_kuaishou_tag_amendment": "For this Japanese-card work only, the owner explicitly approved keeping 怎么用好AI/AI兴趣卡/日语学习/实用知识 and removing the 抖音AI工坊 topic while preserving the source statement in the body. The append-only authorize_browser_tag_amendment record retains the original copy/review and grant, changes derived materials_hash, invalidates old preflight atomically, and does not extend the original 2026-10-20T02:32:15.561Z expiry. Never reuse this approval for another work."
+  },
+  "authorization": "The owner requested four-platform automatic publishing of reviewed completed reserve videos at 08:00 and 18:00, FIFO, and automatic post-publication data collection. Use existing creator browser login memory. Ask the owner only when sign-in, QR, verification or another necessary human action is encountered.",
+  "access": [
+    "Prefer supported owner-private publishing MCP operations. A Site control call is not a creator-platform upload.",
+    "For repeated private control calls, scripts/publishing-session-client.mjs accepts one credential through hidden stdin and reuses the same process; it avoids starting one shell per checkpoint. Its scope is the existing owner-private Site only, never video-platform private endpoints. Close it after use.",
+    "For a collection-only tick, prefer scripts/publishing-collection-tick.mjs with {site_token,body:{action:run_collection_tick}} on hidden stdin. It runs the supported official client in pipes, consumes the complete large framed reply internally and prints only safe status counts/next due time. It cannot publish or accept another action. Use ordinary read tools for the specific current pending collection rather than printing the whole dashboard.",
+    "Credentials and claim tokens remain in process/tool memory only, never arguments, environment files, logs or receipts. Never print an unredacted claim result.",
+    "Existing verified media caches are reused. On first download use approved SHA/size via scripts/publishing-service-client.mjs or the session helper and the normal /api/publishing-service/media route.",
+    "Prefer read_preparation with the known preparation_id during task execution. The dashboard supplies the current ID; do not guess another job/package from its title."
+  ],
+  "management_pages": {
+    "douyin": "https://creator.douyin.com/creator-micro/content/manage?enter_from=publish",
+    "wechat_channels": "https://channels.weixin.qq.com/platform/post/list",
+    "bilibili": "https://member.bilibili.com/platform/upload-manager/article",
+    "kuaishou": "https://cp.kuaishou.com/article/manage/video?status=1&from=publish"
+  },
+  "verified_browser_facts_20261020": {
+    "douyin": {
+      "account_label": "耿梗人",
+      "visible_handle": "subtitler",
+      "logged_in": true,
+      "observed": "2026-10-20 one-time morning makeup completed: creator management explicitly shows the Japanese-card post 已发布 at 09:51 Beijing (minute precision, seconds unknown), official post ID 7698561633559301414. Exact platform copy, five selected topics, both approved covers and AI/public/immediate/download-off/sync-off settings were verified twice before the single publish click."
+    },
+    "bilibili": {
+      "account_label": "StarForge-Kernel",
+      "visible_user_id": "1046852553",
+      "logged_in": true,
+      "observed": "2026-10-20 one-time morning makeup completed: Japanese-card BV1iunc6mEMG is in the selected 已发布 71 list with actual public time 10:02:11 Beijing. Earlier submission time was 10:01:23 and was not used as the public anchor. The owner accepted this upload's terms and the 16:9 crop. Six real tag/topic chips, AI/self-produced declarations and exact platform copy were verified twice before one submit click. Current creator profile remains https://space.bilibili.com/1046852553."
+    },
+    "kuaishou": {
+      "account_label": "星火实验室",
+      "logged_in": true,
+      "observed": "2026-10-20 one-time morning makeup completed: Japanese-card 3xhuijj7vdpdap6 is 已发布; official single-post data page https://cp.kuaishou.com/statistics/article/detail/3xhuijj7vdpdap6 explicitly shows 发布于2026-10-20 10:10:01 Beijing. The four exact owner-confirmed native topics, approved 3:4 cover, AI/public/immediate and download-off settings were verified twice before one publish click. Core metrics are real-time; the bottom 7-day daily panel has a different scope."
+    },
+    "wechat_channels": {
+      "state": "security_blocked",
+      "observed": "Browser site-safety policy rejected observation of channels.weixin.qq.com. Do not retry through other browser surfaces, raw CDP, scripts, private APIs or other workarounds. Login alone does not resolve this policy blocker. An independently supported official integration is a separate future option.",
+      "latest_recheck": "Owner changed default Chrome browsing permission to Always allow; a single normal recheck in the same original Chrome extension/session still returned site-safety refusal. No permission prompt or Auto-review was attempted. Official /feedback/support diagnostic prepared; no bypass or later retry without a supported resolution."
+    }
+  },
+  "run": [
+    "Read the real Beijing clock and owner-private Site state. Never pass a virtual now. Preserve the current owner-only audience and existing 08:00/18:00 publishing plan.",
+    "Ahead of the next slot call prepare_next_slot once, then read_preparation. The service chooses the one FIFO frozen warehouse package and creates independent douyin/wechat_channels/bilibili/kuaishou preparation work. Repeated calls reuse it; queued work is not a saved draft.",
+    "Claim each preparation with claim_preparation and read_preparation_materials. Use the official owner-private media route and existing verified download cache once. Fill the actual platform editor and save its draft; checkpoint_preparation records the real draft locator and result. Never report draft_saved before the platform actually saved it. Do not click publish ahead of time.",
+    "Douyin, Bilibili and Kuaishou use existing Chrome logins and supported CUA browser controls only. Reuse production/platform-publishing-ui-flows.json. Inspect required controls while preparing, not repeatedly at the publication minute. No cookie export, CDP or private creator endpoints.",
+    "WeChat uses the authorized native ADB thread in the local routing record. Read its latest status before handing off, prevent simultaneous phone control, and give it the same package and preparation work ID. Do not create a WeChat browser claim or change channels.weixin.qq.com security_blocked.",
+    "At 07:55/17:55 finish any necessary readiness work and wait in interruptible clock.sleep calls of at most 60 seconds, reading the real clock after each wait. At 08:00/18:00 call run_prepared_tick only in the original five-minute window. It links the same frozen package to the unique slot and dispatches each ready platform independently. No manual content re-review or version comparison. Missing or blocked preparations remain honest pending/blocked; no automatic off-window catch-up.",
+    "Use the saved draft for each formal browser work. Complete the remaining real account/time/duplicate checks and submit once through the platform UI. Save the minimal submission status. For native work send the same formal slot/package once to the designated thread. Existing historical one-time makeup grants do not authorize new catch-up.",
+    "After the actual browser post is available, complete_browser_work saves its real confirmed/published result. If the same actual public post page, account and exact post ID are visible but its official publication time is unreadable, use observe_browser_engagement for the same original work/package/account/post instead; this only makes the existing author engagement available, does not invent a public timestamp or collection anchor and never reopens submission. Review/acceptance and a management row alone do not qualify. Immediately use read_engagement/claim_engagement/record_engagement with the original publication_id to add the brief contextual first comment and author like directly on that post, even while website registration is awaiting reconciliation. Native success uses observe_native_engagement then the same engagement actions for recommendation/comment. These actions are authorized for the same work; no new approval. Already done is not repeated. A genuinely missing platform control is not_present; a failed selector is not proof of absence. Login or identity verification goes to the owner. An unknown comment/like result is read back before any retry.",
+    "Use reconcile_publications for durable real post receipts at any time; it does not create a new upload. Background website registration keeps honest native/browser source and time precision. Exact platform ID/time may remain unknown on native observations; never fabricate it. Queue/review/submitted remain separate from public.",
+    "Use run_collection_tick for background next-day/day-after work. Observe the correct work current data view once, save actual visible cumulative metrics and actual/approximate observation time, leave unseen metrics null. Normal delay is allowed; do not turn late current data into a historical exact T24/T48 sample. Collection does not block publishing or engagement.",
+    "Keep credentials and claim tokens in memory/hidden stdin only. Keep minimal durable package/draft/submission/comment/like states to resume without repeats. No new paid media, production automation or duplicate scheduled automation. Notify only for actual human action, failure/unknown outcome or meaningful results."
+  ],
+  "completion_limit": "Implementation/deployment and saved drafts are reported separately from actual on-time publication and engagement. Only real UI results verify a platform action; tests, queued tasks and instructions are not proof that it ran.",
+  "owner_collection_preference_20261020": {
+    "target_name": "怎么用好AI",
+    "if_available": true,
+    "authorization_reference": "本人在本对话明确要求：注意视频平台填表的时候，如果有合集，记得选上，选“怎么用好AI”这个合集。",
+    "rule": "During preparation select the existing 怎么用好AI collection when the control and exact target are available. Do not create a substitute. Keep the selected draft option; do not redo the same inspection at submit time unless the actual platform changed or lost it.",
+    "observed_results": {
+      "douyin": "Saved existing collection 7695092980209682482 from 12 to 13 works; reopened saved list includes Japanese-card title and 2026-10-20 09:51 publication.",
+      "bilibili": "Existing collection 9282281 contains 8 works, including exact BV1iunc6mEMG; confirmed again after a normal reload without submitting changes.",
+      "kuaishou": "Saved existing collection 264380050 from 6 to 7 works, including the Japanese-card title published at 2026-10-20 10:10."
+    }
+  },
+  "scheduled_kuaishou_tag_amendment": "Owner-explicit normal-slot five-to-four topic reduction uses authorize_scheduled_browser_tag_amendment. Bind current claimed work, slot/release/job, approved version and base materials hash; four distinct topics must be an unchanged subset of original five. No title/body editing, no grant creation, no five-minute window or claim lease extension. Persist append-only approval and invalidate prior preflight atomically; reread materials and recheck complete actual form. Cannot reopen submitted/unknown work; the older makeup-specific amendment remains unchanged. The sole additional off-window scope is the exact owner-approved GLM Oct21 08:00 continuation defined in one_time_glm_slot_continuation; it binds the same nonrenewable grant and only the four stated tags. No other continuation or makeup inherits it.",
+  "one_time_refund_slot_continuation": "Only for the owner explicit 2026-10-20 instruction permitting the refund-experiment original 18:00 slot to continue beyond five minutes: authorize_slot_continuation requires request_id, exact slot_id/release_id/job_id, current approved binding_hash/copy_hash, authorization_reference. Real creation time to at most 60 minutes, nonrenewable, same original work/claim/account/materials and append-only four-topic amendment; no new slot/release, no clock override, no reopening submitting/submitted/unknown browser work. Native WeChat is delegated separately, not browser-unblocked. All current approval/material and full form guards still apply. Ordinary 08:00/18:00 five-minute policy remains unchanged.",
+  "platform_topic_display_casing": "Only topic matching folds ASCII A-Z case (e.g. AI智能体 and official ai智能体); approved text and actual observed labels remain intact, Chinese/other text and account identities remain exact; case-variant duplicates are rejected.",
+  "continued_slot_receipt_ingestion": "While the existing exact one-time continuation grant is valid, run_slot_continuation_reconciliation accepts only slot_id/release_id/job_id/binding_hash/copy_hash and consumes durable real results of its original three browser work IDs. It never syncs reserve, creates slot/release/work, publishes, runs collection observation or extends the grant. Actual published receipts require real platform ID/time and create exactly T24/T48 once; queued/preparing work creates no collections. Native owner-report job registration does not prevent ingesting preexisting true per-platform receipts; version/approval/account checks still apply. Native registration remains separate. Ordinary run_collection_tick still never mutates publications. The exact GLM Oct21 tuple is additionally permitted while its original one-time continuation remains valid; same immutable work IDs and actual receipts only.",
+  "one_time_glm_slot_continuation": {
+    "owner_instruction": "2026-10-21 owner explicitly: 今天情况特殊，立刻补发; applies only to the already allocated GLM original 08:00 slot after normal file-URL permission recovery, not a recurring catch-up policy.",
+    "slot_id": "ps_06ab8566013840ed1d7fd0251e3899e579032d3bed107c8c9bcc722c57d3278e",
+    "release_id": "pr_9e78d8fae37e33de7460bbb7a215cde69b601ecf37bab135396108564622f394",
+    "job_id": "job_b7dcd6bf-682d-429f-9016-7c9f3df41c16",
+    "scheduled_at": "2026-10-21T00:00:00Z",
+    "binding_hash": "22e558a5fee474eb57fa9703bb18eacfefc5fb2a4be39a7925f8a99efddbf161",
+    "copy_hash": "52d733060ca36eb7d69b9e70825e09176d2a623b6b4efe1cc483b0d1ad4653e5",
+    "video_sha256": "11b78d228391cd08ff723eb61aa9abb0d3291387a7b3aaa507a7178e9d1f97dd",
+    "grant_policy": "authorize_slot_continuation once; actual server Date only; after the original five-minute window and before 2026-10-21T16:00:00.000Z. Expires at min(actual creation + 60 minutes, that same-day cutoff). Exact replay returns the original grant without extension; another request cannot renew. No new slot/release/post/work, no plan change, no virtual now.",
+    "work_policy": "Only original publish work referenced by the three original posts: queued/waiting_browser without any claim, or expired claimed/preparing|ready_to_submit with execute-kind and no result. Preserve old state/lease/hash and remove stale preflight; fresh normal claim of the SAME work obtains a new memory-only token. Active claims, submitting/submitted/uncertain/confirmed/blocked or saved results are not reopened.",
+    "kuaishou_tags": {
+      "action": "authorize_scheduled_browser_tag_amendment",
+      "old_tags": [
+        "怎么用好AI",
+        "GLMLegal",
+        "合同审查",
+        "官方演示解读",
+        "AI怎么用"
+      ],
+      "new_tags": [
+        "怎么用好AI",
+        "GLMLegal",
+        "合同审查",
+        "官方演示解读"
+      ],
+      "removed": "AI怎么用",
+      "body": "unchanged approved platform-specific text",
+      "guard": "Only this exact valid continuation and original work, fresh valid execute claim, exact original materials hash and approval/account. Append-only amendment binds original grant expiry, clears stale preflight, changes derived materials hash. Reread materials and recheck every actual cover/title/description/topic/collection/option. No preflight bypass or grant/claim extension."
+    },
+    "wechat": "No change to channels.weixin.qq.com browser security_blocked. Native phone path and delegated thread remain governed by current owner instructions, without changing browser state.",
+    "preserves": "The earlier refund continuation and Japanese-card makeup/amendment stay unchanged. Ordinary 08:00/18:00 five-minute policy remains. Unknown outcomes reconcile read-only, never republish."
+  },
+  "execution_policy": {
+    "consent": "Reuse existing owner approval and publication authorization. Reuse consent to the same Bilibili User Agreement and Community Convention; ask only for a substantive change or an actual current tool requirement, explaining it.",
+    "authority": "Owner explicitly authorized implementation of four-platform advance preparation, on-time publishing, first comment and like/recommendation; this section replaces conflicting historical execution steps.",
+    "effective_at": "2026-10-21",
+    "submission": "At real slot time claim the same prepared package once. Check actual target account, time and whether already submitted. Each ready platform proceeds independently; a blocked phone/platform never blocks the others and never selects another reserve.",
+    "idempotency": "One slot, one package, one submission per platform. Unknown result means read the existing post, never upload again. Already liked/recommended stays selected; existing author first comment is not duplicated.",
+    "preparation": "Upload, fill exact platform text, choose approved covers and existing 怎么用好AI collection when available, set real options and save a draft ahead of the slot. Preparation never clicks publish and never reserves the final slot.",
+    "perception": "Reuse known semantic page controls and established routes. Read UI only as needed to locate the next action or recover an actual layout/error change. No per-click screenshots, repeated audit bundles or redundant same-file downloads.",
+    "warehouse": "The owner-reviewed completed warehouse entry is immutable. Freeze its complete approved video/covers/platform copy/options once as package_id. Reuse it for preparation and submission; do not ask the owner to review it again or manually compare versions.",
+    "completion": "A real successful post plus its author-authorized first comment and like/recommendation is the publishing outcome. Store truthful platform status; acceptance/reviewing is not public. Website registration and approximate next-day/day-after sampling continue in the background and do not gate engagement or publishing completion."
+  },
+  "prepared_slot_owner_continuation": {
+    "action": "authorize_prepared_slot_continuation",
+    "endpoint": "POST /api/publishing-service (existing owner-private authentication)",
+    "required_fields": [
+      "request_id",
+      "preparation_id",
+      "package_id",
+      "platforms",
+      "authorization_reference"
+    ],
+    "scope": "Explicit owner authorization only. Continue the same already-claimed frozen package, original slot/release/job and existing not-yet-external platform works. Name only the still-unsubmitted platforms; already published, submitting, submitted externally or unknown targets cannot reopen. A partially published or blocked original reserve is supported. Native WeChat uses the existing independent prepared phone draft; browser security_blocked is never changed.",
+    "window": "Actual server creation time after the original submission window, through creation + 60 minutes. One immutable grant per slot. Exact replay returns its original expiry and current active flag; another request, platform set, package or later renewal is refused. No now, deadline, duration, force or replacement identity fields.",
+    "execution": "Do not call run_prepared_tick outside the ordinary window or create a second slot/work. Reuse the original browser work ID with its existing valid claim, or obtain a fresh normal claim if the old pre-submit lease expired; never revive the old token. Use the existing prepared_check short verification on the same saved draft/account and unchanged frozen media, then submit once. Uncertain/submitted results use read-only reconciliation. Native material reads return the same package with the authorized continuation window; phone publication remains independently evidenced and registered.",
+    "side_effects": "Authorization writes only the immutable grant after atomic current-plan, warehouse, original-slot/work/account and anti-duplicate checks. It neither publishes nor changes approvals, draft contents, work tokens or successful platforms. Normal 08:00/18:00 selection and five-minute guards remain unchanged. reconcile_publications remains available outside submission windows for actual durable results and T+24/T+48 tasks."
+  },
+  "prepared_submission_policy_20261026": {
+    "restore_drafts_by_beijing": [
+      "07:50",
+      "17:50"
+    ],
+    "ready_on_button_by_beijing": [
+      "07:55",
+      "17:55"
+    ],
+    "stage_action": "arm_prepared_slot",
+    "checkpoint_phase": "armed",
+    "at_slot": "Use the same open prepared page and in-memory timed one-use permit; one click only, no submission RPC or repeated form/SHA audit.",
+    "platform_order": "All available submissions first; accepted means advance to the next platform. IDs, screenshots, site registration, engagement and metrics follow.",
+    "explicit_makeup": "authorize_prepared_slot_continuation for the same preparation/package and genuinely unsubmitted targets; current-date independent, one idempotent one-hour grant from real service time.",
+    "background_yields": "07:50–08:05 and 17:50–18:05 Asia/Shanghai; do not defer valid result recording."
+  }
+}

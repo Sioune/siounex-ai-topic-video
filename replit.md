@@ -1,45 +1,41 @@
-# [Project name]
+# 怎么用好AI · 选题库
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Private Chinese-language workspace for AI story discovery, research, original material, video production/review, publishing and performance records.
 
-## Run & Operate
+## Run
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+Use the managed workflows:
+- `artifacts/ai-studio: web` — existing UI, converted from Next/Vinext to Vite/React.
+- `artifacts/api-server: API Server` — Express API, including all original API paths and `/mcp`.
 
-## Stack
+`pnpm --filter @workspace/api-server test` runs isolated database-adapter tests and authenticated development smoke checks against the running API.
+`node artifacts/api-server/scripts/migration-browser.mjs` runs the browser checks; it needs the workflows and the Replit Chromium binary. Screenshots go into ignored `generated-artifacts/migration/`.
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+## Owner access
 
-## Where things live
+The original host supplied ChatGPT identity headers. They are no longer trusted.
+The replacement uses Replit OIDC with PKCE, secure HTTP-only sessions, and owner restriction. Set `STUDIO_OWNER_ID` to the owner's Replit user ID. `REPL_OWNER_ID` is accepted when available. Only the verified OIDC subject is compared; display names and usernames never authorize access.
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+Without a matching owner, sign-in is intentionally denied. Do not replace this with first-visitor ownership or a public development bypass. The owner account was not provided during migration, so the real OIDC owner callback remains unverified.
 
-## Architecture decisions
+## Data and files
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+The import contains source, policy JSON and starter topics, but **no live database dump or original private R2 objects**. Do not present starter topics as restored live records, or invent production, review or publication receipts.
 
-## Product
+The original database is SQLite/D1. Its schema and SQL are preserved through a Node SQLite adapter rather than converted to PostgreSQL without authorization. Every committed mutation is snapshotted to private App Storage before a successful response; startup restores that snapshot. Archive files also use private App Storage. Development and production have separate storage prefixes.
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Run **one active API instance**. Generation-conditional snapshot writes reject concurrent writers rather than silently overwriting their data. A storage failure must remain an explicit failure, never a fallback to an empty library. Multiple active replicas require a separately authorized storage architecture change.
 
-## User preferences
+Do not restart the API during browser/smoke tests: they create short-lived synthetic sessions directly in the development SQLite cache, then delete those sessions and persist cleanup through logout. There is no test login endpoint.
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+## Source and implementation
 
-## Gotchas
+- `.migration-backup/` — untouched imported source and operational instructions; excluded from deployment.
+- `artifacts/ai-studio/src/` — original client components, styles, policy files and route mapping.
+- `artifacts/api-server/src/imported/` — original backend business rules, SQL migrations and production policy files.
+- `artifacts/api-server/src/lib/studio-*` — SQLite persistence, App Storage and replacement identity boundary.
+- `artifacts/api-server/src/routes/imported.ts` — Express-to-standard-Request adapter, preserving endpoint contracts and streaming.
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+Large worker-side production media are retained in the original import, not duplicated in the deployed API. The web app's original `public/` assets are preserved. The original worker execution scripts and live executor services were not launched or replayed as part of this migration.
 
-## Pointers
-
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+Strict type-cleanup of inherited source is outside the migration scope. Use runtime checks and the managed frontend build; root `pnpm dev` is not a run command.

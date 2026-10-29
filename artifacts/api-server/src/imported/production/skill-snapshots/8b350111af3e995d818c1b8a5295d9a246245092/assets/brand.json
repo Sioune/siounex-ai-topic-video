@@ -1,0 +1,35 @@
+{
+  "brand": "怎么用好AI",
+  "tagline": "让AI真正用起来",
+  "spoken_outro": "关注我，AI有新招，用起来才重要。",
+  "services": [
+    "实战培训",
+    "战略诊断",
+    "产品共创",
+    "经营陪跑",
+    "内容生产",
+    "工具方法"
+  ],
+  "canvas": [
+    720,
+    1280
+  ],
+  "main_frame": {
+    "x": 36,
+    "y": 160,
+    "width": 648,
+    "height": 864
+  },
+  "subtitle": {
+    "font_px": 48,
+    "max_lines": 2,
+    "inner_bottom_region_px": 140
+  },
+  "bottom_safe_px": 256,
+  "pip_diameter_px": 148,
+  "outro_seconds": 4,
+  "variants": [
+    "dark",
+    "light"
+  ]
+}

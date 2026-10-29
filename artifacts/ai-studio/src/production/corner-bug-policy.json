@@ -1,0 +1,61 @@
+{
+  "schema": "siounex-corner-bug-policy-v1",
+  "approved_date": "2026-10-24",
+  "required": true,
+  "asset": {
+    "package_path": "assets/brand/corner_bug_v5.webm",
+    "sha256": "80b4c9b62b83590941ae49a0ae12870dd2ede55e67245939ccb3a69a8482c5d6",
+    "codec": "VP9",
+    "width": 480,
+    "height": 480,
+    "fps": 30,
+    "frames": 196,
+    "alpha_verified": true,
+    "audio": false,
+    "ffmpeg_decoder": "libvpx-vp9",
+    "path": "production/assets/brand/corner_bug_v5.webm"
+  },
+  "layout": {
+    "canvas": [
+      1080,
+      1920
+    ],
+    "anchor": "top-left-brand-row",
+    "x": 56,
+    "y": 12,
+    "width": 144,
+    "height": 122,
+    "source_crop": [
+      96,
+      64,
+      360,
+      304
+    ],
+    "brand_text": {
+      "text": "怎么用好AI",
+      "x": 216,
+      "y": 68,
+      "font_size": 30
+    },
+    "animation": {
+      "source_frame_range": [
+        0,
+        120
+      ],
+      "end_exclusive": true,
+      "playback_rate": 1,
+      "holds_source_frame": 119,
+      "body_only": true,
+      "outro_v6_unchanged": true,
+      "repeat_interval_seconds": 20,
+      "repeat_interval_frames": 600,
+      "active_duration_seconds": 4,
+      "active_frames": 120,
+      "hold_frames_per_period": 480,
+      "schedule": "0,20,40,...; start-to-start"
+    }
+  },
+  "optional_color_plate": "按素材角落实际区域最小处理；默认透明。示意图未伪造已有第三方水印。",
+  "reference": "references/corner-bug.md",
+  "id": "siounex-final-brand@1"
+}
