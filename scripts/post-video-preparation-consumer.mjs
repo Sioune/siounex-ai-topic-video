@@ -32,7 +32,8 @@ export function postVideoLocalSources(job,plan,{root=process.cwd()}={}){
  // The normal owner-feedback correction has its own genuine result record and
  // project identity. It is not a private-review producer receipt.
  if(!cloneId&&plan.delivery_mode==='results-only'){
-  const corrections=path.resolve(root,'.sites-runtime/authorized-inputs',job.id,'revision-'+job.revision,'owner-feedback-correction');
+  for(const kind of ['owner-feedback-correction','owner-feedback-outro']){
+  const corrections=path.resolve(root,'.sites-runtime/authorized-inputs',job.id,'revision-'+job.revision,kind);
   if(fs.existsSync(corrections))for(const entry of fs.readdirSync(corrections,{withFileTypes:true}).filter(d=>d.isDirectory()&&/^[a-f0-9]{64}$/.test(d.name))){
    const resultFile=path.join(corrections,entry.name,'correction-result.json');if(!fs.existsSync(resultFile))continue;
    const r=JSON.parse(fs.readFileSync(resultFile,'utf8'));if(r.schema!=='owner-feedback-correction-result-v1'||r.input_hash!==entry.name||r.video_generated!==true||r.audio_generated!==true||!Array.isArray(r.missing)||r.missing.length||r.files?.find(f=>f.role==='video')?.sha256!==plan.base_video.sha256)continue;
@@ -45,6 +46,7 @@ export function postVideoLocalSources(job,plan,{root=process.cwd()}={}){
     const original_producer_project=exactFile(ref,root);return{video,project_archive:null,producer_project,original_producer_project,correction_receipt:correctionReceipt};
    }
    throw Error('POST_VIDEO_CORRECTION_ORIGINAL_PROJECT_MISSING');
+  }
   }
  }
  throw Error('POST_VIDEO_CURRENT_LOCAL_RECEIPT_MISSING');

@@ -37,6 +37,14 @@ function resumableWaitingPrivate(h){
  const knownVisual=h.status==='blocked'&&h.lease_until==null&&h.missing?.some(m=>String(m.detail||m.code||'').includes('Prepared actual frame count differs; never hand off a truncated plane'))===true;
  return h.status==='claimed'||!!base||knownVisual||isMaterialAcquisitionResumeCandidate(h)||isResourcePreclaimCandidate(h)||isPreproductionNarrationCandidate(h)||isTitleRuntimeRecoveryCandidate(h)||isCaptionPaginationCandidate(h)||isFrameBudgetRecoveryCandidate(h)||isWorkstationWaitCandidate(h)||h.status!=='queued'&&h.checkpoint?.artifacts?.some(a=>a.file?.endsWith('/producer-receipt.json'))===true;
 }
+// Completed handoffs can remain in the server's read-only waiting list after
+// a newer video has returned. In node mode that video belongs to the owner for
+// review; do not resume the older producer as an automatic replacement.
+export function completedHandoffAwaitsOwnerReview(job,h){
+ if(job?.review_mode!=='node'||h?.status!=='completed'||h.reconciliation!=null||h.lease_until!=null||!h.base_pending_video)return false;
+ const m=(job.milestones||[]).filter(v=>v.node==='video'&&v.revision===job.revision&&v.mode_epoch===job.mode_epoch).sort((a,b)=>b.artifact_version-a.artifact_version)[0],p=h.base_pending_video;
+ return m?.status==='awaiting_human'&&m.id===p.id&&m.artifact_hash===p.artifact_hash&&m.artifact_version===p.artifact_version;
+}
 function currentNodes(job){const latest=new Map();for(const m of job.milestones||[])if(m.revision===job.revision&&m.mode_epoch===job.mode_epoch&&(!latest.has(m.node)||Number(m.artifact_version||0)>Number(latest.get(m.node).artifact_version||0)))latest.set(m.node,m);return [...latest.values()].sort((a,b)=>a.node.localeCompare(b.node));}
 function currentWorkflowRead(before,after){
  if(!after||after.id!==before.id||after.is_test||!Number.isSafeInteger(after.revision)||after.revision<before.revision||after.mode_epoch!==before.mode_epoch||after.contract_hash!==before.contract_hash||!['auto','node'].includes(after.review_mode)||after.review_mode!==before.review_mode||!Array.isArray(after.milestones)||!['waiting_executor','awaiting_review','approved','paused','failed','completed','cancelled'].includes(after.status))return false;
@@ -183,6 +191,7 @@ export async function autonomousPass(c,{call,execute=dispatch,prepare=runPrepara
      if(waitingStarted>=2||!flow&&admittedJobs.size>=16||stopScheduling||Date.now()+60000>=admissionDeadline)break;
      if(excluded().includes(h.job_id)||!resumableWaitingPrivate(h))continue;
      const {job}=await call({action:'read',id:h.job_id});if(stopScheduling||Date.now()+60000>=admissionDeadline){if(!natural)budgetDeferred=true;break;}if(!job||job.id!==h.job_id)throw Error('Exact waiting native preparation job required');assertAllowed(job);
+     if(completedHandoffAwaitsOwnerReview(job,h))continue;
      if(job.id==='job_00000000-0000-4000-8000-000000000004'&&!authorizedLegacyPrivateRework(job))throw Error('Protected/test production exclusion violated');
      const candidate={job,kind:'native-preparation-handoff',native_preparation:h};if(seen.has(identity(candidate)))continue;
      waitingStarted++;launch(candidate,true);

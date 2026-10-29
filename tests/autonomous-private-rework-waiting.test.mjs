@@ -11,6 +11,14 @@ const base={id:'local_review_video_'+'b'.repeat(64),artifact_hash:'c'.repeat(64)
 const handoff=(extra={})=>({job_id:id,queue_id:queue,binding:{scope:'private-video'},base_video:base,status:'blocked',checkpoint:{note:'SYNTHETIC new rework queue',artifacts:[]},missing:[{code:'material:shot-2',detail:'SYNTHETIC current source required'}],...extra});
 const returned=h=>({job_id:h.job_id,queue_id:h.queue_id,status:'local-review-returned',local_draft_id:'SYNTHETIC confirmed new return',claimed:true,generation_started:true,video_generated:true});
 
+test('idle waiting list does not re-open a completed producer against the newer node review',async()=>{
+ const pending={id:'local_review_video_'+'d'.repeat(64),artifact_hash:'e'.repeat(64),artifact_version:5};
+ const h=handoff({status:'completed',lease_until:null,reconciliation:null,base_pending_video:pending});
+ const j={id,is_test:0,review_mode:'node',revision:3,mode_epoch:0,milestones:[{...pending,node:'video',revision:3,mode_epoch:0,status:'awaiting_human'}]};let starts=0;
+ await autonomousPass({execute:true},{call:async b=>b.action==='dispatch_next'?{job:null,native_preparation_waiting:[h]}:{job:j},continuePrivate:async()=>{starts++;return returned(h);}});
+ assert.equal(starts,0);
+});
+
 test('a fresh exact rework base resumes without a producer receipt in the new queue',async()=>{
  for(const status of ['queued','blocked','completed']){
   const h=handoff({status}),calls=[],resumed=[];
