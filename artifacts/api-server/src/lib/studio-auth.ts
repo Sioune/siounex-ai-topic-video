@@ -9,6 +9,10 @@ export const authRouter = Router();
 // Clerk verifies identity; the curated owner gate still controls all private work.
 // No JIT user creation: the original app never enrolled arbitrary visitors.
 export function authenticatedUser(req: Request) {
+  const executorIdentity = requestIdentity.getStore();
+  if (executorIdentity?.kind === 'codex-executor' && typeof executorIdentity.userId === 'string') {
+    return { userId: executorIdentity.userId, displayName: '本地 Codex 执行器', email: '', fullName: null };
+  }
   const auth = getAuth(req);
   if (!auth.userId) return null;
   return resolveStudioOwner(auth.sessionClaims, process.env.STUDIO_OWNER_ID);
@@ -16,6 +20,10 @@ export function authenticatedUser(req: Request) {
 
 export const requireStudioOwner: RequestHandler = (req, res, next) => {
   res.set('Cache-Control', 'private, no-store');
+  if (requestIdentity.getStore()?.kind === 'codex-executor') {
+    next();
+    return;
+  }
   if (!getAuth(req).userId) {
     res.status(401).json({ error: '请登录后使用私人工作台。' });
     return;

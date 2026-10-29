@@ -7,6 +7,7 @@ import { importedRouter } from "./routes/imported";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
+import { codexExecutorBridgeMiddleware, issueCodexExecutorGrant, revokeCodexExecutorGrant } from "./lib/codex-executor-bridge";
 
 const app: Express = express();
 
@@ -42,6 +43,11 @@ app.use(
   })),
 );
 
+// A task-scoped Codex credential is accepted only on the existing production
+// executor route. All other routes continue to require the owner's Clerk session.
+app.use("/api/executor", codexExecutorBridgeMiddleware);
+app.post("/api/codex-executor/grant", requireStudioOwner, issueCodexExecutorGrant);
+app.post("/api/codex-executor/grant/revoke", requireStudioOwner, revokeCodexExecutorGrant);
 app.use("/api", router);
 app.use("/api", authRouter);
 app.use(requireStudioOwner);

@@ -17,6 +17,12 @@ for (const route of ['/api/library', '/api/data-center', '/api/production', '/ap
   }
   console.log(`${route}: unverified identities denied`);
 }
+const fakeCodexGrant = await fetch(origin + '/api/executor', {
+  method: 'POST',
+  headers: { Authorization: 'Bearer cxbr1.not-a-real-grant.not-a-real-secret', 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: 'read', id: 'job_not-authorized' }),
+});
+assert.equal(fakeCodexGrant.status, 401, 'A forged local Codex grant must be denied');
 const health = await fetch(origin + '/api/healthz');
 assert.equal(health.status, 200);
 console.log('Clerk boundary smoke: PASS');
