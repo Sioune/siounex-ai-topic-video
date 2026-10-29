@@ -59,6 +59,11 @@ export default defineConfig({
     },
     dedupe: ['react', 'react-dom'],
   },
+  optimizeDeps: {
+    // Task merges can leave prebundled dependencies from a different React
+    // version. Rebuild on startup so React and its renderer stay in sync.
+    force: true,
+  },
   root: path.resolve(import.meta.dirname),
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist/public'),

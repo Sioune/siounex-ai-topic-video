@@ -20,3 +20,9 @@ A managed authentication migration reporting zero users does not establish that 
 **Why:** The imported studio used custom OIDC and opaque local sessions, not the standard managed user bridge. The identity migration reported zero users, and no real owner identity or original live database dump was supplied.
 
 **How to apply:** Require explicit verified owner enrollment and check stable ownership IDs before granting access. Never treat zero migrated users as permission to grant the first registrant ownership or to reassign existing records.
+
+Dependency reconciliation after isolated-task merges can leave Vite prebundles from the previous dependency tree.
+
+**Why:** Installed React and React DOM can be correctly aligned while the browser still receives incompatible renderer versions from prebundled dependencies.
+
+**How to apply:** Check installed versions separately from optimized browser modules when diagnosing version mismatches after merges. Preserve startup cache invalidation for the studio dev server; a successful dependency install alone does not verify browser runtime compatibility.
