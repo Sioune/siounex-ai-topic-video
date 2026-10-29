@@ -1,5 +1,6 @@
 import type {ProductionJob} from '@/lib/production-contract';
 export default function ContentMotionStatus({job}:{job:ProductionJob}){
+ if(job.review_mode==='node')return null;
  if(job.status==='cancelled')return null;
  const latest=job.milestones?.filter(m=>m.node==='video'&&m.revision===job.revision).sort((a,b)=>b.artifact_version-a.artifact_version)[0];let qa:any=null;try{qa=latest?JSON.parse(latest.artifact).qa?.content_motion:null;}catch{}
  const gaps=job.facts?.native_preparation_handoff?.missing?.filter((r:any)=>String(r.code).startsWith('MOTION_'))||[];

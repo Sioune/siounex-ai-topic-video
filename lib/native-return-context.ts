@@ -44,6 +44,9 @@ export async function assertNativeDemonstration(j:NativeReturnJob,value:Record<s
  const editorial=await readCurrentEditorialDelivery(j,String(value.sha256||''));
  if(editorial){const qa=value.qa as Record<string,unknown>|undefined;if(qa?.editorial_delivery_authorization_id!==undefined&&qa.editorial_delivery_authorization_id!==editorial.id)throw new ProductionError('成片回执引用的官方演示解读授权已变化',409);return editorial;}
  if(editorialDeliveryAuthorityRequired(j,value,await hasOwnerEditorialDeliveryClassification(j)))throw new ProductionError('本条官方演示解读须保留当前精确视频、来源和私有范围的本人授权；缺失、撤回或变化后不能沿用',409);
+ // In node mode the owner judges the actual video; an automatic demonstration
+ // assessment must not prevent the video from reaching that review.
+ if(j.review_mode==='node')return;
  // Static case explanation remains independent from an explicitly requested
  // recorded tool session; the category alone does not impose one.
  if(!requiresToolDemonstration(JSON.parse(j.source_snapshot))&&value.demonstration_check===undefined)return;

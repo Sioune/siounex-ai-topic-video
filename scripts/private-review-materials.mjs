@@ -17,11 +17,11 @@ export function availableMaterialCoverage(config,{project}={}){
  const job=config.job,draft=job.drafts.find(d=>d.revision===job.revision&&d.content_hash===job.approved_hash);
  if(!draft||sha(draft.content)!==job.approved_hash||!project?.source_to_timeline)fail('MATERIAL_AVAILABLE_CURRENT_PLAN_REQUIRED');
  const content=JSON.parse(draft.content),storyboard=deriveAuthoritativeNarration(content.script,effectiveProductionStoryboard({job_id:job.id,binding:config.binding,approved_storyboard:bodyStoryboard(content.storyboard),script:content.script,plan:config.visual_plan,demonstration_required:requiresToolDemonstration(JSON.parse(job.source_snapshot||'{}'))})).storyboard,media=config.media||[];
- validateMaterialCoverage(config.material_coverage,{job_id:job.id,binding:config.binding,storyboard,media});
+ validateMaterialCoverage(config.material_coverage,{job_id:job.id,binding:config.binding,storyboard,media,human_review:job.review_mode==='node'});
  const used_ranges=new Map(),missing=[];
  for(const [storyboard_index,approved]of storyboard.entries()){
   const row=project.source_to_timeline[storyboard_index];if(!row)fail('MATERIAL_AVAILABLE_TIMELINE_MISSING');
-  const result=resolveSegmentMaterial({storyboard_index,approved,media,contract:config.material_coverage,required_frames:row.end_frame-row.start_frame,used_ranges});if(result.gap)missing.push(result.gap);
+  const result=resolveSegmentMaterial({storyboard_index,approved,media,contract:config.material_coverage,required_frames:row.end_frame-row.start_frame,used_ranges,human_review:job.review_mode==='node'});if(result.gap)missing.push(result.gap);
  }
  return {valid:missing.length===0,missing};
 }
@@ -36,10 +36,10 @@ export function knownProjectMaterials(job,receipt,{root=process.cwd()}={}){
  const content=JSON.parse(draft.content),storyboard=deriveAuthoritativeNarration(content.script,effectiveProductionStoryboard({job_id:job.id,binding:receipt.binding,approved_storyboard:bodyStoryboard(content.storyboard),script:content.script,plan:project.visual_plan,demonstration_required:requiresToolDemonstration(JSON.parse(job.source_snapshot||'{}'))})).storyboard,media=[];
  for(const row of project.source_to_timeline||[]){if(row.media?.kind==='image-sequence')media.push(...row.media.items);else if(row.media)media.push(row.media);}
  const unique=media.filter((m,i)=>media.findIndex(v=>v.asset_id===m.asset_id)===i),used_ranges=new Map(),missing=[];
- try{validateMaterialCoverage(project.material_coverage,{job_id:job.id,binding:receipt.binding,storyboard,media:unique});}catch(error){return {project,coverage_current:false,missing:storyboard.map(s=>({code:'material:'+s.asset_id,detail:s.visual||'素材合同不匹配当前分镜',reason:error.code||error.message}))};}
+ try{validateMaterialCoverage(project.material_coverage,{job_id:job.id,binding:receipt.binding,storyboard,media:unique,human_review:job.review_mode==='node'});}catch(error){return {project,coverage_current:false,missing:storyboard.map(s=>({code:'material:'+s.asset_id,detail:s.visual||'素材合同不匹配当前分镜',reason:error.code||error.message}))};}
  for(const [storyboard_index,approved]of storyboard.entries()){
   const row=project.source_to_timeline?.[storyboard_index],required_frames=row?row.end_frame-row.start_frame:1;
-  const resolved=resolveSegmentMaterial({storyboard_index,approved,media:unique,contract:project.material_coverage,required_frames,used_ranges});
+  const resolved=resolveSegmentMaterial({storyboard_index,approved,media:unique,contract:project.material_coverage,required_frames,used_ranges,human_review:job.review_mode==='node'});
   if(resolved.gap)missing.push(resolved.gap);
   else {const identity=m=>m?.kind==='image-sequence'?{kind:m.kind,items:m.items.map(a=>({asset_id:a.asset_id,sha256:a.sha256,display_crop:a.display_crop}))}:{kind:m?.kind,asset_id:m?.asset_id,sha256:m?.sha256,display_crop:m?.display_crop,start_seconds:m?.kind==='video'?Number(m.start_seconds||0):undefined,text:m?.kind==='article-quote'?m.text:undefined};if(canonical(identity(resolved.media))!==canonical(identity(row?.media)))missing.push({code:'material:'+approved.asset_id,detail:approved.visual||'实际画面身份与已审素材不一致',reason:'actual-rendered-source-mismatch'});}
  }

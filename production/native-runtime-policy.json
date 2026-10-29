@@ -3,6 +3,7 @@
   "project_id": "appgprj_8f3ab93a1fb6107ad01eef60d3bb28f2",
   "owner_anchor_job_id": "job_ea5571a3-1437-4d09-acd1-ad576666b7a6",
   "allowed_actions": [
+    "owner_node_mode_all",
     "owner_feedback_continue",
     "owner_feedback_review_continue",
     "studio_preview_generation_read",
@@ -93,11 +94,12 @@
     "dispatch_next",
     "research_next",
     "executor_status",
-    "executor_heartbeat"
+    "executor_heartbeat",
+    "owner_node_mode_all"
   ],
   "human_approval_actions": false,
   "publication_actions": false,
   "new_job_creation": false,
   "automatic_mutation_retry": false,
-  "executor_release": "workstation-flow-v30"
+  "executor_release": "workstation-flow-v31"
 }

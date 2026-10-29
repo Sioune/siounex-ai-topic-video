@@ -1,3 +1,4 @@
+import {enableOwnerNodePolicy,applyOwnerNodePolicy} from './owner-node-policy';
 import {continueSavedOwnerFeedback,continueOwnerFeedbackAfterAiReview} from './owner-feedback-continuation';
 import {db} from './store';
 import {ProductionError} from './production-contract';
@@ -27,6 +28,8 @@ export async function nativeProductionRequest(owner:string,args:Record<string,un
   if(job?.owner_id!==owner||job.is_test)throw new ProductionError('宣发任务归属不符',403);bound=true;
  }
  if(!bound&&!policy.global_actions.includes(b.action))throw new ProductionError('正常制作动作必须绑定原任务',403);
+ if(b.action==='owner_node_mode_all'){if(Object.keys(b).some(k=>k!=='action'))throw new ProductionError('人工模式请求无效',400);return {status:200,body:await enableOwnerNodePolicy(owner)};}
+ if(['dispatch_next','executor_heartbeat'].includes(b.action))await applyOwnerNodePolicy(owner);
  // The owner's request to continue failed work can use the same checkpoint-
  // preserving retry as the production page. This grants no content approval.
  if(b.action==='retry')return {status:200,body:{job:await retryJob(b.id,owner)}};

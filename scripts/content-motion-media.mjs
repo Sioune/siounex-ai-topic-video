@@ -46,14 +46,14 @@ async function renderMechanism(recipe,file,frames,dir,{command,font,pacing_frame
 // Build a parent narration segment from many shots at normal source speed.
 // The derived MP4 retains its complete original-shot recipe; QA counts those
 // originals, never the fact that a slideshow was encoded into a video container.
-export async function compileMotionSequence({shots,task_index,jobDir,script,source_media,frames,pacing_frames=frames},{command=defaultCommand,probe=defaultProbe,font}={}){
+export async function compileMotionSequence({shots,task_index,jobDir,script,source_media,frames,pacing_frames=frames,human_review=false},{command=defaultCommand,probe=defaultProbe,font}={}){
  const base=fs.realpathSync(jobDir);if(!Array.isArray(shots)||!shots.length||shots.length>policy.maximum_shots||shots.reduce((n,s)=>n+s.frames,0)!==frames)fail('MOTION_PARENT_DURATION_CHANGED');
  const recipe=shots.map(s=>{
   if(!Number.isSafeInteger(s.frames)||s.frames<1)fail('MOTION_SHOT_DURATION_INVALID');
   if(s.kind==='mechanism'){const mechanism=validateMechanism(s.mechanism,script);return {...s,mechanism,source_sha256:motionSha(mechanism),source_available_frames:s.frames,source_start_frame:0};}
   const m=source_media.find(m=>m.asset_id===s.asset_id);if(!m||!['image','video'].includes(m.kind)||!inside(base,fs.realpathSync(m.file)))fail('MOTION_UNKNOWN_SOURCE');
   sameFile(m.file,m.sha256);if(s.kind==='image'&&m.kind!=='image'||s.kind!=='image'&&m.kind!=='video')fail('MOTION_SOURCE_FORM_CHANGED');
-  if(s.kind==='image'&&s.frames>policy.maximum_single_still_frames)fail('MOTION_STILL_TOO_LONG');
+  if(!human_review&&s.kind==='image'&&s.frames>policy.maximum_single_still_frames)fail('MOTION_STILL_TOO_LONG');
   const available=m.kind==='video'?Math.floor((m.video_review?.duration_seconds||m.probe?.duration_seconds||0)*30):s.frames;
   if(!Number.isSafeInteger(s.source_start_frame)||s.source_start_frame<0||s.source_start_frame+s.frames>available)fail('MOTION_SOURCE_RANGE_TOO_SHORT');
   const illustration=m.kind==='video'?validatedIllustrativeMechanism(m,script):null;
