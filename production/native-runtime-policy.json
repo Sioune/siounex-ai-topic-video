@@ -99,5 +99,5 @@
   "publication_actions": false,
   "new_job_creation": false,
   "automatic_mutation_retry": false,
-  "executor_release": "workstation-flow-v28"
+  "executor_release": "workstation-flow-v29"
 }
