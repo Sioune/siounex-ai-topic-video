@@ -1,3 +1,4 @@
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 'use client';import {useRef,useState} from 'react';import type {ProductionJob} from '@/lib/production-contract';import {Textarea} from './ui/textarea';import {Button} from './ui/button';
 export default function ScriptFeedback({job,onSaved}:{job:ProductionJob;onSaved:(j:ProductionJob)=>void}){
  const [note,setNote]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');const input=useRef<HTMLTextAreaElement>(null),d=job.drafts?.find(d=>d.revision===job.revision);

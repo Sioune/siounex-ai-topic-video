@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Button} from './ui/button';
 import {Textarea} from './ui/textarea';

@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {useEffect,useState,type ReactNode} from 'react';
 import {Button} from '@/components/ui/button';import {Textarea} from '@/components/ui/textarea';import type {IntakeProposal} from '@/lib/production-intake';import type {ProductionJob} from '@/lib/production-contract';
 export async function readTopicProductionJob(topicId:string){const r=await fetch('/api/production?topic_id='+encodeURIComponent(topicId),{cache:'no-store',signal:AbortSignal.timeout(20000)}),d=await r.json() as {job?:ProductionJob|null;error?:string};if(!r.ok)throw Error(d.error||'已有制作任务读取失败');return d.job||null;}

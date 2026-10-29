@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 
 import './publication-data.css';
 import {useCallback,useEffect,useRef,useState} from 'react';

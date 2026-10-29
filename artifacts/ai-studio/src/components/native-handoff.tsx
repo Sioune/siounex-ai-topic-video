@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {useEffect,useState} from 'react';
 import type {ProductionJob} from '@/lib/production-contract';
 import type {NativeCandidateOwnerReview} from '@/lib/native-candidate-feedback-contract.mts';

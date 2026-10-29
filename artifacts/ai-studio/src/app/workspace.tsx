@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import './workspace-design.css';
 import {lazy,Suspense,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ArrowLeft,ArrowUpRight,AudioLines,Bookmark,Check,ChevronRight,Clapperboard,FileSearch,FlaskConical,Gamepad2,LayoutGrid,List,LockKeyhole,RefreshCw,Search,Shuffle,Sparkles,Radio,Clock3,X} from 'lucide-react';

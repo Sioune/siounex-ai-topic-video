@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {useState} from 'react';import type {ProductionJob} from '@/lib/production-contract';import {Textarea} from './ui/textarea';import {Button} from './ui/button';
 export default function ScriptLock({job,onSaved}:{job:ProductionJob;onSaved:(j:ProductionJob)=>void}){
  const [original,setOriginal]=useState(''),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[error,setError]=useState(''),[preview,setPreview]=useState<{text:string;sha256:string;claimable:boolean;binding:{feedback_id:string;queue_id:string;revision:number;content_hash:string;mode_epoch:number;note_sha256:string}}|null>(null);const d=job.drafts?.find(x=>x.revision===job.revision);

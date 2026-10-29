@@ -1,6 +1,7 @@
 'use client';
 
 import {useEffect,useRef,useState} from 'react';
+import {useClerk} from '@clerk/react';
 import {Link,useLocation} from 'wouter';
 import {ThemeProvider,useTheme} from 'next-themes';
 import {Bookmark,BookOpen,ChartNoAxesCombined,ChevronRight,Clapperboard,FileSearch,FilePenLine,Keyboard,LockKeyhole,Monitor,Search,Send,Type} from 'lucide-react';
@@ -17,6 +18,7 @@ const navigation=[
 ];
 
 function Frame({children}:{children:React.ReactNode}){
+ const {signOut}=useClerk();
  const [location,setLocation]=useLocation(),pathname=location||'/',router={push:(href:string)=>setLocation(href)};
  const current=navigation.find(item=>item.href==='/'?pathname==='/':pathname.startsWith(item.href))||navigation[0];
  const [commandOpen,setCommandOpen]=useState(false),[large,setLarge]=useState(false),[ready,setReady]=useState(false);
@@ -43,6 +45,7 @@ function Frame({children}:{children:React.ReactNode}){
     <button className="studio-reading-toggle" type="button" aria-label="大字模式" aria-pressed={large} onClick={()=>setLarge(value=>!value)}><span>大字模式</span><span className="studio-switch" aria-hidden="true"><i/></span></button>
     <label className="studio-theme"><Monitor size={17} strokeWidth={1.75}/><span className="sr-only">界面主题</span><select aria-label="界面主题" value={ready?theme||'system':'system'} onChange={event=>setTheme(event.target.value)}><option value="system">跟随系统外观</option><option value="light">浅色外观</option><option value="dark">深色外观</option></select></label>
     <p className="studio-privacy"><LockKeyhole size={13}/><span>个人工作空间，仅你可见</span></p>
+    <button type="button" className="studio-reading-toggle" onClick={()=>signOut({redirectUrl:import.meta.env.BASE_URL})}>退出登录</button>
    </div>
   </aside>
   <div className="studio-body">

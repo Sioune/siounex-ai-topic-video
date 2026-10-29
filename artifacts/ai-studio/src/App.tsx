@@ -1,6 +1,9 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Route, Switch, Router as WouterRouter, useSearch } from 'wouter';
-import { LockKeyhole } from 'lucide-react';
+import { Route, Switch, Router as WouterRouter, useLocation, useSearch } from 'wouter';
+import { ClerkProvider, SignIn, SignUp, useAuth, useClerk } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { zhCN } from '@clerk/localizations';
+import { customFetchResponse } from '@workspace/api-client-react';
 import AppFrame from '@/components/app-frame';
 import WorkspaceLoading from '@/components/workspace-loading';
 import Workspace from '@/app/workspace';
@@ -11,86 +14,119 @@ import ResearchDesk from '@/components/research-desk';
 import OriginalDesk from '@/components/original-desk';
 import PublishingCenter from '@/components/publishing-center';
 import { Button } from '@/components/ui/button';
+import { clerkAppearance } from '@/lib/clerk-appearance';
 
-type AuthUser = { userId: string; displayName: string };
-type AuthState = { status: 'loading' } | { status: 'error' } | { status: 'ready'; user: AuthUser | null };
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-const base = import.meta.env.BASE_URL.replace(/\/$/, '');
-
-function useAuth() {
-  const [state, setState] = useState<AuthState>({ status: 'loading' });
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    let alive = true;
-    setState({ status: 'loading' });
-    fetch('/api/auth/user', { credentials: 'include', cache: 'no-store' })
-      .then(r => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
-      .then((d: { user: AuthUser | null }) => { if (alive) setState({ status: 'ready', user: d?.user ?? null }); })
-      .catch(() => { if (alive) setState({ status: 'error' }); });
-    return () => { alive = false; };
-  }, [attempt]);
-  return { state, retry: () => setAttempt(a => a + 1) };
+function stripBase(path: string): string {
+  return basePath && path.startsWith(basePath)
+    ? path.slice(basePath.length) || "/"
+    : path;
 }
+if (!clerkPubKey) throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
 
-function SignIn({ error, onRetry }: { error?: boolean; onRetry: () => void }) {
-  const returnTo = window.location.pathname + window.location.search;
-  return (
-    <main className="min-h-[100dvh] flex items-center justify-center px-6">
-      <section className="w-full max-w-sm rounded-xl border bg-card p-8 text-card-foreground">
-        <LockKeyhole size={22} strokeWidth={1.75} aria-hidden />
-        <h1 className="mt-4 text-xl font-semibold">怎么用好AI · 选题库</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          {error ? '暂时无法确认登录状态，请稍后重试。' : '这是私人选题工作台，仅限站点所有者登录后使用。'}
-        </p>
-        <div className="mt-6 flex gap-2">
-          {error ? (
-            <Button onClick={onRetry}>重试</Button>
-          ) : (
-            <Button asChild><a href={'/api/login?returnTo=' + encodeURIComponent(returnTo)}>登录</a></Button>
-          )}
-        </div>
-      </section>
-    </main>
-  );
+function SignInPage() {
+  return <main className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+    <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+  </main>;
+}
+function SignUpPage() {
+  return <main className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+    <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+  </main>;
 }
 
 function UploadRoute() {
   const params = new URLSearchParams(useSearch());
-  const collection = (params.get('collection') || '').slice(0, 200);
-  return <MobileDataUpload collectionId={collection} />;
+  return <MobileDataUpload collectionId={(params.get('collection') || '').slice(0, 200)} />;
 }
-
 function Routes() {
-  return (
-    <Switch>
-      <Route path="/"><Workspace initial={null} deferInitialLoad /></Route>
-      <Route path="/data/upload" component={UploadRoute} />
-      <Route path="/data" component={DataCenter} />
-      <Route path="/production" component={ProductionDesk} />
-      <Route path="/research" component={ResearchDesk} />
-      <Route path="/originals" component={OriginalDesk} />
-      <Route path="/publishing" component={PublishingCenter} />
-      <Route><Workspace initial={null} deferInitialLoad /></Route>
-    </Switch>
-  );
+  return <Switch>
+    <Route path="/"><Workspace initial={null} deferInitialLoad /></Route>
+    <Route path="/data/upload" component={UploadRoute} />
+    <Route path="/data" component={DataCenter} />
+    <Route path="/production" component={ProductionDesk} />
+    <Route path="/research" component={ResearchDesk} />
+    <Route path="/originals" component={OriginalDesk} />
+    <Route path="/publishing" component={PublishingCenter} />
+    <Route><Workspace initial={null} deferInitialLoad /></Route>
+  </Switch>;
 }
 
+// This gate resolves local authorization only after Clerk finishes loading.
+// Signed-in 401/403 is terminal; it must never redirect back to sign-in.
 function Gate({ children }: { children: ReactNode }) {
-  const { state, retry } = useAuth();
-  if (state.status === 'loading') return <WorkspaceLoading />;
-  if (state.status === 'error') return <SignIn error onRetry={retry} />;
-  if (!state.user) return <SignIn onRetry={retry} />;
+  const { isLoaded, isSignedIn, userId } = useAuth();
+  const { signOut } = useClerk();
+  const [state, setState] = useState<{ userId: string; status: 'ready' | 'denied' | 'error' } | null>(null);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !userId) { setState(null); return; }
+    const controller = new AbortController();
+    setState(null);
+    customFetchResponse('/api/studio/access', { cache: 'no-store', signal: controller.signal })
+      .then(r => {
+        if (controller.signal.aborted) return;
+        setState({ userId, status: r.ok ? 'ready' : [401, 403].includes(r.status) ? 'denied' : 'error' });
+      })
+      .catch(() => { if (!controller.signal.aborted) setState({ userId, status: 'error' }); });
+    return () => controller.abort();
+  }, [isLoaded, isSignedIn, userId, attempt]);
+  if (!isLoaded) return <WorkspaceLoading />;
+  if (!isSignedIn) return <main className="min-h-[100dvh] flex items-center justify-center px-6">
+    <section className="w-full max-w-sm rounded-xl border bg-card p-8 text-card-foreground">
+      <h1 className="text-xl font-semibold">怎么用好AI · 选题库</h1>
+      <p className="mt-2 text-sm text-muted-foreground">这是私人选题工作台，仅限站点所有者登录后使用。</p>
+      <Button asChild className="mt-6"><a href={`${basePath}/sign-in`}>登录</a></Button>
+    </section>
+  </main>;
+  if (!state || state.userId !== userId) return <WorkspaceLoading />;
+  if (state.status !== 'ready') return <main className="min-h-[100dvh] flex items-center justify-center px-6">
+    <section data-testid={state.status === 'denied' ? 'access-denied' : 'access-error'} className="w-full max-w-sm rounded-xl border bg-card p-8 text-card-foreground">
+      <h1 className="text-xl font-semibold">{state.status === 'denied' ? '此账号没有站主权限' : '暂时无法确认访问权限'}</h1>
+      <p className="mt-2 text-sm text-muted-foreground">{state.status === 'denied' ? '你已登录，但尚未获得私人工作台的访问权限。请联系站主完成安全配置。' : '请稍后重试。'}</p>
+      <div className="mt-6 flex gap-2">
+        <Button onClick={() => setAttempt(a => a + 1)}>重新检查</Button>
+        <Button variant="outline" onClick={() => signOut({ redirectUrl: basePath || "/" })}>退出登录</Button>
+      </div>
+    </section>
+  </main>;
   return <>{children}</>;
 }
 
-function App() {
-  return (
-    <WouterRouter base={base}>
-      <Gate>
-        <AppFrame><Routes /></AppFrame>
-      </Gate>
-    </WouterRouter>
-  );
+function ClerkProviderWithRoutes() {
+  const [, setLocation] = useLocation();
+  return <ClerkProvider
+    publishableKey={clerkPubKey}
+    proxyUrl={clerkProxyUrl}
+    appearance={clerkAppearance}
+    signInUrl={`${basePath}/sign-in`}
+    signUpUrl={`${basePath}/sign-up`}
+    signInFallbackRedirectUrl={basePath || "/"}
+    signUpFallbackRedirectUrl={basePath || "/"}
+    localization={zhCN}
+    routerPush={(to) => setLocation(stripBase(to))}
+    routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+  >
+    <IdentityScopedRoutes />
+  </ClerkProvider>;
 }
 
-export default App;
+function IdentityScopedRoutes() {
+  const { userId } = useAuth();
+  // Remount all page-local caches when the account changes, including sign-out.
+  return <Switch key={userId || 'anonymous'}>
+    <Route path="/sign-in/*?" component={SignInPage} />
+    <Route path="/sign-up/*?" component={SignUpPage} />
+    <Route><Gate><AppFrame><Routes /></AppFrame></Gate></Route>
+  </Switch>;
+}
+
+export default function App() {
+  return <WouterRouter base={basePath}><ClerkProviderWithRoutes /></WouterRouter>;
+}

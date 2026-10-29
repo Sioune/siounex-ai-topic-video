@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {useEffect,useState} from 'react';
 import {currentBrandCoverId,warehouseBrandCover} from '@/lib/cover-branding.mts';
 import {currentJobV6Outro} from '@/lib/outro-upgrade-contract.mts';

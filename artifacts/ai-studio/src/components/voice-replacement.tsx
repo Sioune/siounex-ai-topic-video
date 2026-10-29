@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import{useCallback,useEffect,useRef,useState}from'react';import{Button}from'./ui/button';import type{ProductionJob}from'@/lib/production-contract';import type{VoiceBinding,VoiceRecord}from'@/lib/voice-replacement';
 type State={eligible:boolean;disabled_reason:string;binding:VoiceBinding|null;script:string;speech_text:string;voice:{id:string;name:string};fee_check:{status:string;message:string};requests:(VoiceRecord&{current:boolean})[];executor_limits:string};
 const labels:Record<string,string>={cost_check_pending:'已登记，等待核验HeyGen费用；尚未生成',cost_check_blocked:'费用未核实，生成暂停',awaiting_fee_confirmation:'新增支付范围已回传，等待本人确认',queued:'已确认费用，换声已排队',running:'执行器已领取；等待真实声音与合成回执',awaiting_human:'换声版已回传，等待本人试听审核',approved:'本人已通过换声版',paused:'换声暂停；保留原片与已存回执',cancelled:'申请已取消，历史保留'};

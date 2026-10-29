@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import ContentMotionStatus from './content-motion-status';
 import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogDescription,DialogFooter} from './ui/dialog';
 import LocalReviewDraftPreview,{currentLocalReviewDraft} from './local-review-draft';

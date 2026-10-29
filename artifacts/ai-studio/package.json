@@ -43,5 +43,11 @@
     "vite": "catalog:",
     "wouter": "^3.3.5",
     "zod": "^3.25.76"
+  },
+  "dependencies": {
+    "@clerk/localizations": "^4.24.3",
+    "@clerk/react": "^6.18.3",
+    "@clerk/themes": "^2.4.57",
+    "@workspace/api-client-react": "workspace:*"
   }
 }

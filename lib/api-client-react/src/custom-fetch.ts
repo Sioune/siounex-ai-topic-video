@@ -1,5 +1,5 @@
 export type CustomFetchOptions = RequestInit & {
-  responseType?: "json" | "text" | "blob" | "auto";
+  responseType?: "json" | "text" | "blob" | "auto" | "response";
 };
 
 export type ErrorType<T = unknown> = ApiError<T>;
@@ -360,7 +360,9 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers });
+  const response = await fetch(input, { credentials: "same-origin", ...init, method, headers });
+
+  if (responseType === "response") return response as T;
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
@@ -368,4 +370,10 @@ export async function customFetch<T = unknown>(
   }
 
   return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+}
+
+// Response-preserving adapter for the imported studio's streaming, upload and
+// JSON callers. All requests still pass through the canonical client above.
+export function customFetchResponse(input: RequestInfo | URL, options: RequestInit = {}): Promise<Response> {
+  return customFetch<Response>(input, { ...options, responseType: "response" });
 }

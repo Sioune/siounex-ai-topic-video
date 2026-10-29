@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {useState} from 'react';
 import type {ProductionJob} from '@/lib/production-contract';
 import {SOURCE_INPUT_REQUIRED,latestSourceBlock,sourceDiagnosticCopy} from '@/lib/source-input-contract.mts';

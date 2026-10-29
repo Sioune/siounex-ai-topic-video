@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 
 import './platform-copy-reviews.css';
 import {useId,useRef,useState} from 'react';

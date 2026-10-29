@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 
 import {ArrowUpRight,Clock3,RefreshCw,Send} from 'lucide-react';
 import {useEffect,useRef,useState} from 'react';

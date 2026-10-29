@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {templateAssetsAvailable} from '@/lib/series-contract';
 import {useEffect,useState} from 'react';import type {SeriesSelection,SeriesTemplate,Publication} from '@/lib/series-contract';import {Button} from '@/components/ui/button';
 type State={catalog:{revision:number;templates:SeriesTemplate[]};current:SeriesSelection|null;history:SeriesSelection[];available_history:{selected:Publication[];verified:boolean;gaps:string[]};script_revision:number;mode_epoch:number;choice_current:boolean;capabilities?:{selection_editable:boolean;selection_blocker:string|null}};

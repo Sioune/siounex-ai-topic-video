@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {promoBundleLink} from '@/lib/promo-bundle-link.mts';
 import {useEffect,useState} from 'react';import {Button} from '@/components/ui/button';import {Textarea} from '@/components/ui/textarea';import {PROMO_FIELDS,promoFieldText,promoPublicText,promoPublicCrossPlatformText,type PromoContent} from '@/lib/promo-content.mjs';
 type Package={id:string;version:number;status:string;origin:string;script_revision:number;script_hash:string;video_binding:string;content:string|null;content_hash:string|null;error:string|null;receipt:string|null;is_current:boolean};

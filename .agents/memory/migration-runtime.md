@@ -14,3 +14,9 @@ SQLite compatibility batches must execute synchronously inside their transaction
 **Why:** The imported publishing dashboard runs concurrent batches through Promise.all. Yielding within BEGIN/COMMIT causes nested transaction errors; missing changes metadata makes approval and concurrency guards misinterpret successful writes.
 
 **How to apply:** Preserve atomic rollback, no yielding inside transactions, and correct changes metadata when modifying the database compatibility layer. Keep the isolated adapter regression test.
+
+A managed authentication migration reporting zero users does not establish that this imported studio has no historical owners or owner-keyed data.
+
+**Why:** The imported studio used custom OIDC and opaque local sessions, not the standard managed user bridge. The identity migration reported zero users, and no real owner identity or original live database dump was supplied.
+
+**How to apply:** Require explicit verified owner enrollment and check stable ownership IDs before granting access. Never treat zero migrated users as permission to grant the first registrant ownership or to reassign existing records.

@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import type {ProductionJob} from '@/lib/production-contract';
 import type {AutomaticCloneRenderProgress} from '@/lib/automatic-clone';

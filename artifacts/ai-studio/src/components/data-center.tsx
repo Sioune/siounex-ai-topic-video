@@ -1,4 +1,5 @@
 'use client';
+import {customFetchResponse as fetch} from '@workspace/api-client-react';
 import './data-design.css';
 import {ArrowDown,ArrowUpRight,FileText,Info,RefreshCw} from 'lucide-react';
 import {nativePublicationInterval,publicationDetails,publicationLabel,publicationTimeDescription} from '@/lib/publication-details.mjs';
