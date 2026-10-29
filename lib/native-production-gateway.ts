@@ -51,6 +51,7 @@ export async function nativeProductionRequest(owner:string,args:Record<string,un
  }
  const response=await executePrivateProduction(new Request('https://siounex-ai-topic-library.siounexzhao.chatgpt.site/api/executor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}));
  const body=await response.json() as any;
+ if(response.ok&&b.action==='native_preparation_progress'&&['completed','blocked'].includes(b.status)&&typeof b.id==='string'){const {tryReconcileHumanPreviewFeedback}=await import('./human-preview-feedback');body.formal_feedback=await tryReconcileHumanPreviewFeedback(b.id,owner);}
  if(body?.job?.id){const j=await db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?').bind(body.job.id).first<{owner_id:string;is_test:number}>();if(j?.owner_id!==owner||j.is_test)throw new ProductionError('返回制作任务归属不符',403);}
  if(body?.research?.id)await getResearch(body.research.id,owner);
  return {status:response.status,body};
