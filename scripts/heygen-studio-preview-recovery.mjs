@@ -9,6 +9,9 @@ function read(file){if(!fs.existsSync(file)||fs.lstatSync(file).isSymbolicLink()
 function completeEventStream(file,events){if(!fs.existsSync(file)||fs.lstatSync(file).isSymbolicLink()||!fs.lstatSync(file).isFile()||fs.statSync(file).size>2000000)return null;try{const bytes=fs.readFileSync(file),text=bytes.toString('utf8');if(!text.endsWith('\n'))return null;const lines=text.slice(0,-1).split('\n').map(line=>JSON.parse(line));return previewSha(lines)===previewSha(events)?previewSha(bytes):null;}catch{return null;}}
 export function sanitizeStudioDiagnostic(value,input={}){
  let message=typeof value==='string'?value:typeof value?.message==='string'?value.message:'';
+ // CUA may append its API manual to an actual error. Keep the error itself;
+ // the original tool receipt remains untouched in the attempt directory.
+ message=message.split(/\r?\n## Computer Use(?:\r?\n|$)/,1)[0].trim();
  for(const secret of [input.text,input.voice_id,input.title])if(typeof secret==='string'&&secret)message=message.split(secret).join('[private input]');
  return message.replace(/https?:\/\/[^\s<>"']+/gi,'[URL redacted]').replace(/Bearer\s+[^\s,;"']+/gi,'Bearer [redacted]').replace(/\b(?:sk-|sess-)[A-Za-z0-9_-]+/g,'[credential redacted]').replace(/(["']?(?:access[_ -]?token|refresh[_ -]?token|api[_ -]?key|authorization|password|cookie|signature|secret)["']?\s*[=:]\s*["']?)[^\s,;}"']+/gi,'$1[redacted]').replace(/\beyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g,'[credential redacted]').replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi,'[email redacted]').replace(/\b[a-f0-9]{24,}\b/gi,'[id redacted]').replace(/\b\d{11,}\b/g,'[number redacted]').replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/g,'').slice(0,1600);
 }

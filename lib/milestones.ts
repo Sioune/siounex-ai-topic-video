@@ -12,7 +12,7 @@ import {requestScriptRework} from './script-feedback';
 import {feedbackReworkBinding} from './script-feedback-contract';
 import {assertMediaScope,assertNoPreparation,PREPARATION_IDLE_SQL} from './media-continuation';
 import {db} from './store';
-import {assertFinalDuration} from './final-media-contract';
+import {assertFinalDuration,assertHumanReviewDuration} from './final-media-contract';
 import {assertNativeDemonstration,nativeScopeContext} from './native-return-context';
 import {feedbackForReturn} from './native-draft-revision-handoff';
 import {editorialMutationGuard} from './owner-editorial-delivery-contract.mts';
@@ -122,7 +122,7 @@ export async function decideMilestone(id:string,mid:string,revision:number,artif
  if(!['approve','revise','pause'].includes(decision))throw new ProductionError('审核决定无效',400);
  if(decision==='approve'&&['source','script'].includes(m.node))feedbackReworkBinding(j as never);
  if(decision==='approve'&&m.node==='script'&&j.milestones?.some(n=>n.node==='source'&&n.revision===revision)&&!prerequisitesApproved(j,'script'))throw new ProductionError('当前版本来源尚未通过，不能先批准口播稿');
- if(decision==='approve'&&m.node==='video'){const a=JSON.parse(m.artifact);assertFinalDuration(a.qa?.final_duration,a.sha256||a.asset?.sha256);}
+ if(decision==='approve'&&m.node==='video'){const a=JSON.parse(m.artifact);(j.review_mode==='node'?assertHumanReviewDuration:assertFinalDuration)(a.qa?.final_duration,a.sha256||a.asset?.sha256);}
  if(!token&&decision==='approve')report={...report,reason:''};
  if(decision!=='approve')report={...report,reason:text(report.reason,4000)};
  const logical:Record<string,unknown>={...report,decision,actor,revision,artifact_hash:artifactHash,mode_epoch:epoch};delete logical.operation_id;
@@ -260,10 +260,10 @@ export async function recordStage(id:string,stage:Record<string,unknown>,result:
 }
 export async function submitMilestone(id:string,node:string,revision:number,baseVersion:number,submission:string,value:Record<string,unknown>,expectedEpoch?:number,pendingVisualCorrection=false,authorizedFeeCeiling?:number){
  const j=await getJob(id);if(expectedEpoch!==undefined&&j.mode_epoch!==expectedEpoch)throw new ProductionError('执行模式已改变，旧操作不能回传');if(!['cover','video','promotion','delivery'].includes(node)||j.approved_revision!==revision||j.revision!==revision)throw new ProductionError('必须绑定当前已批准口播稿');
- if(j.status==='paused'||j.reworks>2)throw new ProductionError('任务暂停或返工预算已用完，先人工决定，不重复生成外部成果');
+ if(j.status==='paused'||j.review_mode!=='node'&&j.reworks>2)throw new ProductionError('任务暂停或返工预算已用完，先人工决定，不重复生成外部成果');
  const media=['cover','video'].includes(node);if(media&&!j.is_test)await assertMediaScope(j,node);const artifact=media?{url:https(value.url),sha256:text(value.sha256,64),provider_job_id:text(value.provider_job_id,150),cost:authorizedFeeCeiling===undefined?0:Number(value.cost),verification:'external-result-reported; no visual/audio inspection',...(value.library_file_id?{library_file_id:text(value.library_file_id,100),library_version:Number(value.library_version)}:{}),...(value.qa?{qa:value.qa}:{}),...(node==='video'&&value.demonstration_check!==undefined?{demonstration_check:value.demonstration_check}:{})}:{text:(node==='promotion'?await exactOwnerPromotionText(j,value):null)??text(value.text,16000),limits:text(value.limits,4000)};
  if(media&&((authorizedFeeCeiling===undefined?value.cost!==0:!Number.isFinite(Number(value.cost))||Number(value.cost)<0||Number(value.cost)>authorizedFeeCeiling)||!/^[a-f0-9]{64}$/.test(String(value.sha256))))throw new ProductionError('只接受已授权零费用真实成果报告，付费需另行授权',400);
- if(node==='video')assertFinalDuration((value.qa as {final_duration?:unknown})?.final_duration,String(value.sha256));
+ if(node==='video')(j.review_mode==='node'?assertHumanReviewDuration:assertFinalDuration)((value.qa as {final_duration?:unknown})?.final_duration,String(value.sha256));
  const content=JSON.stringify(artifact),h=await hash(content),mid='artifact_'+await hash(id+node+revision+text(submission,120)),prior=j.milestones?.find(m=>m.id===mid);
  if(prior){if(prior.artifact_hash!==h)throw new ProductionError('提交ID不能覆盖旧成果');return getJob(id);}
  const editorial=node==='video'?await assertNativeDemonstration(j,artifact):null,editorialGuard=editorial?editorialMutationGuard(editorial):null;
