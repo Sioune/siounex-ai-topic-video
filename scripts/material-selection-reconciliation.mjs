@@ -6,6 +6,7 @@ import {createHash} from 'node:crypto';
 import {cliFailureDiagnostic} from './cli-failure-recovery.mjs';
 import {safeRateLimitFailure} from '../lib/cli-failure-contract.mts';
 import {inspectStaleMaterialSelection} from './stale-material-selection.mjs';
+import {inspectSpawnFailureSelection} from './spawn-failure-material-selection.mjs';
 const sha=b=>createHash('sha256').update(b).digest('hex');
 const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
@@ -34,9 +35,9 @@ export function inspectMaterialSelectionHistory(parent,binding,{persist=true,now
     }else{
      const processDir=path.join(dir,'process');if(!fs.existsSync(processDir)||fs.lstatSync(processDir).isSymbolicLink())throw Error('unconfirmed-process');
      if(!fs.existsSync(path.join(processDir,'cli-process-exit.json'))){
-      const proof=inspectStaleMaterialSelection({dir,started,intent:ib,prompt,binding,read:bytes,isProcessAlive});
-      const proof_sha256=persist?immutable(path.join(dir,'selection-stale-readonly.json'),proof):sha(Buffer.from(JSON.stringify(proof,null,2)));
-      evidence.push(proof.process_started_sha256,proof.owned_process_sha256,proof.event_log_sha256,proof_sha256);
+      let proof,proofName='selection-stale-readonly.json';try{proof=inspectStaleMaterialSelection({dir,started,intent:ib,prompt,binding,read:bytes,isProcessAlive});}catch{proof=inspectSpawnFailureSelection({dir,started,intent:ib,prompt,binding,read:bytes});proofName='selection-spawn-failure-readonly.json';}
+      const proof_sha256=persist?immutable(path.join(dir,proofName),proof):sha(Buffer.from(JSON.stringify(proof,null,2)));
+      if(proof.owned_process_sha256)evidence.push(proof.process_started_sha256,proof.owned_process_sha256,proof.event_log_sha256,proof_sha256);else evidence.push(proof.process_started_sha256,proof.event_log_sha256,proof_sha256,...[proof.failure_sha256,proof.station_started_sha256,proof.station_finished_sha256].filter(hash));
       attempts.push({directory:dir,input_hash,status:'stale-readonly',started_at:started.started_at,prompt_sha256,proof_sha256,original_result_unknown:true});
      }else{
      for(const f of ['cli-process-started.json','cli-owned-child.json','cli-process-exit.json','cli-events.log'])bytes(path.join(processDir,f));
