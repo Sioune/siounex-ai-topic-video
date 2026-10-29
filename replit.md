@@ -22,7 +22,7 @@ Without a configured matching owner, Clerk login can succeed but private access 
 
 ### Secure owner enrollment
 
-The real owner identity has not been supplied, so real-owner login is **not verified**. Do not enroll any test user as the real owner.
+Do not enroll any test user as the real owner. Owner grants must target an explicitly authorized, verified account in the intended environment.
 1. The owner creates/signs into their account in the target environment. Development and production Clerk stores are separate.
 2. A trusted operator verifies the intended account and email ownership, then runs `pnpm --filter @workspace/api-server owner:inspect` with `STUDIO_OWNER_ENROLL_EMAIL` securely configured for that environment. This read-only command resolves exactly one verified account and prints its stable local ownership ID; it never grants a role, creates accounts, or changes `externalId`.
 3. Configure `STUDIO_OWNER_ID` through the secure Secrets/admin flow to that ID **only after checking that it matches existing local data ownership**. If existing data has a different owner ID, stop and arrange an explicitly authorized identity binding; do not rename/reassign data or set arbitrary external IDs.

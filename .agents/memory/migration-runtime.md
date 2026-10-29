@@ -26,3 +26,9 @@ Dependency reconciliation after isolated-task merges can leave Vite prebundles f
 **Why:** Installed React and React DOM can be correctly aligned while the browser still receives incompatible renderer versions from prebundled dependencies.
 
 **How to apply:** Check installed versions separately from optimized browser modules when diagnosing version mismatches after merges. Preserve startup cache invalidation for the studio dev server; a successful dependency install alone does not verify browser runtime compatibility.
+
+Development Clerk cookie authentication also depends on its development-browser context, not just a minted session JWT.
+
+**Why:** Sending only a session cookie from a shell can produce `dev-browser-missing` and a 401 despite a valid, correctly authorized account.
+
+**How to apply:** Distinguish authentication-context failures from owner-authorization failures. Use a real browser context for cookie-flow verification or server-side token requests strictly for programmatic authorization checks; never change the web client to bearer-token authentication to work around a shell-only failure.

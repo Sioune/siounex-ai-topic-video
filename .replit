@@ -38,3 +38,8 @@ expertMode = true
 [postMerge]
 path = "scripts/post-merge.sh"
 timeoutMs = 20000
+
+[userenv]
+
+[userenv.development]
+STUDIO_OWNER_ID = "user_3LLouN3fBlzDxcVcX9ICjtfZa0n"
