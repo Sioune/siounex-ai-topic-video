@@ -4,10 +4,23 @@ import { db } from '../imported/lib/store';
 import { persistStudioDatabase } from './studio-database';
 import { authenticatedUser, requestIdentity } from './studio-auth';
 import { isCodexBridgeRequestAllowed } from './codex-bridge-policy.mjs';
+import { authorizeCodexExecutorDeviceRequest } from './codex-executor-device';
 
 const GRANT_PREFIX = 'codex_executor_grant_v1:';
 const TTL_MS = 60 * 60 * 1000;
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
+type StatementLike = {
+  first(): Promise<unknown>;
+  all(): Promise<{ results: unknown[] }>;
+};
+
+async function firstRow<T>(statement: StatementLike): Promise<T | null> {
+  return await statement.first() as T | null;
+}
+
+async function allRows<T>(statement: StatementLike): Promise<T[]> {
+  return (await statement.all()).results as T[];
+}
 
 export function trustedRequestOrigin(req: Request) {
   const host = req.get('host') || '';
@@ -55,8 +68,9 @@ export const issueCodexExecutorGrant: RequestHandler = async (req, res) => {
     res.status(403).json({ error: '站主身份无效。' });
     return;
   }
-  const job = await db().prepare('SELECT owner_id,is_test,status FROM production_jobs WHERE id=?')
-    .bind(jobId).first<{ owner_id: string | null; is_test: number; status: string }>();
+  const job = await firstRow<{ owner_id: string | null; is_test: number; status: string }>(
+    db().prepare('SELECT owner_id,is_test,status FROM production_jobs WHERE id=?').bind(jobId),
+  );
   if (job?.owner_id !== owner || job.is_test !== 0) {
     res.status(404).json({ error: '找不到可授权的正式制作任务。' });
     return;
@@ -66,8 +80,10 @@ export const issueCodexExecutorGrant: RequestHandler = async (req, res) => {
     return;
   }
   try {
-    const source = JSON.parse(String((await db().prepare('SELECT source_snapshot FROM production_jobs WHERE id=?')
-      .bind(jobId).first<{ source_snapshot: string }>())?.source_snapshot || 'null'));
+    const sourceRow = await firstRow<{ source_snapshot: string }>(
+      db().prepare('SELECT source_snapshot FROM production_jobs WHERE id=?').bind(jobId),
+    );
+    const source = JSON.parse(String(sourceRow?.source_snapshot || 'null'));
     if (typeof source?.url !== 'string' || !/^https?:\/\/\S+$/i.test(source.url)) throw new Error('missing source url');
   } catch {
     res.status(409).json({ error: '任务缺少可核对的原始来源链接，无法交给本机执行器。' });
@@ -86,8 +102,9 @@ export const issueCodexExecutorGrant: RequestHandler = async (req, res) => {
     version: 1, token_hash: hash(secret), owner_id: owner, job_id: jobId,
     origin, created_at: Date.now(), expires_at: Date.now() + TTL_MS, revoked: false,
   };
-  const existing = await db().prepare("SELECT key,value FROM app_state WHERE key LIKE ?")
-    .bind(GRANT_PREFIX + '%').all<{ key: string; value: string }>();
+  const existing = await allRows<{ key: string; value: string }>(
+    db().prepare("SELECT key,value FROM app_state WHERE key LIKE ?").bind(GRANT_PREFIX + '%'),
+  );
   const statements = [];
   let active = 0;
   for (const row of existing.results) {
@@ -129,7 +146,7 @@ export const revokeCodexExecutorGrant: RequestHandler = async (req, res) => {
   const owner = authenticatedUser(req)?.userId;
   const tokenId = grantId.slice('grant_'.length);
   const key = GRANT_PREFIX + tokenId;
-  const row = await db().prepare('SELECT value FROM app_state WHERE key=?').bind(key).first<{ value: string }>();
+  const row = await firstRow<{ value: string }>(db().prepare('SELECT value FROM app_state WHERE key=?').bind(key));
   if (!row) { res.status(204).end(); return; }
   const grant = JSON.parse(row.value);
   if (grant.owner_id !== owner) { res.status(404).json({ error: '授权不存在。' }); return; }
@@ -143,8 +160,9 @@ async function executorIdentity(req: Request) {
   if (!header.startsWith('Bearer cxbr1.')) return null;
   const match = /^Bearer cxbr1\.([A-Za-z0-9_-]{20,32})\.([A-Za-z0-9_-]{40,48})$/.exec(header);
   if (!match) return false;
-  const row = await db().prepare('SELECT value FROM app_state WHERE key=?')
-    .bind(GRANT_PREFIX + match[1]).first<{ value: string }>();
+  const row = await firstRow<{ value: string }>(
+    db().prepare('SELECT value FROM app_state WHERE key=?').bind(GRANT_PREFIX + match[1]),
+  );
   if (!row) return false;
   let grant: any;
   try { grant = JSON.parse(row.value); } catch { return false; }
@@ -153,8 +171,9 @@ async function executorIdentity(req: Request) {
   if (storedHash.length !== presentedHash.length || !timingSafeEqual(storedHash, presentedHash)) return false;
   if (req.protocol !== 'https' || grant.origin !== `https://${req.get('host')}`) return false;
   if (typeof grant.owner_id !== 'string' || grant.owner_id !== process.env.STUDIO_OWNER_ID) return false;
-  const job = await db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?')
-    .bind(grant.job_id).first<{ owner_id: string; is_test: number }>();
+  const job = await firstRow<{ owner_id: string; is_test: number }>(
+    db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?').bind(grant.job_id),
+  );
   if (job?.owner_id !== grant.owner_id || job.is_test !== 0) return false;
   const body = bodyObject(req, 1500000);
   if (!isCodexBridgeRequestAllowed(grant, body)) return false;
@@ -163,8 +182,17 @@ async function executorIdentity(req: Request) {
 
 export const codexExecutorBridgeMiddleware: RequestHandler = (req, res, next) => {
   void executorIdentity(req).then(grant => {
-    if (grant === null) { next(); return; }
+    if (grant) {
+      requestIdentity.run({ kind: 'codex-executor', userId: grant.owner_id, executorGrant: true }, next as NextFunction);
+      return;
+    }
     if (grant === false) { res.status(401).json({ error: '本机执行授权无效、已过期或不适用于此任务。' }); return; }
-    requestIdentity.run({ kind: 'codex-executor', userId: grant.owner_id, executorGrant: true }, next as NextFunction);
+    void authorizeCodexExecutorDeviceRequest(req).then(device => {
+      if (device === null) { next(); return; }
+      if (device === false) { res.status(401).json({ error: '本机执行器未获准处理此任务，或设备授权已撤销。' }); return; }
+      requestIdentity.run({
+        kind: 'codex-executor', userId: device.owner_id, executorDeviceId: device.device_id,
+      }, next as NextFunction);
+    }).catch(next);
   }).catch(next);
 };

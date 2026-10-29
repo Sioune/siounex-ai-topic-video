@@ -16,7 +16,7 @@ export async function executorFetch(_url, options) {
     throw new Error('The Replit Codex bridge accepts only bounded POST executor requests.');
   }
   const authorization = options.headers?.['OAI-Sites-Authorization'];
-  const match = typeof authorization === 'string' && /^Bearer (cxbr1\.[A-Za-z0-9_-]{20,32}\.[A-Za-z0-9_-]{40,48})$/.exec(authorization);
+  const match = typeof authorization === 'string' && /^Bearer ((?:cxbr1|cxdev1)\.[A-Za-z0-9_-]{20,32}\.[A-Za-z0-9_-]{40,48})$/.exec(authorization);
   if (!match) throw new Error('A one-task Replit Codex grant is required.');
   const response = await fetch(new URL('/api/executor', origin), {
     method: 'POST',

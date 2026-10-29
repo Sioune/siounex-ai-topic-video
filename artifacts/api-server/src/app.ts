@@ -8,6 +8,11 @@ import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
 import { codexExecutorBridgeMiddleware, issueCodexExecutorGrant, revokeCodexExecutorGrant } from "./lib/codex-executor-bridge";
+import {
+  approveCodexExecutorJob, codexExecutorDeviceMiddleware, issueCodexExecutorPairing,
+  pairCodexExecutorDevice, pollCodexExecutorJobs, readCodexExecutorDeviceStatus,
+  revokeCodexExecutorDevice, revokeCodexExecutorJobApproval,
+} from "./lib/codex-executor-device";
 
 const app: Express = express();
 
@@ -37,6 +42,8 @@ app.use(express.raw({ type: () => true, limit: "32mb" }));
 // Authenticate the narrowly scoped machine credential before Clerk, so it is
 // never forwarded to Clerk or treated as a malformed user session JWT.
 app.post("/api/executor", codexExecutorBridgeMiddleware);
+app.post("/api/codex-executor/agent/pair", pairCodexExecutorDevice);
+app.post("/api/codex-executor/agent/poll", codexExecutorDeviceMiddleware, pollCodexExecutorJobs);
 const clerkSession = clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
       getClerkProxyHost(req) ?? "",
@@ -55,6 +62,11 @@ app.use((req, res, next) => {
 // executor route. All other routes continue to require the owner's Clerk session.
 app.post("/api/codex-executor/grant", requireStudioOwner, issueCodexExecutorGrant);
 app.post("/api/codex-executor/grant/revoke", requireStudioOwner, revokeCodexExecutorGrant);
+app.post("/api/codex-executor/pairing", requireStudioOwner, issueCodexExecutorPairing);
+app.get("/api/codex-executor/devices", requireStudioOwner, readCodexExecutorDeviceStatus);
+app.post("/api/codex-executor/jobs/approve", requireStudioOwner, approveCodexExecutorJob);
+app.post("/api/codex-executor/jobs/revoke", requireStudioOwner, revokeCodexExecutorJobApproval);
+app.post("/api/codex-executor/devices/revoke", requireStudioOwner, revokeCodexExecutorDevice);
 app.use("/api", router);
 app.use("/api", authRouter);
 app.use(requireStudioOwner);

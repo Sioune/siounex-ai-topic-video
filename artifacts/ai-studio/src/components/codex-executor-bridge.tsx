@@ -1,8 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import type { ProductionJob } from '@/lib/production-contract';
 
-type Grant = { grant_id: string; token: string; origin: string; expires_at: number };
+type Device = {
+  device_id: string;
+  device_name: string;
+  online: boolean;
+  last_seen_at: number;
+};
+
+type Pairing = {
+  pairing_code: string;
+  origin: string;
+  expires_at: number;
+};
+
+type DeviceStatus = {
+  device: Device | null;
+  approved: boolean;
+};
 
 function sourceUrl(snapshot: string) {
   try {
@@ -12,13 +28,13 @@ function sourceUrl(snapshot: string) {
 }
 
 export default function CodexExecutorBridge({ job }: { job: ProductionJob }) {
-  const [grant, setGrant] = useState<Grant | null>(null);
-  const [sourceFile, setSourceFile] = useState('');
+  const [status, setStatus] = useState<DeviceStatus | null>(null);
+  const [pairing, setPairing] = useState<Pairing | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
   const url = useMemo(() => sourceUrl(job.source_snapshot), [job.source_snapshot]);
 
-  async function request(path: string, body: unknown) {
+  async function post(path: string, body: unknown) {
     const response = await fetch(path, {
       method: 'POST',
       credentials: 'include',
@@ -32,26 +48,77 @@ export default function CodexExecutorBridge({ job }: { job: ProductionJob }) {
     return result;
   }
 
-  async function issue() {
+  async function refreshStatus(signal?: AbortSignal) {
+    const response = await fetch(`/api/codex-executor/devices?job_id=${encodeURIComponent(job.id)}`, {
+      credentials: 'include',
+      cache: 'no-store',
+      signal,
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result?.error || `读取执行器状态失败 (${response.status})`);
+    setStatus(result as DeviceStatus);
+  }
+
+  useEffect(() => {
+    const controller = new AbortController();
+    let active = true;
+    const load = async () => {
+      try { await refreshStatus(controller.signal); }
+      catch (error) {
+        if (active && !controller.signal.aborted) {
+          setMessage(error instanceof Error ? error.message : '读取本机执行器状态失败。');
+        }
+      }
+    };
+    void load();
+    const timer = window.setInterval(() => void load(), 15_000);
+    return () => {
+      active = false;
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, [job.id]);
+
+  async function issuePairing() {
     setBusy(true);
     setMessage('');
     try {
-      const result = await request('/api/codex-executor/grant', { job_id: job.id });
-      setGrant(result);
-      setSourceFile('');
-      setMessage('一次性授权已生成。请立即复制保存；关闭或刷新此页后无法再次查看。');
-    } catch (error) { setMessage(error instanceof Error ? error.message : '无法生成授权。'); }
+      setPairing(await post('/api/codex-executor/pairing', {}) as Pairing);
+      setMessage('一次性配对码已生成。请在 10 分钟内于本机运行安装命令。');
+    } catch (error) { setMessage(error instanceof Error ? error.message : '无法生成配对码。'); }
     finally { setBusy(false); }
   }
 
-  async function revoke() {
-    if (!grant) return;
+  async function authorizeTask() {
+    setBusy(true);
+    setMessage('');
+    try {
+      await post('/api/codex-executor/jobs/approve', { job_id: job.id });
+      await refreshStatus();
+      setMessage('已授权这条任务。本机执行器在线时会领取；其他任务不会自动执行。');
+    } catch (error) { setMessage(error instanceof Error ? error.message : '无法授权此任务。'); }
+    finally { setBusy(false); }
+  }
+
+  async function revokeTask() {
     setBusy(true);
     try {
-      await request('/api/codex-executor/grant/revoke', { grant_id: grant.grant_id });
-      setGrant(null);
-      setMessage('这次本机执行授权已撤销。');
-    } catch (error) { setMessage(error instanceof Error ? error.message : '撤销授权失败。'); }
+      await post('/api/codex-executor/jobs/revoke', { job_id: job.id });
+      await refreshStatus();
+      setMessage('这条任务的本机执行授权已撤销。');
+    } catch (error) { setMessage(error instanceof Error ? error.message : '撤销任务授权失败。'); }
+    finally { setBusy(false); }
+  }
+
+  async function revokeDevice() {
+    if (!status?.device) return;
+    setBusy(true);
+    try {
+      await post('/api/codex-executor/devices/revoke', { device_id: status.device.device_id });
+      setPairing(null);
+      await refreshStatus();
+      setMessage('本机执行器已撤销，之后不会再领取任务。');
+    } catch (error) { setMessage(error instanceof Error ? error.message : '撤销本机执行器失败。'); }
     finally { setBusy(false); }
   }
 
@@ -60,42 +127,69 @@ export default function CodexExecutorBridge({ job }: { job: ProductionJob }) {
     catch { setMessage('浏览器未允许复制，请手动选择文本复制。'); }
   }
 
-  if (job.is_test !== 0 || job.status !== 'waiting_executor' && !grant) return null;
-
-  const runner = `$env:REPLIT_CODEX_BRIDGE_ORIGIN = '${grant?.origin || '在这里填入授权页面显示的网址'}'\nnode --import .\\artifacts\\api-server\\scripts\\codex-executor-loader.mjs .\\.migration-backup\\scripts\\production-codex-executor.mjs`;
-  const payload = grant ? JSON.stringify({
-    token: grant.token,
-    job_id: job.id,
-    source_file: sourceFile || '请填写本机已核对的来源文件绝对路径',
-    source_url: url,
-    submission_id: `replit_${job.id}_r${job.revision}`,
-  }, null, 2) : '';
+  if (job.is_test !== 0 || !['waiting_executor', 'running'].includes(job.status)) return null;
+  const device = status?.device;
+  const installCommand = pairing
+    ? `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\artifacts\\api-server\\scripts\\install-codex-executor.ps1 -Origin '${pairing.origin}'`
+    : '';
 
   return (
-    <section className="milestone-card" aria-label="本机 Codex 单任务桥接">
-      <h3>本机 Codex 单任务执行</h3>
-      <p>仅适用于当前正式任务。授权限时一小时、绑定此任务，运行一次既有的本机 Codex 文稿流程；不会自动启动电脑、生成视频或发布内容。</p>
-      <p className="text-sm text-muted-foreground">先在本机同步此仓库并安装依赖，使用 Node.js 22.15+ 和原来已经登录的 Codex CLI。模型仍沿用本机 Codex 的账号与额度。</p>
-      {!grant ? (
-        <Button disabled={busy} onClick={() => void issue()}>{busy ? '正在准备…' : '为此任务生成临时授权'}</Button>
+    <section className="milestone-card space-y-3" aria-label="本机 Codex 后台执行器">
+      <h3>本机 Codex 后台执行器</h3>
+      <p>执行器在 Windows 登录后后台启动，只会领取你逐条批准的正式任务。它不会自动制作未批准任务，也不会生成视频或发布内容。</p>
+      <p className="text-sm text-muted-foreground">
+        本机需要安装并登录现有 Codex CLI、Node.js 22.15+，且保持开机联网。首次配对需在本机运行一次安装命令；之后后台执行器会轮询此制作台。
+      </p>
+      {device ? (
+        <div className="rounded-md border p-3 text-sm">
+          <p>已配对设备：<strong>{device.device_name}</strong></p>
+          <p>{device.online ? '在线' : `离线；上次连接 ${new Date(device.last_seen_at).toLocaleString()}`}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Button variant="outline" disabled={busy} onClick={() => void revokeDevice()}>撤销本机执行器</Button>
+          </div>
+        </div>
       ) : (
-        <div className="space-y-3">
-          <p role="status">授权将于 {new Date(grant.expires_at).toLocaleTimeString()} 过期，刷新页面前请先在本地启动。</p>
-          <label className="block text-sm">本地来源文件完整路径
-            <input className="mt-1 block w-full rounded-md border bg-background px-3 py-2" value={sourceFile} onChange={event => setSourceFile(event.target.value)} placeholder="例如 C:\Work\source.txt" />
-          </label>
-          <label className="block text-sm">一次性任务授权与输入
-            <textarea className="mt-1 block w-full rounded-md border bg-background p-3 font-mono text-xs" rows={10} readOnly value={payload} />
-          </label>
-          <Button variant="outline" onClick={() => void copy(payload, '隐藏输入 JSON')}>复制隐藏输入 JSON</Button>
-          <label className="block text-sm">在 Windows PowerShell 的仓库根目录运行
-            <textarea className="mt-1 block w-full rounded-md border bg-background p-3 font-mono text-xs" rows={3} readOnly value={runner} />
-          </label>
-          <Button variant="outline" onClick={() => void copy(runner, 'PowerShell 命令')}>复制运行命令</Button>
-          <p className="text-sm text-muted-foreground">启动后，Codex 会要求输入上方 JSON；隐藏输入不会回显。只选择哈希与任务来源相符的本地文件。草稿照常回传站点等待你审核。</p>
-          <Button variant="outline" disabled={busy} onClick={() => void revoke()}>{busy ? '处理中…' : '立即撤销授权'}</Button>
+        <div className="space-y-2">
+          <Button disabled={busy} onClick={() => void issuePairing()}>
+            {busy ? '处理中…' : '配对本机并设置登录启动'}
+          </Button>
+          {pairing && (
+            <div className="space-y-2 rounded-md border p-3">
+              <p role="status">配对码 10 分钟后失效，只能使用一次。安装后凭据会由 Windows 当前用户加密保存。</p>
+              <label className="block text-sm">一次性配对码
+                <textarea className="mt-1 block w-full rounded-md border bg-background p-3 font-mono text-xs" rows={2} readOnly value={pairing.pairing_code} />
+              </label>
+              <Button variant="outline" onClick={() => void copy(pairing.pairing_code, '配对码')}>复制配对码</Button>
+              <label className="block text-sm">在本机仓库根目录运行
+                <textarea className="mt-1 block w-full rounded-md border bg-background p-3 font-mono text-xs" rows={2} readOnly value={installCommand} />
+              </label>
+              <Button variant="outline" onClick={() => void copy(installCommand, '安装命令')}>复制安装命令</Button>
+              <p className="text-xs text-muted-foreground">安装脚本会提示输入配对码，并在当前 Windows 账号下创建登录启动任务；不会提升为管理员权限。</p>
+            </div>
+          )}
         </div>
       )}
+      {device && job.status === 'waiting_executor' && (
+        <div className="flex flex-wrap items-center gap-2">
+          {status?.approved ? (
+            <>
+              <p className="text-sm">此任务已单独授权，{device.online ? '等待本机领取' : '等待本机执行器上线'}。</p>
+              <Button variant="outline" disabled={busy} onClick={() => void revokeTask()}>撤销此任务授权</Button>
+            </>
+          ) : (
+            <Button disabled={busy || !url} onClick={() => void authorizeTask()}>
+              {busy ? '处理中…' : '仅授权本机执行此任务'}
+            </Button>
+          )}
+        </div>
+      )}
+      {device && job.status === 'running' && status?.approved && (
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="text-sm">本机正在执行此任务。</p>
+          <Button variant="outline" disabled={busy} onClick={() => void revokeTask()}>撤销此任务授权</Button>
+        </div>
+      )}
+      {!url && <p className="text-sm text-destructive">任务缺少可用的来源链接，不能授权本机执行。</p>}
       {message && <p role="status" className="text-sm text-muted-foreground">{message}</p>}
     </section>
   );
