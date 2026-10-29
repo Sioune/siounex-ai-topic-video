@@ -74,6 +74,20 @@ function generationBrowserPrompt(phase,input){
 }
 function readCooldownFailure(cooldown){const connection=['tab-owned-by-another-session','browser-disconnected'].includes(cooldown.reason),code=connection?'STUDIO_PREVIEW_CONNECTION_COOLDOWN':'STUDIO_PREVIEW_READONLY_COOLDOWN';throw Object.assign(Error(code),{code,diagnostic:'同一草稿的只读检查等待退避至 '+cooldown.next_retry_at+'（'+cooldown.reason+'）；保留原请求、草稿及原 Play 恢复机会。',next_retry_at:cooldown.next_retry_at});}
 const save=(f,v)=>{fs.mkdirSync(path.dirname(f),{recursive:true});const b=Buffer.from(JSON.stringify(v,null,2));if(fs.existsSync(f)){if(speechSha(fs.readFileSync(f))!==speechSha(b))fail('STUDIO_PREVIEW_IMMUTABLE_CHANGED');}else fs.writeFileSync(f,b,{flag:'wx'});};
+// The legacy start marker was written before resolving the desktop CLI. If
+// resolution failed, the adapter did not even create a browser attempt. Keep
+// that marker, but allow the original preparation to start once the binding is
+// repaired. Any evidence of an actual browser attempt retains normal recovery.
+export function studioPreparationFailedBeforeBrowser({dir,request:r,speech_text_sha256}){
+ try{
+  if(r?.status!=='blocked'||r.provider_call_started===true||r.provider_result||r.lease_until!=null||typeof r.reason!=='string'||!r.reason.endsWith('（STUDIO_PREVIEW_BROWSER_UNAVAILABLE）'))return false;
+  const entries=fs.readdirSync(dir,{withFileTypes:true});
+  if(entries.some(e=>e.isSymbolicLink()||!(e.name==='studio-prepare-started.json'&&e.isFile()||/^account-read-[a-f0-9-]{36}$/.test(e.name)&&e.isDirectory())))return false;
+  const file=path.join(dir,'studio-prepare-started.json'),stat=fs.lstatSync(file);if(!stat.isFile()||stat.isSymbolicLink()||stat.size>65536)return false;
+  const start=JSON.parse(fs.readFileSync(file,'utf8'));
+  return start.request_id===r.id&&studioCanonical(start.binding)===studioCanonical(r.binding)&&start.text_sha256===speech_text_sha256&&Number.isFinite(Date.parse(start.started_at));
+ }catch{return false;}
+}
 function scope(root,job,r,{metadataIdentity=false}={}){if(!/^job_[a-f0-9-]{36}$/.test(job?.id||'')||!/^acl_[a-f0-9]{64}$/.test(r?.id||'')||r.job_id!==job.id||r.acquisition_method!=='heygen_studio_audio_preview'||!['auto','node'].includes(job.review_mode)||job.review_mode!==r.workflow_mode||!metadataIdentity&&job.status!=='approved'||r.binding?.revision!==job.revision||r.binding.mode_epoch!==job.mode_epoch||r.binding.script_hash!==job.approved_hash||r.binding.contract_hash!==job.contract_hash||r.new_payment_limit!==0||r.new_clone_allowed!==false||r.api_fallback_allowed!==false||r.publication_authorized!==false||r.scope_id!==job.media_continuation?.current_id||!r.scope_id||!r.owner_id||job.owner_id!==undefined&&job.owner_id!==r.owner_id)fail('STUDIO_PREVIEW_CURRENT_APPROVAL_REQUIRED');
  const videos=(job.milestones||[]).filter(m=>m.node==='video'&&m.revision===job.revision&&m.mode_epoch===job.mode_epoch),milestone=metadataIdentity?videos.find(m=>m.id===r.base?.milestone_id):videos.sort((a,b)=>b.artifact_version-a.artifact_version)[0];let artifact;try{artifact=JSON.parse(milestone?.artifact);}catch{fail('STUDIO_PREVIEW_FIRST_APPROVAL_CHANGED');}
  const first=(job.reviews||[]).find(v=>v.id===r.first_review_id&&v.revision===job.revision&&v.decision==='approve'&&v.reviewer===r.owner_id&&v.content_hash===r.base?.artifact_hash&&v.note===milestone?.report);
@@ -409,7 +423,7 @@ export function createStudioPreviewVoice({root=process.cwd(),deadline_ms=Infinit
   if(!readonly&&known){const record=cache.getPreparedDraft({job,request:r,text}),proof=inspectPersistedStudioPreparation({dir,request_id:r.id,binding:r.binding,speech_text_sha256:speechSha(text),draft_id:input.draft_id,voice_id:r.voice_id,expected_prepared_binding:record?.binding,clock});if(proof){const p={input,observation:null};prepared.set(r.id,p);return p;}}
   if(!readonly){const cooldown=studioReadinessCooldown({dir,request_id:r.id,draft_id:input.draft_id,speech_text_sha256:speechSha(text),clock,phases:['prepare','recover-preparation']});if(cooldown)readCooldownFailure(cooldown);}
   const ownerPreparation=!readonly&&!input.draft_id?claimOwnerPreparation({dir,request:r,binding:r.binding,speech_text_sha256:speechSha(text),clock}):null;
-  const start=path.join(dir,'studio-prepare-started.json'),recovering=!readonly&&!input.draft_id&&fs.existsSync(start)&&!ownerPreparation;if(!readonly&&!input.draft_id&&!recovering&&!ownerPreparation)save(start,{request_id:r.id,binding:r.binding,text_sha256:speechSha(text),started_at:new Date(clock()).toISOString()});
+  const start=path.join(dir,'studio-prepare-started.json'),started=fs.existsSync(start),beforeBrowser=started&&studioPreparationFailedBeforeBrowser({dir,request:r,speech_text_sha256:speechSha(text)}),recovering=!readonly&&!input.draft_id&&started&&!ownerPreparation&&!beforeBrowser;if(!readonly&&!input.draft_id&&!started&&!ownerPreparation)save(start,{request_id:r.id,binding:r.binding,text_sha256:speechSha(text),started_at:new Date(clock()).toISOString()});
   if(recovering){const options={dir,request_id:r.id,binding:r.binding,speech_text_sha256:speechSha(text),owner_id_sha256:speechSha(r.owner_id),clock},inspect=()=>inspectPendingPreparationContext(options)||inspectOwnerPendingPreparationContext({...options,request:r});let context=inspect();if(context){await refreshPreparedOwnerBindings(r);context=inspect();}if(context)input.pending_preparation_context=context;}
   const phase=readonly?'reconcile':recovering?'recover-preparation':'prepare';let o,resumedOriginal=false;
   try{o=await browser(phase,input,{dir:ownerPreparation?.dir||path.join(dir,'browser-'+randomUUID()),deadline_ms});}
