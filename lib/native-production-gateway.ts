@@ -3,7 +3,8 @@ import {continueSavedOwnerFeedback,continueOwnerFeedbackAfterAiReview} from './o
 import {db} from './store';
 import {ProductionError} from './production-contract';
 import {getResearch} from './research';
-import {retryJob} from './production';
+import {retryJob,getJob} from './production';
+import {continueMediaRework} from './milestones';
 import {retryOwnerTextReview,recoverOwnerTerminalTextReview} from './owner-text-review-retry';
 import {getLatestWorkInProgress,getWorkInProgressPartDigest} from './work-in-progress-video';
 import {POST as executePrivateProduction} from '../app/api/executor/route';
@@ -34,6 +35,11 @@ export async function nativeProductionRequest(owner:string,args:Record<string,un
  // preserving retry as the production page. This grants no content approval.
  if(b.action==='retry')return {status:200,body:{job:await retryJob(b.id,owner)}};
  if(b.action==='owner_feedback_review_continue'){if(Object.keys(b).some(k=>!['action','id','review_id','revision','content_hash','mode_epoch'].includes(k))||typeof b.review_id!=='string'||!Number.isSafeInteger(b.revision)||!Number.isSafeInteger(b.mode_epoch)||typeof b.content_hash!=='string')throw new ProductionError('审核纠错请求无效',400);return {status:200,body:await continueOwnerFeedbackAfterAiReview(b.id,owner,b)};}
+ if(b.action==='owner_video_feedback_continue'){
+  if(Object.keys(b).some(k=>!['action','id','milestone_id','revision','artifact_hash','mode_epoch'].includes(k))||typeof b.milestone_id!=='string'||!Number.isSafeInteger(b.revision)||!Number.isSafeInteger(b.mode_epoch)||typeof b.artifact_hash!=='string')throw new ProductionError('视频反馈接续请求无效',400);
+  const j=await getJob(b.id,owner),m=j.milestones?.find(x=>x.id===b.milestone_id);if(!m||m.node!=='video'||m.status!=='revise'||typeof j.review_note!=='string'||!j.review_note.trim())throw new ProductionError('当前本人视频修改意见已变化',409);
+  const resumed=await continueMediaRework(b.id,owner,b.milestone_id,b.revision,b.artifact_hash,b.mode_epoch,j.review_note);return {status:200,body:{job_id:resumed.id,status:resumed.status,feedback_saved:true,quality_approved:false,publication_authorized:false}};
+ }
  if(b.action==='owner_feedback_continue'){if(Object.keys(b).some(k=>!['action','id','feedback_id','revision','content_hash','mode_epoch'].includes(k))||typeof b.feedback_id!=='string'||!Number.isSafeInteger(b.revision)||!Number.isSafeInteger(b.mode_epoch)||typeof b.content_hash!=='string')throw new ProductionError('意见接续请求无效',400);return {status:200,body:await continueSavedOwnerFeedback(b.id,owner,b)};}
  if(b.action==='owner_text_review_retry')return {status:200,body:await retryOwnerTextReview(b.id,owner,b)};
  if(b.action==='owner_text_review_output_recover')return {status:200,body:await recoverOwnerTerminalTextReview(b.id,owner,b)};

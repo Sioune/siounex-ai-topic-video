@@ -182,6 +182,10 @@ export async function decideMilestone(id:string,mid:string,revision:number,artif
  }
  const results=await db().batch(updates);if(!results[0].meta.changes){if(ai&&token&&await ownerManualPolicy(id))return observeInFlightReview(id,mid,revision,artifactHash,epoch,decision,report,actor,token);throw new ProductionError('节点已审核或版本变化，重新读取');}
  if(m.node==='delivery'&&decision==='approve')await triggerSiteRetention(id);
+ if(!ai&&decision==='revise'&&m.node==='video'&&j.review_mode==='node'&&localReviewGuard&&localAutomaticVideoReworkSupported(m)&&!previewGuard){
+  try{return await continueMediaRework(id,actor,mid,revision,artifactHash,epoch,note)}
+  catch(error){const saved=await getJob(id,actor);return {...saved,media_rework_continuation:{status:'not-confirmed',message:error instanceof Error?error.message:'修改接续结果未确认'}};}
+ }
  return getJob(id);
 }
 async function resumeManualText(j:Awaited<ReturnType<typeof getJob>>,owner:string,note:string){

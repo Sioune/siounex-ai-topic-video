@@ -5,6 +5,7 @@
   "allowed_actions": [
     "owner_node_mode_all",
     "owner_feedback_continue",
+    "owner_video_feedback_continue",
     "owner_feedback_review_continue",
     "studio_preview_generation_read",
     "studio_preview_generation_effect",
