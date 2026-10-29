@@ -42,7 +42,7 @@ export function postVideoLocalSources(job,plan,{root=process.cwd()}={}){
    for(const originalDir of fs.readdirSync(parent,{withFileTypes:true}).filter(d=>d.isDirectory()&&/^[a-f0-9]{64}$/.test(d.name))){
     const f=path.join(parent,originalDir.name,'producer-receipt.json');if(!fs.existsSync(f))continue;const original=JSON.parse(fs.readFileSync(f,'utf8')),ref=original.files?.find(x=>x.role==='project');
     if(ref?.sha256!==p.original_project_sha256||original.files?.find(x=>x.role==='video')?.sha256!==p.original_video_sha256||original.files?.find(x=>x.role==='voice')?.sha256!==p.original_voice_sha256)continue;
-    const original_producer_project=exactFile(ref,root);return{video,project_archive:null,producer_project,original_producer_project};
+    const original_producer_project=exactFile(ref,root);return{video,project_archive:null,producer_project,original_producer_project,correction_receipt:correctionReceipt};
    }
    throw Error('POST_VIDEO_CORRECTION_ORIGINAL_PROJECT_MISSING');
   }
