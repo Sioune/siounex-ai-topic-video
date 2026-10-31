@@ -1,0 +1,25 @@
+@layer theme, base, clerk, components, utilities;
+@import "tailwindcss";
+@import "@clerk/themes/shadcn.css";
+@font-face{font-family:Geist;src:url('/fonts/geist-variable.woff2') format('woff2');font-weight:100 900;font-style:normal;font-display:swap}
+:root{
+ --studio-bg:#f5f6fa;--studio-surface:#fdfdff;--studio-surface-soft:#eef0f6;
+ --studio-text:#202638;--studio-muted:#626b7e;--studio-line:#dce1ec;
+ --studio-accent:#3154d8;--studio-accent-soft:#e9edff;--studio-on-accent:#fcfcff;
+ --studio-radius:12px;--studio-shadow:0 8px 28px rgb(33 48 95 / .055);
+ --background:var(--studio-bg);--foreground:var(--studio-text);--card:var(--studio-surface);--card-foreground:var(--studio-text);
+ --popover:var(--studio-surface);--popover-foreground:var(--studio-text);--primary:var(--studio-accent);--primary-foreground:var(--studio-on-accent);
+ --secondary:var(--studio-surface-soft);--secondary-foreground:var(--studio-text);--muted:var(--studio-surface-soft);--muted-foreground:var(--studio-muted);
+ --accent:var(--studio-accent-soft);--accent-foreground:var(--studio-accent);--border:var(--studio-line);--input:var(--studio-line);--ring:var(--studio-accent);--radius:.625rem;color-scheme:light;
+}
+html[data-theme=dark]{
+ --studio-bg:#151923;--studio-surface:#1d2330;--studio-surface-soft:#272e3e;
+ --studio-text:#e9edf7;--studio-muted:#a7b1c6;--studio-line:#374052;
+ --studio-accent:#a3b5ff;--studio-accent-soft:#2c3657;--studio-on-accent:#1a2548;color-scheme:dark;
+}
+html{font-size:16px;scroll-padding-top:5rem;scrollbar-gutter:stable}
+body{margin:0;background:var(--studio-bg);color:var(--studio-text);font-family:Geist,'Microsoft YaHei UI','PingFang SC',sans-serif;line-height:1.65;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit}button,a{-webkit-tap-highlight-color:transparent}
+button{cursor:pointer}button:disabled{cursor:not-allowed}
+.studio-skip{position:fixed;top:1rem;left:1rem;z-index:60;padding:.75rem 1rem;background:var(--studio-accent);color:var(--studio-on-accent);border-radius:8px;transform:translateY(-180%)}
+.studio-skip:focus{transform:none}

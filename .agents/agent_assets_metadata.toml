@@ -14,3 +14,17 @@ mtime_ms = 1793462678403
 storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3c7870ed-0b2e-45fd-a88e-f7ba8e46fbc5/b90c4f02-2813-4504-b75e-42007e4c5d78/c928877d-7be9-4988-a6ad-62504369b3ed"
 storage_version_token = "1793462704154988"
 content_type = "text/html"
+
+[[outputs]]
+id = "yFEkImJTcdqrP1egkvaZe"
+uri = "file://generated-artifacts/slimming-quality-report.html"
+type = "html"
+title = "系统精简完成与质检报告"
+description = "包含实际删除与体积对比、功能边界、数据保全、测试结果，以及管理员浏览器验收和旧后端兼容层的明确限制。"
+logical_id = "0de838f6-8e39-4350-ab0d-66f3aa2217fb"
+content_hash = "sha256:53ad39ed6479f2cfbfc388f73d11d43261588a91eb47c4d6c2eff9ee96248f9b"
+size = 13719
+mtime_ms = 1793463971864
+storage_uri = "gcs://replit-rams-assets-sisko/rams/assets/repl:3c7870ed-0b2e-45fd-a88e-f7ba8e46fbc5/0de838f6-8e39-4350-ab0d-66f3aa2217fb/096c33bf-b118-4e0e-b020-4f29d2a70505"
+storage_version_token = "1793464004828786"
+content_type = "text/html"

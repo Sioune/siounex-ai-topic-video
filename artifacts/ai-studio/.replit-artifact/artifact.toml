@@ -1,7 +1,7 @@
 kind = "web"
 previewPath = "/"
 title = "怎么用好AI · 选题库"
-description = "私人 AI 选题与视频制作工作台，保留资料采集、选题研究、制作和发布管理流程。"
+description = "公开的 AI 选题与外部成果展示网站，支持固定来源同步、成果回传和站主内容维护，不承担制作与平台发布过程。"
 version = "1.0.0"
 id = "artifacts/ai-studio"
 router = "path"

@@ -1,12 +1,12 @@
 # 怎么用好AI · 选题库
 
-Private Chinese-language workspace for AI story discovery, research, original material, video production/review, publishing and performance records.
+Chinese-language public AI topic library and external-results display site. The website does not generate, render, or publish production content. External programs do that work; the site synchronizes sources and receives their results.
 
 ## Run
 
 Use the managed workflows:
-- `artifacts/ai-studio: web` — existing UI, converted from Next/Vinext to Vite/React.
-- `artifacts/api-server: API Server` — Express API, including all original API paths and `/mcp`.
+- `artifacts/ai-studio: web` — public topics `/`, approved results `/results`, and owner-only content maintenance `/admin`.
+- `artifacts/api-server: API Server` — public read projections and result import; original private APIs and `/mcp` remain as a lazily loaded compatibility layer.
 
 `pnpm --filter @workspace/api-server test` runs isolated database/identity tests and non-mutating access-boundary smoke checks against the running API.
 Authenticated browser verification uses programmatic Clerk sign-in and real session cookies. Do not insert SQLite sessions to simulate a login.
@@ -16,7 +16,7 @@ Authenticated browser verification uses programmatic Clerk sign-in and real sess
 The original host supplied ChatGPT identity headers. They are no longer trusted.
 Authentication uses Replit-managed **Clerk**, with embedded Chinese sign-in/sign-up pages and same-origin session cookies. Web API calls use the shared `@workspace/api-client-react` client; no browser bearer tokens. The Clerk proxy is mounted before body parsing.
 
-Authorization remains the existing single-owner allowlist. Only a cryptographically verified `sessionClaims.userId` matching the securely configured `STUDIO_OWNER_ID` can access private APIs or MCP. For migrated accounts this is the original subject stored as Clerk `externalId`; for new accounts it is the Clerk ID. It is also the unchanged local ownership ID used by all business data. Never use JWT `sub`/`auth.userId` for migrated local data, profile names, emails, user-editable metadata, `REPL_OWNER_ID`, incoming identity headers, or first-registration ownership. There is no automatic local-user provisioning.
+Public topic/result pages do not load Clerk or require a login. Only allowlisted feed fields and explicitly visible catalog results are exposed. Authorization for `/admin`, original private APIs and MCP remains the existing single-owner allowlist. Only a cryptographically verified `sessionClaims.userId` matching the securely configured `STUDIO_OWNER_ID` can access them. For migrated accounts this is the original subject stored as Clerk `externalId`; for new accounts it is the Clerk ID. It is also the unchanged local ownership ID used by all business data. Never use JWT `sub`/`auth.userId` for migrated local data, profile names, emails, user-editable metadata, `REPL_OWNER_ID`, incoming identity headers, or first-registration ownership. There is no automatic local-user provisioning.
 
 Without a configured matching owner, Clerk login can succeed but private access is denied (403), with a terminal access-denied page and client-side logout. Old opaque SQLite sessions are ignored; their schema and other existing tables remain intact.
 
@@ -28,7 +28,18 @@ Do not enroll any test user as the real owner. Owner grants must target an expli
 3. Configure `STUDIO_OWNER_ID` through the secure Secrets/admin flow to that ID **only after checking that it matches existing local data ownership**. If existing data has a different owner ID, stop and arrange an explicitly authorized identity binding; do not rename/reassign data or set arbitrary external IDs.
 4. Restart the API and verify owner-only library/data reads, a safe reversible private operation, logout, and denial for an unrelated account. Production enrollment must run in the target production environment; do not copy development grants or production credentials into the workspace.
 
-Anonymous browsing outside production/publishing and BYOK model-provider adapters remain separate future work.
+BYOK and production execution belong to the external producer, not the public site's runtime. Old `/production`, `/publishing`, `/research`, `/originals`, and `/data` pages are explicitly retired, not silently presented as working production tools. No historical job or private draft is automatically made public.
+
+## Display and synchronization
+
+- OpenAPI in `lib/api-spec/openapi.yaml` defines the new contracts; regenerate clients with `pnpm --filter @workspace/api-spec run codegen`.
+- Public reads `/api/public/topics` and `/api/public/results` bypass the legacy serialized request queue.
+- Owner maintenance under `/api/admin` uses existing Clerk cookies and same-origin writes.
+- External programs POST one result to `/api/sync/results` with an import-only credential issued in `/admin`. It expires in 30 days; only its hash is stored. It cannot read private data, start production, change visibility or delete results.
+- Results use stable `external_id` and increasing `revision`. Exact retries are idempotent; differing same/older revisions return 409. New revisions become private again, and owner visibility changes must name the current revision.
+- Catalog entries are in the existing SQLite `app_state`, separately from original production records. Removing a catalog entry does not delete external files or historical jobs.
+- Source refresh uses the original fixed source allowlist. The single API process checks sources every 30 minutes while running; it is not an always-on scheduler when the process is stopped. Manual refresh runs in the background and reports per-source status. A sleeping/restarting deployment needs an independently configured scheduler if wall-clock guarantees are required.
+- `scripts/content-catalog.test.mjs` tests projection isolation, import permission, same-origin checks, visibility, revisions, retries, credential rotation/revocation and removal using an isolated SQLite database.
 
 ## Data and files
 
@@ -40,22 +51,20 @@ Run **one active API instance**. Generation-conditional snapshot writes reject c
 
 There is no test login endpoint or runtime development bypass. For browser tests only, a tester may temporarily override the development process owner allowlist to a synthetic account, then restore the managed workflow. This does not enroll the real owner or alter data ownership.
 
-## Local Codex bridge
+## Legacy Local Codex compatibility
 
-The bridge reuses the existing single-task Codex CLI production executor; it does not expose a local Codex port or start a persistent daemon. In the owner-only production desk, a real job in `waiting_executor` can receive a one-hour, one-job authorization. The server stores only its hash and binds it to the owner, job, and Replit HTTPS host. Reissuing for the same job rotates the old grant; the owner can also revoke it.
+The original task-grant and Windows resident-device APIs/scripts are retained privately to avoid breaking external callers. There is no longer a production desk or pairing workflow in the display UI. Existing credentials do not become result-import credentials; their limited scope is unchanged. Device polling updates transient in-memory presence rather than uploading a whole database snapshot for every heartbeat. No test here proves that a particular Windows machine is installed, online, or has completed a real Codex run.
 
-On the Windows machine with the existing Codex CLI and this repository synced and dependencies installed (including the runner's development dependency `sharp`), start the runner from the repository root using the command shown in the production desk. Use Node.js 22.15+, the exact local source file for the task, and the hidden JSON prompt displayed once with the grant. The local overlay routes only the existing executor API calls to Replit; it does not alter `.migration-backup/` or use the old Codex Sites identity header. Grant actions are limited to reading, claiming, heartbeating, checkpointing, submitting or failing that one production job. Drafts return to the existing site review flow; there is no auto-approval, media render, paid media adapter, or external publishing.
-
-Do not paste the temporary token into chat, save it in source, or run commands other than the displayed bounded executor. If the local Codex run fails or its result is uncertain, inspect the task and receipts before retrying.
+For the new display flow, an external producer should return finished results through `/api/sync/results`, then the owner reviews visibility in `/admin`. Do not reintroduce production controls into the public site.
 
 ## Source and implementation
 
 - `.migration-backup/` — untouched imported source and operational instructions; excluded from deployment.
-- `artifacts/ai-studio/src/` — original client components, styles, policy files and route mapping.
+- `artifacts/ai-studio/src/content/` — focused public reading and owner content-maintenance screens. Unreferenced legacy frontend components, production policies and duplicated server libraries have been removed.
 - `artifacts/api-server/src/imported/` — original backend business rules, SQL migrations and production policy files.
 - `artifacts/api-server/src/lib/studio-*` — SQLite persistence, App Storage and replacement identity boundary.
 - `artifacts/api-server/src/routes/imported.ts` — Express-to-standard-Request adapter, preserving endpoint contracts and streaming.
 
 Large worker-side production media are retained in the original import, not duplicated in the deployed API. The web app's original `public/` assets are preserved. The original worker execution scripts and live executor services were not launched or replayed as part of this migration.
 
-Strict type-cleanup of inherited source is outside the migration scope. Use runtime checks and the managed frontend build; root `pnpm dev` is not a run command.
+Frontend and shared-library typechecks must pass. The retained imported backend has inherited diagnostics that are not waived by a successful runtime build; do not claim the entire repository is type-clean. Root `pnpm dev` is not a run command.
