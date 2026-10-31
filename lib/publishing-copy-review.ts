@@ -1,3 +1,4 @@
+import {replacementSourceBinding} from './publishing-cover-replacement-guard';
 import {v6OutroSourceBinding} from './outro-upgrade-contract.mts';
 import {db} from './store';
 import {hash,ProductionError,text} from './production-contract';
@@ -10,14 +11,14 @@ export type PlatformCopy={title:string;description:string;tags:string[];approach
 export const PLATFORM_COPY_OPTIONS={category:'technology-ai',originality:'self-produced-commentary',ai_disclosure:'ai-generated',visibility:'public',publish_mode:'immediate',download:'disabled',sync:'disabled'} as const;
 export type PlatformCopyReview={job_id:string;title:string;copy_hash:string;binding_hash:string;strategy_version:string;platforms:Record<string,PlatformCopy>;option_policy:typeof PLATFORM_COPY_OPTIONS;originality_decision:'self-produced-commentary'|'repost'|null;status:'awaiting_review'|'approved'|'revise'|'source_changed';reason:string;reviewed_at:string|null};
 const key=(owner:string,id:string)=>'publishing_platform_copy_review_v1:'+owner+':'+id;
-export async function platformCopyReview(owner:string,binding:PublishingBinding,title='',sourceText?:string):Promise<PlatformCopyReview|null>{
+export async function platformCopyReview(owner:string,binding:PublishingBinding,title='',sourceText?:string,preloaded?:{value:string}|null):Promise<PlatformCopyReview|null>{
  const promotion=binding.materials.find(m=>m.role==='promotion');let seed=seeds.drafts.find(d=>d.job_id===binding.job_id);
  if((!seed||seed.source_promotion_sha256!==promotion?.sha256)&&sourceText&&promotion){const entries=(['douyin','wechat_channels','bilibili','kuaishou','xiaohongshu'] as PublishingCopyPlatform[]).map(p=>[p,resolvePublishingCopy(sourceText,p)] as const);if(entries.every(([,c])=>c.ok)){const copies=entries.map(([p,c])=>[p,c.ok?{title:c.title,description:c.description,tags:c.tags,approach:'本平台专段来自当前已审核宣发，按五平台写作规范分别组织；编辑依据保留在原宣发材料中。'}:null] as const);if(new Set(copies.map(([,c])=>c!.title)).size===5&&new Set(copies.map(([,c])=>c!.description)).size===5)seed={job_id:binding.job_id,source_promotion_sha256:promotion.sha256,platforms:Object.fromEntries(copies)} as typeof seed;}}
  if(!seed)return null;
  const bindingHash=await hash(JSON.stringify(binding));
  const payload={schema:seeds.schema,strategy_version:seeds.strategy_version,job_id:binding.job_id,binding_hash:bindingHash,source_promotion_sha256:seed.source_promotion_sha256,platforms:seed.platforms,option_policy:PLATFORM_COPY_OPTIONS},copyHash=await hash(JSON.stringify(payload));
- const stored=await db().prepare('SELECT value FROM app_state WHERE key=?').bind(key(owner,binding.job_id)).first<{value:string}>(),saved=stored?JSON.parse(stored.value):null,current=promotion?.sha256===seed.source_promotion_sha256;
- const beforeOutro=v6OutroSourceBinding(binding),sourceBinding=coverBrandingSourceBinding(beforeOutro||binding)||beforeOutro,sourceHash=sourceBinding?await hash(JSON.stringify(sourceBinding)):null,sourceCopyHash=sourceHash?await hash(JSON.stringify({...payload,binding_hash:sourceHash})):null;
+ const stored=preloaded===undefined?await db().prepare('SELECT value FROM app_state WHERE key=?').bind(key(owner,binding.job_id)).first<{value:string}>():preloaded,saved=stored?JSON.parse(stored.value):null,current=promotion?.sha256===seed.source_promotion_sha256;
+ const beforeOutro=v6OutroSourceBinding(binding),sourceBinding=await replacementSourceBinding(owner,beforeOutro||binding)||coverBrandingSourceBinding(beforeOutro||binding)||beforeOutro,sourceHash=sourceBinding?await hash(JSON.stringify(sourceBinding)):null,sourceCopyHash=sourceHash?await hash(JSON.stringify({...payload,binding_hash:sourceHash})):null;
  const oldOptions={...PLATFORM_COPY_OPTIONS,originality:'owner-selection-required'},legacyCopyHash=await hash(JSON.stringify({...payload,option_policy:oldOptions})),legacySourceCopyHash=sourceHash?await hash(JSON.stringify({...payload,binding_hash:sourceHash,option_policy:oldOptions})):null;
  // Removing a second approval must not erase an actual owner's previous revision request.
  if(saved&&(saved.binding_hash===bindingHash&&saved.copy_hash===legacyCopyHash||saved.binding_hash===sourceHash&&saved.copy_hash===legacySourceCopyHash||saved.copy_hash!==copyHash&&sourceCopyHash===saved.copy_hash&&sourceHash===saved.binding_hash)){saved.copy_hash=copyHash;saved.binding_hash=bindingHash;}

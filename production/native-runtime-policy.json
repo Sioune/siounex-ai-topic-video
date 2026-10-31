@@ -19,6 +19,7 @@
     "automatic_clone_preflight",
     "automatic_clone_quote",
     "automatic_clone_read",
+    "automatic_clone_render_job_read",
     "automatic_clone_render_progress",
     "automatic_clone_terminal_failure",
     "checkpoint",
@@ -89,14 +90,27 @@
     "site_archive_read_part",
     "site_archive_start",
     "source_input_block",
-    "submit"
+    "submit",
+    "cover_candidate_start",
+    "cover_candidate_part",
+    "cover_candidate_finish",
+    "cover_candidate_read",
+    "cover_candidate_read_part",
+    "site_cover_source_part",
+    "site_cover_thumbnail_put",
+    "site_cover_worker_claim",
+    "site_cover_worker_next",
+    "site_cover_worker_finish"
   ],
   "global_actions": [
     "dispatch_next",
     "research_next",
     "executor_status",
     "executor_heartbeat",
-    "owner_node_mode_all"
+    "owner_node_mode_all",
+    "site_cover_worker_claim",
+    "site_cover_worker_next",
+    "site_cover_worker_finish"
   ],
   "human_approval_actions": false,
   "publication_actions": false,

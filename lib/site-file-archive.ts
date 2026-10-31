@@ -1,3 +1,4 @@
+import {getCoverCandidateArchive} from './cover-candidate';
 import {postVideoPreparationArchiveContext,postVideoPreparationGuard,readPostVideoPreparationRecord} from './post-video-preparation';
 import {derivedV6ArchiveMetadata,derivedV6ArchiveFile} from './outro-upgrade-storage';
 import type {PostVideoPreparationPlan} from './post-video-preparation-contract.mts';
@@ -181,7 +182,7 @@ async function archivedStored(id:string,sid:string,owner:string){
  const review=await store.db().prepare('SELECT note,content_hash FROM production_reviews WHERE id=? AND job_id=? AND decision=?').bind('site_archive_confirmed_'+siteDigest(sid),id,SITE_ARCHIVE_DECISION).first<{note:string;content_hash:string}>();if(!review||review.content_hash!==a.file.sha256||review.note!==siteCanonical({owner_id:owner,...a}))throw error('固定归档缺少原始确认记录');
  const r2=await bucket(),manifest=await r2.get(rootKey(sid)+'manifest.json');if(!manifest)throw error('固定归档封存清单缺失');const raw=await manifest.text();if(siteDigest(raw)!==a.manifest_sha256)throw error('固定归档封存清单完整性失败');const m=JSON.parse(raw);if(siteCanonical(m.parts)!==siteCanonical(s.parts)||siteCanonical(m.file)!==siteCanonical(a.file)||siteCanonical(m.binding)!==siteCanonical(a.binding)||m.owner_review_id!==a.owner_review_id||m.scope_id!==a.scope_id||m.scope_hash!==a.scope_hash||m.version_request_id!==a.version_request_id||m.final_native_request_id!==a.final_native_request_id||m.pending_native_request_id!==a.pending_native_request_id||m.pending_candidate_id!==a.pending_candidate_id||m.voice_provenance_id!==a.voice_provenance_id||m.quality_review!==a.quality_review||m.post_video_preparation_id!==a.post_video_preparation_id||m.post_video_delivery_id!==a.post_video_delivery_id||siteCanonical(m.post_video_material_reviews)!==siteCanonical(a.post_video_material_reviews))throw error('固定归档清单与确认元数据不符');return s;
 }
-export async function getSiteArchiveMetadata(id:string,sid:string,owner:string){const derived=await derivedV6ArchiveMetadata(id,sid,owner,getSiteArchiveMetadata);return derived||(await archivedStored(id,sid,owner)).archive;}
+export async function getSiteArchiveMetadata(id:string,sid:string,owner:string){const candidate=await getCoverCandidateArchive(id,sid,owner);if(candidate)return candidate.archive as SiteFileArchive;const derived=await derivedV6ArchiveMetadata(id,sid,owner,getSiteArchiveMetadata);return derived||(await archivedStored(id,sid,owner)).archive;}
 async function streamArchivedStored(s:Stored,range?:{offset:number;length:number}){
  const a=s.archive;
  const offset=range?.offset??0,length=range?.length??a.file.size_bytes;if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(length)||offset<0||length<=0||offset+length>a.file.size_bytes)throw error('文件Range无效',416);
@@ -192,11 +193,13 @@ async function streamArchivedStored(s:Stored,range?:{offset:number;length:number
 // binding and manifest validation used by standalone metadata/file reads.
 // Every streamed part is still checked against that confirmed manifest.
 export async function openSiteArchiveForRead(id:string,sid:string,owner:string){
+ const candidate=await getCoverCandidateArchive(id,sid,owner);if(candidate)return{archive:candidate.archive as SiteFileArchive,read:async(range?:{offset:number;length:number})=>{const bytes=candidate.bytes,offset=range?.offset??0,length=range?.length??bytes.length;if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(length)||offset<0||length<=0||offset+length>bytes.length)throw error('文件Range无效',416);return{archive:candidate.archive as SiteFileArchive,body:new Response(bytes.subarray(offset,offset+length)).body!};}};
  const derived=await derivedV6ArchiveMetadata(id,sid,owner,getSiteArchiveMetadata);
  if(derived)return{archive:derived,read:async(range?:{offset:number;length:number})=>{const r=await derivedV6ArchiveFile(id,sid,owner,getSiteArchiveMetadata,range);if(!r)throw error('V6换尾成片已变化');return r;}};
  const s=await archivedStored(id,sid,owner);return{archive:s.archive,read:(range?:{offset:number;length:number})=>streamArchivedStored(s,range)};
 }
 export async function readSiteArchiveFile(id:string,sid:string,owner:string,range?:{offset:number;length:number}){
+ const candidate=await getCoverCandidateArchive(id,sid,owner);if(candidate){const bytes=candidate.bytes,offset=range?.offset??0,length=range?.length??bytes.length;if(!Number.isSafeInteger(offset)||!Number.isSafeInteger(length)||offset<0||length<=0||offset+length>bytes.length)throw error('文件Range无效',416);return{archive:candidate.archive as SiteFileArchive,body:new Response(bytes.subarray(offset,offset+length)).body!};}
  const derived=await derivedV6ArchiveFile(id,sid,owner,getSiteArchiveMetadata,range);if(derived)return derived;
  return streamArchivedStored(await archivedStored(id,sid,owner),range);
 }

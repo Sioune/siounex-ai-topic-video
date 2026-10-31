@@ -41,10 +41,10 @@ export async function listJobSummaries(owner:string):Promise<ProductionJobSummar
  const [result,runtime]=await Promise.all([db().prepare(`SELECT j.id,j.topic_id,j.owner_id,j.is_test,j.status,j.review_mode,j.mode_epoch,j.reworks,j.ai_calls,j.revision,j.approved_revision,j.approved_hash,j.contract_hash,j.lease_until,j.lease_hash,j.error,j.review_note,j.source_snapshot,j.updated_at,
  (j.is_test=0 AND j.review_mode='auto' AND j.status NOT IN ('completed','cancelled') AND EXISTS(SELECT 1 FROM app_state policy WHERE policy.key='owner_manual_review_policy_v1:'||j.owner_id AND json_valid(policy.value) AND json_extract(policy.value,'$.status')='enabled')) AS manual_mode_pending,
  ${summaryRows('production_drafts','revision,content_hash,content','revision DESC','job_id=j.id AND revision=j.revision')} AS drafts_raw,
- ${summaryRows('production_milestones','id,node,revision,artifact_version,artifact_hash,artifact,status,mode_epoch,review_until,report,created_at','revision DESC,artifact_version DESC,created_at DESC')} AS milestones_raw,
- ${summaryRows('production_reviews','id,revision,content_hash,decision,note,reviewer,created_at,rowid','created_at DESC',"job_id=j.id AND decision<>'native_preparation_handoff_event'")} AS reviews_raw,
+ ${summaryRows('production_milestones','id,node,revision,artifact_version,artifact_hash,artifact,status,mode_epoch,review_until,report,created_at','revision DESC,artifact_version DESC,created_at DESC','job_id=j.id AND revision=j.revision')} AS milestones_raw,
+ ${summaryRows('production_reviews','id,revision,content_hash,decision,note,reviewer,created_at,rowid','created_at DESC',"job_id=j.id AND decision<>'native_preparation_handoff_event' AND (revision=j.revision OR decision IN ('media_license','site_retention_status_v1','site_archive_deleted_v1'))")} AS reviews_raw,
  ${summaryRows('production_stages','id,stage,review_revision,review_hash,status,result','stage')} AS stages_raw,
- ${summaryRows('production_operations','id,node,revision,mode_epoch,script_hash,status,lease_until,error,result','created_at DESC')} AS operations_raw,
+ ${summaryRows('production_operations','id,node,revision,mode_epoch,script_hash,status,lease_until,error,result','created_at DESC','job_id=j.id AND revision=j.revision')} AS operations_raw,
  ${summaryRows('production_data_videos','id,title,published_at,publication_source,created_at','created_at DESC,id DESC',"job_id=j.id AND published_at IS NOT NULL AND (owner_id IS NULL OR owner_id=j.owner_id)")} AS publications_raw,
  (SELECT count(*) FROM production_data_videos WHERE job_id=j.id AND published_at IS NOT NULL) AS any_publications,
  (SELECT value FROM app_state WHERE key='media_scope_v1:'||j.id) AS scope_raw,
@@ -94,24 +94,24 @@ export async function listJobs(owner:string):Promise<ProductionJob[]>{
  }));
  return jobs.filter((job):job is ProductionJob=>job!==null);
 }
-export async function getJob(id:string,owner?:string,options?:{desk?:boolean}){
+export async function getJob(id:string,owner?:string,options?:{desk?:boolean;currentOnly?:boolean}){
  // The browser desk does not use the large immutable skill snapshot except in
  // the on-demand historical diagnostics. All executor and mutation callers
  // retain the full existing contract. The desk result is explicitly marked.
- const desk=options?.desk===true,readColumns=desk?columns.replace(',skill_snapshot,',','):columns;
+ const currentOnly=options?.currentOnly===true,desk=options?.desk===true||currentOnly,readColumns=desk?columns.replace(',skill_snapshot,',','):columns;
  const job=await db().prepare(`SELECT ${readColumns}, (is_test=0 AND review_mode='auto' AND status NOT IN ('completed','cancelled') AND EXISTS(SELECT 1 FROM app_state policy WHERE policy.key='owner_manual_review_policy_v1:'||production_jobs.owner_id AND json_valid(policy.value) AND json_extract(policy.value,'$.status')='enabled')) AS manual_mode_pending FROM production_jobs WHERE id=?${owner?' AND (owner_id=? OR is_test=1)':''}`).bind(...(owner?[id,owner]:[id])).first<ProductionJob>();if(!job)throw new ProductionError('任务不存在',404);
  // Once access is checked above, these independent reads need no serial wait.
  // Their existing implementations, owner filters and validation stay intact.
  const [factOwner,drafts,stages,reviews,publications,runtime,ms,ops,mediaContinuation,nativePreparation,intake,series,cliCapacity]=await Promise.all([
   db().prepare('SELECT owner_id FROM production_jobs WHERE id=?').bind(id).first<{owner_id:string|null}>(),
-  db().prepare('SELECT * FROM production_drafts WHERE job_id=? ORDER BY revision DESC').bind(id).all(),
+  db().prepare('SELECT * FROM production_drafts WHERE job_id=?'+(currentOnly?' AND revision=?':'')+' ORDER BY revision DESC').bind(...(currentOnly?[id,job.revision]:[id])).all(),
   db().prepare('SELECT * FROM production_stages WHERE job_id=? ORDER BY stage').bind(id).all(),
-  db().prepare(`SELECT id,revision,content_hash,decision,note,reviewer,created_at FROM production_reviews WHERE job_id=?${desk?" AND decision<>'native_preparation_handoff_event'":''} ORDER BY created_at DESC`).bind(id).all(),
+  db().prepare(`SELECT id,revision,content_hash,decision,note,reviewer,created_at FROM production_reviews WHERE job_id=?${desk?" AND decision<>'native_preparation_handoff_event'":''}${currentOnly?" AND (revision=? OR decision IN ('media_license','site_retention_status_v1','site_archive_deleted_v1'))":''} ORDER BY created_at DESC`).bind(...(currentOnly?[id,job.revision]:[id])).all(),
   db().prepare('SELECT id,title,published_at,publication_source,created_at FROM production_data_videos WHERE job_id=? AND published_at IS NOT NULL AND (owner_id IS NULL OR owner_id=(SELECT owner_id FROM production_jobs WHERE id=?)) ORDER BY created_at DESC,id DESC').bind(id,id).all(),
-  executorPresence(),milestones(id),operations(id),readMediaContinuation(id),readCurrentNativePreparationState(id),acceptedIntake(id),readSeries(id,owner),readCliCapacity(id)
+  executorPresence(),milestones(id,currentOnly?job.revision:undefined),operations(id,currentOnly?job.revision:undefined),readMediaContinuation(id),readCurrentNativePreparationState(id,currentOnly?{currentOnly:true}:undefined),acceptedIntake(id),readSeries(id,owner),readCliCapacity(id)
  ]);
  const facts=productionFacts({...job,native_preparation_raw:nativePreparation,owner_id:factOwner?.owner_id,media_continuation:mediaContinuation,drafts:drafts.results,reviews:reviews.results,stages:stages.results,publication_reports:publications.results,operations:ops,milestones:ms} as never);
- return {...job,...(desk?{detail_view:'desk' as const}:{}),cli_capacity:cliCapacity,media_continuation:mediaContinuation,intake,facts,runtime,series,drafts:drafts.results,stages:stages.results,reviews:reviews.results,publication_reports:publications.results,milestones:ms,operations:ops};
+ return {...job,...(desk?{detail_view:(currentOnly?'current':'desk') as 'current'|'desk'}:{}),cli_capacity:cliCapacity,media_continuation:mediaContinuation,intake,facts,runtime,series,drafts:drafts.results,stages:stages.results,reviews:reviews.results,publication_reports:publications.results,milestones:ms,operations:ops};
 }
 export async function createJob(topicId:string,owner:string|null,isTest=false,mode='node',initialStatus:'waiting_executor'|'paused'='waiting_executor'){
  if(!['node','auto'].includes(mode))throw new ProductionError('审核模式无效',400);

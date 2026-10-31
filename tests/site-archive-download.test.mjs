@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {build} from 'esbuild';
+import {createHash} from 'node:crypto';
 import fs from 'node:fs';
 import migrations from '../production/cover-branding-migrations.json' with {type:'json'};
 
@@ -20,7 +21,7 @@ test('Site archive GET/HEAD authenticates a real owner, streams bytes, and handl
    'next/headers':'export async function headers(){return globalThis.__siteArchiveHeaders}',
    cloudflare:'export const env=globalThis.__siteArchiveEnv;',
    'next/navigation':'export function redirect(){throw Error("unused")}',
-   store:'export function db(){return globalThis.__siteArchiveDb}',
+   store:'export function db(){return globalThis.__siteArchiveDb} export function siteArchiveBucket(){return globalThis.__siteArchiveBucket}',
    'site-file-archive':`import{ProductionError}from'@/lib/production-contract';export async function getSiteArchiveMetadata(id,sid,owner){globalThis.__siteArchiveMetaReads++;if(sid!==globalThis.__siteArchiveRecord.site_archive_id)throw new ProductionError('missing',404);return structuredClone(globalThis.__siteArchiveRecord)}export async function readSiteArchiveFile(id,sid,owner,range){globalThis.__siteArchiveByteReads++;globalThis.__siteArchiveRange=range;if(globalThis.__siteArchiveRace)throw new ProductionError('绑定已变',409);if(globalThis.__siteArchiveUnexpected)throw Error('SYNTHETIC-SECRET-DO-NOT-EXPOSE');const archive=structuredClone(globalThis.__siteArchiveRecord),bytes=range?globalThis.__siteArchiveBytes.slice(range.offset,range.offset+range.length):globalThis.__siteArchiveBytes;return{archive,body:new ReadableStream({start(c){c.enqueue(bytes);c.close()}})}}export async function openSiteArchiveForRead(id,sid,owner){const archive=await getSiteArchiveMetadata(id,sid,owner);return{archive,read:range=>readSiteArchiveFile(id,sid,owner,range)}}`
   })[a.path]}));
  }}]});
@@ -45,6 +46,11 @@ test('Site archive GET/HEAD authenticates a real owner, streams bytes, and handl
  for(const [role,mime,expected]of [['source_bundle','application/zip','attachment'],['complete_bundle','application/zip','attachment'],['promotion','text/plain','attachment'],['cover_3_4','image/png','inline']]){
   Object.assign(globalThis.__siteArchiveRecord.file,{role,mime_type:mime});response=await GET(new Request(url));assert.equal(response.status,200);assert.match(response.headers.get('content-disposition'),new RegExp('^'+expected+';'));assert.equal(response.headers.get('content-type'),mime+(mime==='text/plain'?'; charset=utf-8':''));
  }
+ const thumb=Buffer.from('RIFF0000WEBP','ascii'),thumbSha=createHash('sha256').update(thumb).digest('hex');globalThis.__siteArchiveRecord.status='confirmed';Object.assign(globalThis.__siteArchiveRecord.file,{role:'cover_3_4',mime_type:'image/png'});
+ globalThis.__siteArchiveBucket={async get(){return {customMetadata:{source_sha256:'b'.repeat(64),role:'cover_3_4',thumbnail_sha256:thumbSha},async arrayBuffer(){return Uint8Array.from(thumb).buffer}}}};
+ response=await GET(new Request(url+'&preview=1'));assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'image/webp');assert.deepEqual(new Uint8Array(await response.arrayBuffer()),new Uint8Array(thumb));assert.equal(response.headers.get('x-source-asset-sha256'),'b'.repeat(64));
+ globalThis.__siteArchiveBucket={async get(){return null}};response=await GET(new Request(url+'&preview=1'));assert.equal(response.headers.get('content-type'),'image/png');assert.deepEqual(new Uint8Array(await response.arrayBuffer()),globalThis.__siteArchiveBytes);
+ globalThis.__siteArchiveHeaders=new Headers();assert.equal((await GET(new Request(url+'&preview=1'))).status,401);globalThis.__siteArchiveHeaders=new Headers({'oai-authenticated-user-id':'owner','oai-authenticated-user-email':'owner@example.org'});
  response=await GET(new Request(url+'&download=1'));assert.match(response.headers.get('content-disposition'),/^attachment;/);
  globalThis.__siteArchiveRace=true;response=await GET(new Request(url));assert.equal(response.status,409);assert.match(response.headers.get('cache-control'),/no-store/);delete globalThis.__siteArchiveRace;
  globalThis.__siteArchiveUnexpected=true;response=await GET(new Request(url));assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/SECRET/);

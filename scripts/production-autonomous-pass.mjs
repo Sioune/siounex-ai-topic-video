@@ -2,7 +2,8 @@ import {executorFetch as fetch} from './native-production-transport.mjs';
 import {WORKSTATION_FLOW,waitForFlowActivity} from './production-flow-lifecycle.mjs';
 import {isTitleRuntimeRecoveryCandidate} from '../lib/private-title-recovery-selection.mts';
 import {createNativeVoice} from './native-speech-bridge.mjs';
-import {createStudioPreviewVoice} from './heygen-studio-preview-bridge.mjs';
+import {createStudioPreviewVoice,runStudioPreviewBrowser} from './heygen-studio-preview-bridge.mjs';
+import {createDedicatedStudioBrowser} from './heygen-dedicated-browser.mjs';
 import {runAutomaticClone} from './automatic-clone-consumer.mjs';
 import{runUnattendedMedia}from'./unattended-media-executor.mjs';
 import{writePeriodicResult,writePeriodicJobResult,safeFailure,writePeriodicWorkstationEvent,writePeriodicWorkstationSnapshot,safeWorkstationSnapshot}from'./periodic-diagnostics.mjs';
@@ -54,6 +55,30 @@ function currentWorkflowRead(before,after){
 const workflowIdentity=job=>JSON.stringify([job.status,job.revision,job.mode_epoch,job.approved_revision,job.approved_hash,job.updated_at,currentNodes(job).map(m=>[m.id,m.node,m.status,m.artifact_hash,m.artifact_version,m.updated_at])]);
 const humanOrStopped=job=>!['waiting_executor','awaiting_review','approved','completed'].includes(job.status)||job.review_mode==='node'&&job.status!=='approved'&&job.status!=='completed'||currentNodes(job).some(m=>['awaiting_human','revise','paused'].includes(m.status));
 function blockedDiagnostic(b){const result={job_id:b.job_id,reason:b.reason};for(const key of ['confirmed_no_result','result_unknown','http_status','next_retry_at','package_id','retry_state'])if(b[key]!==undefined)result[key]=b[key];return result;}
+// Route every current owner-authorized node task through the single dedicated
+// voice station. Re-read before every browser operation, including recovery.
+export async function completedDedicatedDraft({root=process.cwd(),call,draft_id}={}) {
+ if(typeof call!=='function'||!/^[a-f0-9]{32}$/.test(draft_id||''))return false;
+ const base=path.resolve(root,'.sites-runtime','authorized-inputs');let found=[];
+ try { for(const j of fs.readdirSync(base,{withFileTypes:true})) { if(!j.isDirectory()||j.isSymbolicLink()||!/^job_[a-f0-9-]{36}$/.test(j.name))continue;
+  for(const rev of fs.readdirSync(path.join(base,j.name),{withFileTypes:true})) { if(!rev.isDirectory()||rev.isSymbolicLink()||!/^revision-[1-9][0-9]*$/.test(rev.name))continue;const p=path.join(base,j.name,rev.name,'automatic-clone');if(!fs.existsSync(p)||fs.lstatSync(p).isSymbolicLink())continue;
+   for(const req of fs.readdirSync(p,{withFileTypes:true})) {if(!req.isDirectory()||req.isSymbolicLink()||!/^acl_[a-f0-9]{64}$/.test(req.name))continue;const f=path.join(p,req.name,'studio-draft.json');try{const st=fs.lstatSync(f);if(!st.isFile()||st.isSymbolicLink()||st.size>65536)continue;const d=JSON.parse(fs.readFileSync(f,'utf8'));if(d.draft_id===draft_id&&d.request_id===req.name)found.push({job_id:j.name,request_id:req.name,revision:Number(rev.name.slice(9))});}catch{}}
+  }
+ }} catch{return false;}
+ if(found.length!==1)return false;const match=found[0];try{const [{job},state]=await Promise.all([call({action:'read',id:match.job_id}),call({action:'automatic_clone_read',id:match.job_id})]);const r=state?.request,c=state?.clone;return job?.id===match.job_id&&!job.is_test&&job.status==='approved'&&job.revision===match.revision&&r?.id===match.request_id&&r.job_id===job.id&&c?.is_current===true&&['awaiting_second_review','approved','completed'].includes(c.stage)&&/^[a-f0-9]{64}$/.test(c.result_video_sha256||'');}catch{return false;}
+}
+export function createDedicatedCloneRouter({call,createBrowser=createDedicatedStudioBrowser}={}) {
+ if(typeof call!=='function')throw Error('DEDICATED_ROUTER_CALL_REQUIRED');
+ const browser=createBrowser({allowFirstPreparation:()=>true});
+ return async (phase,input,options)=>{
+  const id=input?.job_id,rid=input?.request_id;
+  if(!/^job_[a-f0-9-]{36}$/.test(id||'')||!/^acl_[a-f0-9]{64}$/.test(rid||''))throw Error('DEDICATED_ROUTER_BINDING_INVALID');
+  const [{job},state]=await Promise.all([call({action:'read',id}),call({action:'automatic_clone_read',id})]);
+  const r=state?.request;
+  if(!job||job.id!==id||job.is_test||job.status!=='approved'||job.review_mode!=='node'||!state?.clone?.is_current||r?.id!==rid||r.job_id!==id||r.acquisition_method!=='heygen_studio_audio_preview'||r.new_payment_limit!==0||r.new_clone_allowed!==false||r.api_fallback_allowed!==false||r.publication_authorized!==false||r.binding?.revision!==job.revision||r.binding?.mode_epoch!==job.mode_epoch||r.binding?.contract_hash!==job.contract_hash||r.binding?.script_hash!==job.approved_hash||r.voice_id!==input.voice_id)throw Error('DEDICATED_ROUTER_CURRENT_AUTHORIZATION_REQUIRED');
+  return browser(phase,input,options);
+ };
+}
 export async function autonomousPass(c,{call,execute=dispatch,prepare=runPreparation,consume=runNativePreparation,continuePrivate=runPrivateReviewContinuation,postVideo=runPostVideoPreparation,media=runUnattendedMedia,archiveCapability,postAsset,clone=runAutomaticClone,nativeVoice,studioPreviewVoice,renderClone,workstations,externalPending=()=>false,externalWake=()=>null,waitForActivity=waitForFlowActivity}={}){
  if(c.execute!==true)throw Error('Explicit authorized execute:true required');if(c.foreground_deadline_ms!==undefined&&(!Number.isFinite(c.foreground_deadline_ms)||c.foreground_deadline_ms<0))throw Error('Invalid inherited foreground deadline');if(c.admission_deadline_ms!==undefined&&(!Number.isFinite(c.admission_deadline_ms)||c.admission_deadline_ms<0))throw Error('Invalid production admission deadline');if(c.production_completion_policy!==undefined&&c.production_completion_policy!=='natural')throw Error('Invalid production completion policy');
  if(c.production_lifecycle!==undefined&&c.production_lifecycle!==WORKSTATION_FLOW)throw Error('Invalid production lifecycle');
@@ -69,16 +94,29 @@ export async function autonomousPass(c,{call,execute=dispatch,prepare=runPrepara
  const handoffResult=waiting=>{const all=[...handoffs,...waiting].filter((v,i,a)=>a.findIndex(x=>x.queue_id===v.queue_id)===i),first=all[0];return {status:all.length?'needs-native-handoff':'private-review-production-returned',job_id:first?.job_id||productions[0]?.job_id,queue_id:first?.queue_id,handoff_status:first?.status,waiting_for:first?.waiting_for,missing:first?.missing||[],handoffs:all,preparations,productions,executions,blocked,claimed:consumption.some(v=>v.claimed===true),generation_started:productions.some(v=>v.generation_started===true),automatic_editor_launch:false,new_paid_calls:0,publication_authorized:false};};
  if(!call)call=async b=>executorResponse(await fetch(origin+'/api/executor',{method:'POST',headers:{'Content-Type':'application/json','OAI-Sites-Authorization':'Bearer '+c.token},body:JSON.stringify(b),redirect:'error',signal:AbortSignal.timeout(executorTimeoutMs(b.action,deadline))}));
  if(c.native_voice_bridge===true&&nativeVoice===undefined)nativeVoice=createNativeVoice({root:process.cwd(),deadline_ms:deadline});
- if(c.native_voice_bridge===true&&studioPreviewVoice===undefined)studioPreviewVoice=createStudioPreviewVoice({root:process.cwd(),deadline_ms:deadline,call,readPreparedOwner:async({job_id})=>{
+ if(c.native_voice_bridge===true&&studioPreviewVoice===undefined){
+ const browser=createDedicatedCloneRouter({call});
+ studioPreviewVoice=createStudioPreviewVoice({root:process.cwd(),deadline_ms:deadline,call,...(browser?{browser}:{}),readPreparedOwner:async({job_id})=>{
   if(!/^job_[a-f0-9-]{36}$/.test(job_id||''))throw Error('STUDIO_PREPARED_OWNER_JOB_INVALID');
   if(Date.now()+5000>=deadline)return null;
   // Authenticated identity metadata only; this never starts or retries media.
   const [owned,clone]=await Promise.all([call({action:'read',id:job_id}),call({action:'automatic_clone_read',id:job_id})]);
   if(owned.job?.id!==job_id||clone.request?.job_id!==job_id)throw Error('STUDIO_PREPARED_OWNER_READ_CHANGED');
   return{job:owned.job,request:clone.request,authenticated_owner_scope:true};
- }});
+ }});}
  if(c.native_voice_bridge===true&&renderClone===undefined)renderClone=async input=>{const renderer=await import('./automatic-clone-render.mjs');return renderer.renderClone({...input,call});};
  const recordJob=(selection,result)=>{writePeriodicJobResult(c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,{phase:'job-returned',job_id:selection.job.id,revision:selection.job.revision,mode_epoch:selection.job.mode_epoch,kind:selection.kind||'native-preparation-handoff',queue_id:result.queue_id,package_id:result.package_id,plan_id:result.plan_id,stage:result.stage,status:result.status,confirmed_no_result:result.confirmed_no_result,result_unknown:result.result_unknown,http_status:result.http_status,execution_phase:result.phase,failure:result.failure||(result.error?{...safeFailure({message:result.error}),phase:result.phase}:undefined),claimed:result.claimed,generation_started:result.generation_started,audio_generated:result.audio_generated,video_generated:result.video_generated,retry_without_reconciliation:result.retry_without_reconciliation,claim_state:result.claim_state,generation_state:result.generation_state,next_retry_at:result.next_retry_at});return result;};
+ if(c.exact_clone_job_id||c.exact_clone_request_id){
+  const id=c.exact_clone_job_id,rid=c.exact_clone_request_id;
+  if(!/^job_[a-f0-9-]{36}$/.test(id||'')||!/^acl_[a-f0-9]{64}$/.test(rid||''))throw Error('Exact dedicated clone target required');
+  const [{job},state]=await Promise.all([call({action:'read',id}),call({action:'automatic_clone_read',id})]);
+  if(!job||job.id!==id||job.id==='job_00000000-0000-4000-8000-000000000003'||job.is_test||job.status!=='approved'||job.review_mode!=='node'||state?.request?.id!==rid||state.request.job_id!==id||state.clone?.is_current!==true)throw Error('Exact current dedicated clone binding required');
+  const selection={kind:'automatic-clone',job,automatic_clone:{request_id:rid,status:state.request.status}};
+  const result=await clone(selection,{call,nativeVoice,studioPreviewVoice,renderClone,deadline_ms:deadline,workstations:stations});
+  if(result.job_id!==id||result.request_id!==undefined&&result.request_id!==rid)throw Error('Dedicated clone returned another request');
+  recordJob(selection,result);
+  return {status:result.status,job_id:id,productions:[{...result,stage:'automatic-clone'}],claimed:result.claimed===true,generation_started:result.generation_started===true,quality_approved:false,publication_authorized:false};
+ }
  const isolatedNative=async(selection,fn)=>{try{return await fn(selection,{call,deadline_ms:deadline,workstations:stations});}catch(error){if(['PRODUCTION_CANCELLED','PRODUCTION_STATION_BUDGET_DEFERRED'].includes(error?.code))throw error;recordPrivateStageFailure(error,{run_id:c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,job_id:selection.job.id});const failure={...safeFailure(error),phase:'native-preparation'},h=selection.native_preparation,q=h?.queue_id||h?.handoff?.queue_id;if(!/^native_prep_[a-f0-9]{64}$/.test(q||''))throw error;writePeriodicResult(c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,{phase:'job-failed',job_id:selection.job.id,kind:'native-preparation-handoff',failure,reconciliation_required:true});return{status:h.binding?.scope==='private-video'?'private-review-result-unknown':'native-preparation-result-unknown',...(h.binding?.scope==='private-video'?{}:{generation_started:false}),job_id:selection.job.id,queue_id:q,failure,phase:'native-preparation',claim_state:'unknown',generation_state:'unknown',retry_without_reconciliation:false};}};
  const executeSelected=async selection=>{
   const j=selection.job;writePeriodicResult(c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,{phase:'selected',job_id:j.id,revision:j.revision,mode_epoch:j.mode_epoch,kind:selection.kind});if(j.id==='job_00000000-0000-4000-8000-000000000003'||j.is_test)throw Error('Protected/test production exclusion violated');

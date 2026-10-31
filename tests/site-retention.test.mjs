@@ -5,9 +5,11 @@ import fs from 'node:fs';
 import {DatabaseSync} from 'node:sqlite';
 import {createHash} from 'node:crypto';
 import {build} from 'esbuild';
+import {runCoverThumbnailSweep} from '../scripts/cover-thumbnail-worker.mjs';
+import {backfillCoverThumbnail} from '../scripts/cover-thumbnail-backfill.mjs';
 const ID='job_1c2556b8-53d5-4dc0-8d7a-faec60fa36ba',OWNER='SYNTHETIC-site-owner',AT='2026-10-17T00:00:00.000Z',PROJECT='aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',TIMELINE='bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',PART=524288;
 const hash=b=>createHash('sha256').update(b).digest('hex'),clone=v=>JSON.parse(JSON.stringify(v));
-const built=await build({stdin:{contents:["export * from './lib/site-retention';","export * from './lib/site-file-archive';","export * from './lib/approved-native-version';","export {submitMilestone} from './lib/milestones';","export {getJob} from './lib/production';","export {confirmMediaScope} from './lib/media-continuation';","export {registerNativePromoVideo} from './lib/promo-delivery';","export {recordNativeCandidateFeedback} from './lib/native-candidate-feedback';","export {readNativeWorkPacket} from './lib/native-work-packet';","export {returnNativeDraft} from './lib/native-draft-handoff';","export {decideMilestone} from './lib/milestones';","export * as route from './app/api/executor/route';"].join('\n'),resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',write:false,plugins:[{name:'SYNTHETIC-site-r2',setup(b){b.onResolve({filter:/^(?:\.\/store|@\/lib\/store)$/},()=>({path:'db',namespace:'fixture'}));b.onLoad({filter:/^db$/,namespace:'fixture'},()=>({contents:'export function db(){return globalThis.__siteArchiveDB} export function siteArchiveBucket(){return globalThis.__siteArchiveR2}'}));b.onResolve({filter:/^@\/lib\/api$/},()=>({path:'identity',namespace:'fixture'}));b.onLoad({filter:/identity/,namespace:'fixture'},()=>({contents:"export async function identity(req){return req.headers.get('x-synthetic-owner')||null}export const json=(body,status=200)=>Response.json(body,{status});"}));}}]});
+const built=await build({stdin:{contents:["export * from './lib/site-retention';","export * from './lib/site-file-archive';","export * from './lib/approved-native-version';","export {submitMilestone} from './lib/milestones';","export {getJob} from './lib/production';","export {confirmMediaScope} from './lib/media-continuation';","export {registerNativePromoVideo} from './lib/promo-delivery';","export {recordNativeCandidateFeedback} from './lib/native-candidate-feedback';","export {readNativeWorkPacket} from './lib/native-work-packet';","export {returnNativeDraft} from './lib/native-draft-handoff';","export {decideMilestone} from './lib/milestones';","export * as route from './app/api/executor/route';","export {nativeProductionRequest} from './lib/native-production-gateway';"].join('\n'),resolveDir:process.cwd()},bundle:true,platform:'node',format:'esm',write:false,plugins:[{name:'SYNTHETIC-site-r2',setup(b){b.onResolve({filter:/^(?:\.\/store|@\/lib\/store)$/},()=>({path:'db',namespace:'fixture'}));b.onLoad({filter:/^db$/,namespace:'fixture'},()=>({contents:'export function db(){return globalThis.__siteArchiveDB} export function siteArchiveBucket(){return globalThis.__siteArchiveR2}'}));b.onResolve({filter:/^@\/lib\/api$/},()=>({path:'identity',namespace:'fixture'}));b.onLoad({filter:/identity/,namespace:'fixture'},()=>({contents:"export async function identity(req){return req.headers.get('x-synthetic-owner')||null}export const json=(body,status=200)=>Response.json(body,{status});"}));}}]});
 const p=await import('data:text/javascript;base64,'+Buffer.from(built.outputFiles[0].contents).toString('base64'));
 class R2{
  map=new Map();puts=0;hook=null;deletedKeys=[];deleteCalls=[];headKeys=[];listCalls=[];deleteHook=null;failDeleteOnce=null;retainDeleteKey=null;rejectEmptyDelete=false;
@@ -47,7 +49,7 @@ function returnBody(f,sid){return{revision:1,script_hash:f.script,mode_epoch:0,s
 const proof=(sha,seconds)=>({schema:'actual-final-duration-v1',file_sha256:sha,probe_sha256:'e'.repeat(64),checked_at:AT,report:{hard_max_seconds:60,hard_duration_pass:true,maximum_measured_seconds:String(seconds),measurements_seconds:{container_duration:String(seconds),video_0_playback_end:String(seconds),audio_0_playback_end:String(seconds)},errors:[]}});
 function png(w,h){const b=Buffer.alloc(40);Buffer.from([137,80,78,71,13,10,26,10]).copy(b);b.writeUInt32BE(13,8);b.write('IHDR',12);b.writeUInt32BE(w,16);b.writeUInt32BE(h,20);return b;}
 async function completedFixture(t,options={}){
- const f=await fixture(t,options),bytes={video:f.bytes,source_bundle:Buffer.from('PK\x03\x04SYNTHETIC old source'),cover_3_4:png(300,400),cover_4_3:png(400,300),promotion:Buffer.from('SYNTHETIC approved promotion\n'),complete_bundle:Buffer.from('PK\x03\x04SYNTHETIC old complete')},archives={};
+ const f=await fixture(t,options),bytes={video:f.bytes,source_bundle:Buffer.from('PK\x03\x04SYNTHETIC old source'),cover_3_4:options.realCover?fs.readFileSync('public/brand-covers/print-cover_3_4-c7673320d52a.png'):png(300,400),cover_4_3:options.realCover?fs.readFileSync('public/brand-covers/print-cover_4_3-f84bb88d24d0.png'):png(400,300),promotion:Buffer.from('SYNTHETIC approved promotion\n'),complete_bundle:Buffer.from('PK\x03\x04SYNTHETIC old complete')},archives={};
  for(const[role,data]of Object.entries(bytes)){const file={role,sha256:hash(data),size_bytes:data.length,file_name:role==='video'?f.native.file_name:'SYNTHETIC-'+role+(role.startsWith('cover')?'.png':role==='promotion'?'.txt':'.zip'),mime_type:role==='video'?'video/mp4':role.startsWith('cover')?'image/png':role==='promotion'?'text/plain':'application/zip'};archives[role]=await confirmed(f,{...f.body,request_id:'SYNTHETIC-old-'+role,file},data);}
  const finish=async(node,artifact)=>{const before=await p.getJob(ID),latest=before.milestones.find(m=>m.node===node),r=await p.submitMilestone(ID,node,1,latest?.artifact_version||0,'SYNTHETIC-old-'+node,artifact,0);const m=r.milestones.find(x=>x.node===node);await p.decideMilestone(ID,m.id,1,m.artifact_hash,0,'approve',{reason:''},OWNER);};
  await p.returnNativeDraft(ID,returnBody(f,archives.video),actor);let j=await p.getJob(ID),video=j.milestones.find(m=>m.node==='video');await p.decideMilestone(ID,video.id,1,video.artifact_hash,0,'approve',{reason:''},OWNER);
@@ -64,9 +66,10 @@ function localMix(f){const b=clone(f.begin);b.video={...b.video,render_id:null,d
 
 const ROLES=['video','source_bundle','cover_3_4','cover_4_3','promotion','complete_bundle'];
 const policyBody=()=>({request_id:'SYNTHETIC-retain-current-final',confirmed:true,rule:'current-final-per-role',quote:'SYNTHETIC final delivery: retain only the current final artifact per project and role.',reported_at:AT,source:'owner-oral-report',website_button_clicked:false,current_policy_id:''});
+function connectGateway(f){const original=f.db.prepare;f.db.prepare=q=>q==='SELECT owner_id FROM production_jobs WHERE id=? AND is_test=0'?{bind(id){if(id==='job_ea5571a3-1437-4d09-acd1-ad576666b7a6')return{async first(){return{owner_id:OWNER}}};return original(q).bind(id)}}:original(q);return async(body,owner=OWNER)=>p.nativeProductionRequest(owner,{request_json:JSON.stringify(body),runtime_protocol:2});}
 const prefixFor=id=>'site-private-archives/v1/'+id+'/';
 const keysFor=(f,id)=>[...f.r2.map.keys()].filter(key=>key.startsWith(prefixFor(id)));
-async function acceptedFixture(t,{local=false}={}){const f=await completedFixture(t);if(local)f.begin=localMix(f);const {started,ids}=await stageVersion(f);await p.commitApprovedNativeVersion(ID,{version_request_id:started.version.version_id,archives:ids},actor);return{...f,started,ids};}
+async function acceptedFixture(t,{local=false,realCover=false}={}){const f=await completedFixture(t,{realCover});if(local)f.begin=localMix(f);const {started,ids}=await stageVersion(f);await p.commitApprovedNativeVersion(ID,{version_request_id:started.version.version_id,archives:ids},actor);return{...f,started,ids};}
 async function enable(id=ID){return p.setSiteRetentionPolicy(id,policyBody(),actor);}
 async function plan(id=ID,extra={}){return(await p.planSiteRetention(id,{request_id:'SYNTHETIC-prune-old',...extra},actor)).plan;}
 async function finish(id,first){let current=first;for(let n=0;n<40&&!['complete','protected'].includes(current.status);n++)current=(await p.applySiteRetention(id,{plan_id:current.plan_id,max_objects:16},actor)).plan;assert.ok(['complete','protected'].includes(current.status),current.last_error||current.status);return current;}
@@ -92,7 +95,8 @@ test('SYNTHETIC deletes only six superseded archives, validates head and list, r
  assert.equal(prepared.status,'pending');assert.equal(prepared.candidates.length,6);assert.equal(prepared.pending_count,6);assert.deepEqual(prepared.keep,f.ids);assert.equal(prepared.candidates.some(c=>Object.values(f.ids).includes(c.site_archive_id)),false);
  // Carried cover/promotion bytes are identical; identity, not SHA alone, protects the current copy.
  for(const role of ['cover_3_4','cover_4_3','promotion'])assert.ok(prepared.candidates.some(c=>c.site_archive_id===f.oldArchives[role]&&c.sha256===hash(f.oldBytes[role])));
- const done=await finish(ID,prepared);assert.equal(done.status,'complete');assert.equal(done.pending_count,0);
+ const thumbnailKey='site-private-thumbnails/v1/'+hash(ID+'\n'+f.oldArchives.cover_3_4+'\ncover_3_4\n'+hash(f.oldBytes.cover_3_4));await f.r2.put(thumbnailKey,Buffer.from('SYNTHETIC preview'));
+ const done=await finish(ID,prepared);assert.equal(done.status,'complete');assert.equal(done.pending_count,0);assert.equal(f.r2.map.has(thumbnailKey),false);
  for(const old of Object.values(f.oldArchives)){assert.equal(keysFor(f,old).length,0);await assert.rejects(()=>p.readSiteArchiveFile(ID,old,OWNER),status(410));await assert.rejects(()=>p.readSiteArchivePart(ID,{site_archive_id:old,part:0},actor),status(410));await assert.rejects(()=>p.readSiteArchivePart(ID,{site_archive_id:old,part:0},{trusted_owner_service:true}),status(410));assert.ok(f.r2.listCalls.some(v=>v.prefix===prefixFor(old)));}
  assert.ok(f.r2.headKeys.length>=13);assert.equal(f.sql.prepare("SELECT count(*) n FROM production_reviews WHERE decision='site_archive_deleted_v1'").get().n,6);
  assert.deepEqual(clone(f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all()),milestones);assert.deepEqual(clone(f.sql.prepare("SELECT * FROM production_reviews WHERE decision NOT LIKE 'site_retention_%' AND decision<>'site_archive_deleted_v1' ORDER BY id").all()),reviews);
@@ -131,7 +135,7 @@ test('SYNTHETIC a staged replacement blocks cleanup before any physical operatio
 });
 
 test('SYNTHETIC pending MiniCPM cannot be cleaned even with a valid standing owner policy',async t=>{
- const f=await acceptedFixture(t);await enable();const mini='job_9ef39025-d92e-4770-82d0-05881451c5df';rekey(f,mini);f.sql.prepare("UPDATE production_jobs SET status='awaiting_human' WHERE id=?").run(mini);
+ const f=await acceptedFixture(t);await enable();const mini='job_00000000-0000-4000-8000-000000000004';rekey(f,mini);f.sql.prepare("UPDATE production_jobs SET status='awaiting_human' WHERE id=?").run(mini);
  await assert.rejects(()=>plan(mini),status(409));assert.equal(f.r2.deletedKeys.length,0);assert.equal([...f.r2.map.keys()].length,26);
 });
 
@@ -147,7 +151,7 @@ test('SYNTHETIC fully approved future project is supported without historical He
 });
 
 function addCurrentSourceReference(f,archiveId){
- const other='job_9ef39025-d92e-4770-82d0-05881451c5df';
+ const other='job_00000000-0000-4000-8000-000000000004';
  f.sql.exec("INSERT INTO topics(id,url,source_id,source,title,original_title,summary,collected_at,category,score,material,highlight,angle,materials,risk,curated,content_lang) VALUES('site-synthetic-shared','https://example.org/SYNTHETIC-shared','shared-fixture','fixture','SYNTHETIC shared','SYNTHETIC shared','fixture','now','视觉影像',0,'m','h','a','m','r',0,'zh')");
  f.sql.prepare("INSERT INTO production_jobs(id,topic_id,owner_id,is_test,status,source_snapshot,skill_snapshot,contract_hash,revision,approved_revision,approved_hash,review_mode,mode_epoch,reworks,ai_calls,attempt,created_at,updated_at) SELECT ?,'site-synthetic-shared',owner_id,0,'awaiting_human',?,skill_snapshot,contract_hash,revision,approved_revision,approved_hash,review_mode,mode_epoch,reworks,ai_calls,attempt,created_at,updated_at FROM production_jobs WHERE id=?").run(other,JSON.stringify({kind:'SYNTHETIC current reusable source',site_archive_id:archiveId}),ID);
  return other;
@@ -221,3 +225,69 @@ test('SYNTHETIC plain app-state timestamps are safe and malformed in-flight reco
  assert.equal(f.r2.deletedKeys.length,0);
 });
 
+
+test('SYNTHETIC executor restricts thumbnail writes to service and binds them to confirmed source',async t=>{
+ const f=await acceptedFixture(t),role='cover_3_4',sid=f.oldArchives[role],source=hash(f.oldBytes[role]),base={id:ID,site_archive_id:sid,source_sha256:source,role};
+ const post=(body,headers={})=>p.route.POST(new Request('https://private.example/api/executor',{method:'POST',headers:{'content-type':'application/json',...headers},body:JSON.stringify(body)}));
+ let response=await post({...base,action:'site_cover_source_part',part:0});assert.equal(response.status,200);let result=await response.json();assert.equal(result.source_sha256,source);assert.deepEqual(Buffer.from(result.chunk_base64,'base64'),f.oldBytes[role]);
+ const thumbnail=Buffer.from('RIFF0000WEBP','ascii'),write={...base,action:'site_cover_thumbnail_put',thumbnail_base64:thumbnail.toString('base64')};
+ response=await post(write,{origin:'https://private.example','x-synthetic-owner':OWNER});assert.equal(response.status,403);
+ response=await post({...write,source_sha256:'0'.repeat(64)});assert.equal(response.status,409);
+ response=await post(write);assert.equal(response.status,200);result=await response.json();assert.equal(result.source_sha256,source);assert.equal(result.thumbnail_sha256,hash(thumbnail));
+ response=await post(write);assert.equal(response.status,200);assert.equal((await response.json()).reused,true);
+});
+
+test('SYNTHETIC single cover thumbnail goes through owner gateway and actual executor end to end',async t=>{
+ const f=await acceptedFixture(t,{realCover:true}),original=f.db.prepare;f.db.prepare=q=>q==='SELECT owner_id FROM production_jobs WHERE id=? AND is_test=0'?{bind(id){if(id==='job_ea5571a3-1437-4d09-acd1-ad576666b7a6')return{async first(){return{owner_id:OWNER}}};return original(q).bind(id)}}:original(q);
+ const request={id:ID,site_archive_id:f.oldArchives.cover_3_4,source_sha256:hash(f.oldBytes.cover_3_4),role:'cover_3_4'},calls=[];const call=async body=>{calls.push(body.action);return p.nativeProductionRequest(OWNER,{request_json:JSON.stringify(body),runtime_protocol:2})};
+ await assert.rejects(()=>p.nativeProductionRequest('foreign',{request_json:JSON.stringify({action:'site_cover_source_part',...request,part:0}),runtime_protocol:2}),/所有者/);
+ const originalNodes=clone(f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all()),r=await backfillCoverThumbnail(request,call);assert.equal(r.source_sha256,request.source_sha256);assert.ok(calls.includes('site_cover_source_part')&&calls.includes('site_cover_thumbnail_put'));assert.equal([...f.r2.map.keys()].filter(k=>k.startsWith('site-private-thumbnails/v1/')).length,1);assert.deepEqual(clone(f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all()),originalNodes);
+ f.sql.prepare('UPDATE production_jobs SET owner_id=? WHERE id=?').run('foreign',ID);await assert.rejects(()=>call({action:'site_cover_source_part',...request,part:0}),/归属/);
+});
+
+test('SYNTHETIC gateway exposes history summary only for the owning job and keeps default promo list complete',async t=>{
+ const f=await fixture(t),original=f.db.prepare;f.db.prepare=q=>q==='SELECT owner_id FROM production_jobs WHERE id=? AND is_test=0'?{bind(id){if(id==='job_ea5571a3-1437-4d09-acd1-ad576666b7a6')return{async first(){return{owner_id:OWNER}}};return original(q).bind(id)}}:original(q);
+ const call=(owner,body)=>p.nativeProductionRequest(owner,{request_json:JSON.stringify(body),runtime_protocol:2});
+ const full=await call(OWNER,{action:'promo_list',id:ID});assert.equal(full.status,200);assert.ok(full.body.current_binding.input_snapshot);
+ const summary=await call(OWNER,{action:'promo_list',id:ID,view:'history'});assert.equal(summary.status,200);assert.equal('input_snapshot' in summary.body.current_binding,false);assert.deepEqual(summary.body.packages,full.body.packages);
+ await assert.rejects(()=>call('foreign',{action:'promo_list',id:ID,view:'history'}),/所有者/);
+});
+
+test('SYNTHETIC independent thumbnail worker uses owner-bound gateway, one lease, bounded discovery and failure backoff',async t=>{
+ const f=await acceptedFixture(t),call=connectGateway(f);await assert.rejects(()=>call({action:'site_cover_worker_claim'},'foreign'),/所有者/);
+ const attempts=await Promise.allSettled([call({action:'site_cover_worker_claim'}),call({action:'site_cover_worker_claim'})]);const claims=attempts.filter(x=>x.status==='fulfilled').map(x=>x.value),winner=claims.find(x=>x.body.claimed);assert.ok(winner);assert.equal(claims.filter(x=>x.body.claimed).length,1);
+ const token=winner.body.token;await assert.rejects(()=>call({action:'site_cover_worker_next',token:'not-the-lease'}));
+ const next=(await call({action:'site_cover_worker_next',token})).body;assert.ok(next.cursor.startsWith('site_archive_confirmed_'));assert.ok(['cover_3_4','cover_4_3'].includes(next.item.role));
+ assert.equal((await call({action:'site_cover_worker_finish',token,cursor:next.cursor,failed:true})).body.deferred,true);assert.equal((await call({action:'site_cover_worker_claim'})).body.claimed,false);
+ const key='site_cover_thumbnail_worker_v1:'+hash(OWNER),state=JSON.parse(f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key).value);assert.equal(state.cursor,next.cursor);assert.ok(state.retry_after>Date.now());
+});
+
+test('SYNTHETIC global thumbnail discovery excludes other owners',async t=>{const f=await acceptedFixture(t),call=connectGateway(f);f.sql.prepare('UPDATE production_jobs SET owner_id=? WHERE id=?').run('foreign',ID);const claim=(await call({action:'site_cover_worker_claim'})).body;assert.equal((await call({action:'site_cover_worker_next',token:claim.token})).body.done,true);await assert.rejects(()=>call({action:'site_cover_source_part',id:ID,site_archive_id:'sitefile_'+'a'.repeat(64),source_sha256:'b'.repeat(64),role:'cover_3_4',part:0}),/归属/);});
+
+test('SYNTHETIC independent sweep discovers an archived cover and generates a bound thumbnail end to end',async t=>{
+ const f=await acceptedFixture(t,{realCover:true}),before=clone(f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all()),calls=[],gateway=connectGateway(f);
+ const call=async body=>{calls.push(body.action);return gateway(body)};
+ const result=await runCoverThumbnailSweep(call);assert.equal(result.status,'created');assert.ok(calls.includes('site_cover_source_part'));assert.ok(calls.includes('site_cover_thumbnail_put'));assert.equal([...f.r2.map.keys()].filter(k=>k.startsWith('site-private-thumbnails/v1/')).length,1);assert.deepEqual(clone(f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all()),before);
+});
+
+test('SYNTHETIC sweeps skip previously backfilled covers and revisit arrivals before the cursor',async t=>{
+ const f=await acceptedFixture(t,{realCover:true}),gateway=connectGateway(f),call=async body=>gateway(body);
+ for(const role of ['cover_3_4','cover_4_3'])await backfillCoverThumbnail({id:ID,site_archive_id:f.oldArchives[role],source_sha256:hash(f.oldBytes[role]),role},call);
+ const key='site_cover_thumbnail_worker_v1:'+hash(OWNER),due=()=>{const row=f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key);if(row){const state=JSON.parse(row.value);state.retry_after=0;f.sql.prepare('UPDATE app_state SET value=? WHERE key=?').run(JSON.stringify(state),key)}};
+ const statuses=[];statuses.push((await runCoverThumbnailSweep(call)).status);
+ const state=JSON.parse(f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key).value),old=f.sql.prepare('SELECT * FROM production_reviews WHERE id=?').get(state.cursor),insertId='site_archive_confirmed_'+'0'.repeat(64);assert.ok(insertId<state.cursor);
+ f.sql.prepare('INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) VALUES(?,?,?,?,?,?,?,?)').run(insertId,old.job_id,old.revision,old.content_hash,old.decision,old.note,old.reviewer,old.created_at);
+ for(let i=0;i<6;i++){due();const status=(await runCoverThumbnailSweep(call)).status;statuses.push(status);if(status==='scan-complete')break;}
+ assert.equal(statuses.filter(x=>x==='already-present').length,2);assert.equal(statuses.filter(x=>x==='created').length,2);assert.equal(statuses.at(-1),'scan-complete');
+ due();assert.equal((await runCoverThumbnailSweep(call)).status,'already-present');assert.equal(JSON.parse(f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key).value).cursor,insertId);
+});
+
+test('SYNTHETIC one failed cover advances while its next sweep retries it',async t=>{
+ const f=await acceptedFixture(t,{realCover:true}),gateway=connectGateway(f),key='site_cover_thumbnail_worker_v1:'+hash(OWNER);let fail=true;
+ const call=async body=>{if(fail&&body.action==='site_cover_thumbnail_put'){fail=false;throw Error('synthetic transient failure')}return gateway(body)};
+ await assert.rejects(()=>runCoverThumbnailSweep(call),/synthetic transient failure/);let state=JSON.parse(f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key).value);const failedCursor=state.cursor;assert.ok(failedCursor);assert.ok(state.retry_after>Date.now());
+ const due=()=>{const row=f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key),s=JSON.parse(row.value);s.retry_after=0;f.sql.prepare('UPDATE app_state SET value=? WHERE key=?').run(JSON.stringify(s),key)};
+ due();assert.equal((await runCoverThumbnailSweep(call)).status,'created');state=JSON.parse(f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key).value);assert.ok(state.cursor>failedCursor);
+ for(let i=0;i<6;i++){due();if((await runCoverThumbnailSweep(call)).status==='scan-complete')break;}
+ due();assert.equal((await runCoverThumbnailSweep(call)).status,'created');assert.equal(JSON.parse(f.sql.prepare('SELECT value FROM app_state WHERE key=?').get(key).value).cursor,failedCursor);
+});

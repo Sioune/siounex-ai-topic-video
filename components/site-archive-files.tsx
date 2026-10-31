@@ -90,7 +90,7 @@ function CurrentSiteCoverPreview({jobId,archive}:{jobId:string;archive:SiteFileA
  return <figure style={{margin:0,minWidth:0}} data-current-cover-role={archive.file.role}>
   <figcaption style={{fontWeight:650,marginBottom:10}}>{ratio} 封面</figcaption>
   <a href={href} target="_blank" rel="noopener noreferrer" aria-label={'放大查看 '+ratio+' 封面'} style={{display:'block',aspectRatio:ratio.replace(':',' / '),background:'var(--muted, #f2f4f8)',borderRadius:12,overflow:'hidden'}}>
-   <img src={href} alt={ratio+' 封面 · 当前版本原件'} loading="eager" decoding="async" width={archive.file.width} height={archive.file.height} onError={()=>setFailed(true)} onLoad={()=>setFailed(false)} style={{display:'block',width:'100%',height:'100%',objectFit:'contain'}}/>
+   <img src={href+'&preview=1'} alt={ratio+' 封面 · 当前版本预览'} loading="lazy" decoding="async" width={archive.file.width} height={archive.file.height} onError={()=>setFailed(true)} onLoad={()=>setFailed(false)} style={{display:'block',width:'100%',height:'100%',objectFit:'contain'}}/>
   </a>
   {failed&&<p role="alert">封面暂未加载成功，请重新读取或打开原图核对。</p>}
   <p><a className="text-link" href={href} target="_blank" rel="noopener noreferrer">放大查看</a>{' · '}<a className="text-link" href={href+'&download=1'} download={archive.file.file_name}>下载 {ratio} 原图</a></p>
@@ -125,7 +125,7 @@ export function CurrentSiteMaterialPreview({job,milestone}:{job:ProductionJob;mi
   if(!portrait||!landscape||portrait.site_archive_id===landscape.site_archive_id)return missing;
   const promotion=pick('promotion',qa.promotion_site_archive_id);
   return <section data-current-site-material-preview="cover" aria-label="本版双封面与宣发预览">
-   <p>两张封面均完整展示，可点击原图放大查看。封面和宣发稿分别审核。</p>
+   <p>两张封面展示当前版本预览，可点击查看原图。封面和宣发稿分别审核。</p>
    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(min(100%, 18rem), 1fr))',alignItems:'start',gap:24,maxWidth:'52rem'}}>
     <CurrentSiteCoverPreview key={portrait.site_archive_id} jobId={job.id} archive={portrait}/><CurrentSiteCoverPreview key={landscape.site_archive_id} jobId={job.id} archive={landscape}/>
    </div>

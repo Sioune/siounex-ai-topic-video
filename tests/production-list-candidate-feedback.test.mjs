@@ -48,6 +48,17 @@ async function fixture(t){
  return{sql,queries,add,script,contract,candidate,candidateId:registered.id,body,snapshot,raw:()=>clone(sql.prepare(`SELECT ${columns} FROM production_jobs WHERE owner_id=? OR is_test=1 ORDER BY created_at DESC LIMIT 100`).all(OWNER)),afterListRead:hook=>{afterListRead=hook;},barrier:hook=>{readBarrier=hook;},record:async()=>p.recordNativeCandidateFeedback(JOB,body,{owner_id:OWNER})};
 }
 const detailReads=f=>f.queries.filter(query=>query.startsWith('SELECT review_mode,mode_epoch,')&&query.includes('FROM production_jobs WHERE id=?')).length;
+test('SYNTHETIC list avoids obsolete revision payload while full detail retains historical reviews and milestones',async t=>{
+ const f=await fixture(t);await f.record();const before=(await p.listJobSummaries(OWNER)).find(r=>r.id===JOB),large='SYNTHETIC-OLD-'.repeat(20000);
+ f.sql.prepare("INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) VALUES(?,?,0,?,'approve',?,?,'old')").run('SYNTHETIC-old-review',JOB,f.script,large,OWNER);
+ f.sql.prepare("INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) VALUES(?,?,0,?,'media_license',?,?,'old')").run('SYNTHETIC-old-license',JOB,f.script,JSON.stringify({library_file_id:'old',sha256:'a'.repeat(64)}),OWNER);
+ f.sql.prepare("INSERT INTO production_milestones(id,job_id,node,revision,artifact_version,artifact_hash,artifact,status,mode_epoch,created_at,updated_at) VALUES(?,?,'video',0,1,?,?,'approved',0,'old','old')").run('SYNTHETIC-old-video',JOB,f.script,large);
+ f.queries.length=0;const after=(await p.listJobSummaries(OWNER)).find(r=>r.id===JOB);assert.deepEqual(after,before);
+ const query=f.queries.find(q=>q.includes(' AS reviews_raw')),row=f.sql.prepare(query).all(OWNER).find(r=>r.id===JOB);assert.ok(!row.reviews_raw.includes('SYNTHETIC-OLD-'));assert.ok(!row.milestones_raw.includes('SYNTHETIC-OLD-'));
+ const detail=await p.getJob(JOB,OWNER);assert.equal(detail.reviews.find(r=>r.id==='SYNTHETIC-old-review').note,large);assert.equal(detail.milestones.find(m=>m.id==='SYNTHETIC-old-video').artifact,large);
+ const response=await p.route.GET(new Request('https://synthetic.test/api/production?id='+JOB+'&view=current',{headers:{'x-synthetic-owner':OWNER}}));assert.equal(response.status,200);const compact=(await response.json()).job;assert.equal(compact.detail_view,'current');assert.equal(compact.reviews.some(r=>r.id==='SYNTHETIC-old-review'),false);assert.equal(compact.reviews.some(r=>r.id==='SYNTHETIC-old-license'),true);assert.equal(compact.milestones.some(m=>m.id==='SYNTHETIC-old-video'),false);assert.equal(compact.facts.candidate_video_sha256,detail.facts.candidate_video_sha256);assert.ok(JSON.stringify(compact).length<JSON.stringify(detail).length/4);
+ const denied=await p.route.GET(new Request('https://synthetic.test/api/production?id='+JOB+'&view=current',{headers:{'x-synthetic-owner':OTHER}}));assert.equal(denied.status,404);
+});
 test('SYNTHETIC list snapshot excludes historical manuscript bodies while detail retains them',async t=>{
  const f=await fixture(t);await f.record();const before=(await p.listJobSummaries(OWNER)).find(row=>row.id===JOB);
  const oldContent=JSON.stringify({script:'SYNTHETIC old draft '.repeat(50000)});
@@ -161,23 +172,8 @@ for(const [field,sql,value]of[
 ])test('SYNTHETIC summary does not inherit a prior candidate approval after '+field+' changes',async t=>{
  const f=await fixture(t);await f.record();f.sql.prepare(sql).run(value,JOB);const row=(await p.listJobSummaries(OWNER)).find(r=>r.id===JOB);assert.equal(row.current_candidate?.review_id??null,null);assert.equal(row.current_candidate?.review_decision??null,null);assert.doesNotMatch(row.status_label,/聊天审阅通过|交付已完成/);
 });
-test('LOCAL saved three-job snapshots: summary query validates the genuine archived/review inputs without returning their large bodies',{skip:!process.env.TOPIC_SUMMARY_SNAPSHOT_DIR},async t=>{
- const f=await fixture(t),base=process.env.TOPIC_SUMMARY_SNAPSHOT_DIR,ids=['job_38fd8bfd-2949-4d26-8b67-d07a03e6f0b0','job_ed3c8123-59ed-4948-9d99-fdb7067ee522','job_b7dcd6bf-682d-429f-9016-7c9f3df41c16'];
- let originalBytes=0;
- function insert(table,row){const allowed=new Set(f.sql.prepare('PRAGMA table_info('+table+')').all().map(v=>v.name));const keys=Object.keys(row).filter(k=>allowed.has(k));f.sql.prepare('INSERT OR REPLACE INTO '+table+' ('+keys.join(',')+') VALUES ('+keys.map(()=>'?').join(',')+')').run(...keys.map(k=>row[k]));}
- for(const id of ids){const j=JSON.parse(fs.readFileSync(base+'/'+id+'.final-a-video-and-publicity.json','utf8')).job;originalBytes+=Buffer.byteLength(JSON.stringify(j));const owner=JSON.parse(j.milestones.find(m=>m.node==='video'&&m.status==='approved').report).actor;f.add({id,owner});const old=f.sql.prepare('SELECT topic_id FROM production_jobs WHERE id=?').get(id);const cols=f.sql.prepare('PRAGMA table_info(production_jobs)').all().map(v=>v.name).filter(k=>k in j&&k!=='id'&&k!=='topic_id');f.sql.prepare('UPDATE production_jobs SET '+cols.map(k=>k+'=?').join(',')+' WHERE id=?').run(...cols.map(k=>j[k]),id);
-  for(const [table,rows]of[['production_drafts',j.drafts],['production_stages',j.stages],['production_reviews',j.reviews],['production_milestones',j.milestones],['production_operations',j.operations]]){f.sql.prepare('DELETE FROM '+table+' WHERE job_id=?').run(id);for(const row of rows||[])insert(table,{...row,job_id:id});}
-  f.sql.prepare("INSERT OR REPLACE INTO app_state(key,value) VALUES(?,?)").run('media_scope_v1:'+id,JSON.stringify({id:j.media_continuation.current_id,scope:j.media_continuation.scope}));f.sql.prepare('UPDATE production_jobs SET owner_id=? WHERE id=?').run(OWNER,id);f.sql.prepare('UPDATE production_reviews SET reviewer=? WHERE job_id=? AND reviewer=?').run(OWNER,id,owner);
-  // Keep the actual owner for the immutable archive facts; then query each
-  // owner's rows below. No fixture is ever written to a production database.
-  f.sql.prepare('UPDATE production_jobs SET owner_id=? WHERE id=?').run(owner,id);f.sql.prepare('UPDATE production_reviews SET reviewer=? WHERE job_id=? AND reviewer=?').run(owner,id,OWNER);assert.ok(old.topic_id);
- }
- const owners=[...new Set(ids.map(id=>f.sql.prepare('SELECT owner_id FROM production_jobs WHERE id=?').get(id).owner_id))];let summaries=[];for(const owner of owners){f.queries.length=0;summaries.push(...(await p.listJobSummaries(owner)).filter(r=>ids.includes(r.id)));assert.equal(f.queries.length,2);}
- assert.equal(summaries.length,3);for(const row of summaries){assert.equal(row.current_node.node,'cover');assert.equal(row.status_label,'封面待本人审核');assert.ok(row.current_candidate.id.startsWith('native_video_'));}
- const compactBytes=Buffer.byteLength(JSON.stringify(summaries));assert.ok(compactBytes<5000);t.diagnostic(JSON.stringify({saved_detail_bytes:originalBytes,summary_bytes:compactBytes,summary_count:3,queries_per_owner:2,network_calls:0}));
-});
 test('SYNTHETIC no-feedback production list retains its actual raw column shape, including protected and shared test jobs',async t=>{
- const f=await fixture(t);f.add({id:'job_9ef39025-d92e-4770-82d0-05881451c5df'});f.add({id:'job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'});f.add({id:'SYNTHETIC-shared-test',owner:OTHER,isTest:1});f.add({id:'SYNTHETIC-private-other',owner:OTHER});
+ const f=await fixture(t);f.add({id:'job_00000000-0000-4000-8000-000000000004'});f.add({id:'job_00000000-0000-4000-8000-000000000003'});f.add({id:'SYNTHETIC-shared-test',owner:OTHER,isTest:1});f.add({id:'SYNTHETIC-private-other',owner:OTHER});
  const before=f.snapshot(),expected=f.raw();f.queries.length=0;const rows=await p.listJobs(OWNER);assert.deepEqual(rows,expected);assert.equal(rows.some(row=>row.id==='SYNTHETIC-private-other'),false);assert.equal(detailReads(f),0);assert.deepEqual(f.snapshot(),before);
  for(const row of rows){assert.deepEqual(Object.keys(row),columns.split(','));assert.equal(Object.hasOwn(row,'candidate_feedback_present'),false);assert.equal(Object.hasOwn(row,'facts'),false);}
 });

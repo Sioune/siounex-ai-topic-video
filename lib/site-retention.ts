@@ -1,3 +1,4 @@
+import {coverThumbnailKey} from './site-cover-thumbnail';
 import {completedOwnerPostVideoDelivery,ownerPostVideoTarget} from './owner-post-video-approval-contract.mts';
 import {editorialMutationGuard,type EditorialAuthorization} from './owner-editorial-delivery-contract.mts';
 import {nativeScopeContext} from './native-return-context';
@@ -119,6 +120,9 @@ export async function applySiteRetention(id:string,b:Record<string,unknown>,acto
    await assertGuard(p);
    if(await sharedReference(id,p.owner_id,item.site_archive_id))throw new ProductionError('删除前发现新的共享输入，已停止清理',409);
    const bucket=siteArchiveBucket(),keys=item.keys.filter(k=>!item.removed.includes(k)).slice(0,max);
+   // Delete previews even for plans created before thumbnail support. A racing
+   // writer rechecks the tombstone after upload and removes its own result.
+   if(item.role==='cover_3_4'||item.role==='cover_4_3'){const preview=coverThumbnailKey(id,item.site_archive_id,item.role,item.sha256);await bucket.delete(preview);if(await bucket.head(preview))throw new ProductionError('封面预览物理删除尚未确认',503);}
    if(keys.length)await bucket.delete(keys);
    for(const key of keys)if(await bucket.head(key))throw new ProductionError('物理删除尚未验证缺失',503);
    item.removed.push(...keys);

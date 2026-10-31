@@ -14,6 +14,12 @@ import {writePeriodicFailure,writePeriodicResult} from './periodic-diagnostics.m
 // through into production after searching, completing, failing, or cancelling.
 export async function siteQueuePass(config,{research=executeResearch,production=autonomousPass}={}){
   if(config.execute!==true)throw Error('Explicit authorized execute:true required');
+  const dedicatedJob=process.env.SIOUNEX_STUDIO_CDP_JOB_ID,dedicatedRequest=process.env.SIOUNEX_STUDIO_CDP_REQUEST_ID;
+  if(dedicatedJob||dedicatedRequest){
+    if(!/^job_[a-f0-9-]{36}$/.test(dedicatedJob||'')||!/^acl_[a-f0-9]{64}$/.test(dedicatedRequest||''))throw Error('Exact dedicated clone target required');
+    const executor=typeof config.token==='string'?createFlowExecutor({token:config.token,project_id:JSON.parse(fs.readFileSync('.openai/hosting.json','utf8')).project_id}):null;
+    try{const returned=await production({...config,exact_clone_job_id:dedicatedJob,exact_clone_request_id:dedicatedRequest},executor?{call:executor.call}:{});writePeriodicResult(config.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,autonomousPassDiagnostics(returned));return returned;}finally{await executor?.close();}
+  }
   if(config.production_lifecycle===WORKSTATION_FLOW&&!config.research_id){
     const executor=typeof config.token==='string'?createFlowExecutor({token:config.token,project_id:JSON.parse(fs.readFileSync('.openai/hosting.json','utf8')).project_id}):null;
     try{const returned=await concurrentSiteQueue(config,{research,production,productionOptions:executor?{call:executor.call}:{}});writePeriodicResult(config.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,autonomousPassDiagnostics(returned));return returned;}finally{await executor?.close();}

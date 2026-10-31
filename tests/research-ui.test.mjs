@@ -32,18 +32,31 @@ async function setup(t,{records=[],url='https://SYNTHETIC.test/research',handler
  t.after(async()=>{await act(async()=>root.unmount());globalThis.fetch=oldFetch;dom.window.close()});
  return {calls,timers,get state(){return state},set state(value){state=clone(value)},async tick(){await act(async()=>{await Promise.all([...timers.values()].map(callback=>callback()))});await settle()}};
 }
+const canFast=()=>{const detail={safe:false,path:'/research'};window.dispatchEvent(new CustomEvent('studio:fast-production-navigation',{detail}));return detail.safe};
 const button=text=>[...document.querySelectorAll('button')].find(value=>value.textContent.trim()===text);
 const history=id=>[...document.querySelectorAll('.research-history-list button')].find(value=>value.textContent.includes(id==='research_A'?'roadster 特斯拉':'另一个测试方向'));
 async function click(element){assert.ok(element);await act(async()=>element.click());await settle()}
 async function input(selector,value){const element=document.querySelector(selector);assert.ok(element);await act(async()=>{Object.getOwnPropertyDescriptor(element.tagName==='TEXTAREA'?window.HTMLTextAreaElement.prototype:window.HTMLInputElement.prototype,'value').set.call(element,value);element.dispatchEvent(new Event('input',{bubbles:true}))});await settle()}
 async function changeVersion(value){await act(async()=>{const select=document.querySelector('[aria-label="研究资料版本"]');select.value=String(value);select.dispatchEvent(new Event('change',{bubbles:true}))});await settle()}
 
+test('research history reads and active background polling block fast navigation',async t=>{
+ let finish;await setup(t,{handler:({method,response})=>method==='GET'?new Promise(resolve=>{finish=()=>resolve(response({researches:[record('research_A','running')]}))}):undefined});assert.equal(canFast(),false);await act(async()=>finish());await settle();assert.equal(canFast(),false,'active research can start a background read');
+});
+
+test('browser history through a research detail retains conservative navigation',async t=>{
+ await setup(t);assert.equal(canFast(),true);await act(async()=>{window.history.pushState(null,'','/research?id=SYNTHETIC');window.dispatchEvent(new window.PopStateEvent('popstate'))});assert.equal(canFast(),false);await act(async()=>{window.history.back();await new Promise(resolve=>setTimeout(resolve,40))});await settle();assert.equal(window.location.search,'');assert.equal(canFast(),false);
+});
+
+test('fast production entry is limited to a pristine research visit and unsaved text blocks leaving',async t=>{
+ await setup(t,{records:[record()]});assert.equal(canFast(),true);await input('#research-keywords','SYNTHETIC unsaved');assert.equal(canFast(),false);const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);assert.equal(event.defaultPrevented,true);await input('#research-keywords','');assert.equal(canFast(),true);await click(history('research_A'));assert.equal(canFast(),false);await click(button('写新方向'));assert.equal(canFast(),false,'visited detail may have nested in-flight work');
+});
+
 test('initial render is GET-only; keywords stay empty, double submit saves one queued request',async t=>{
  let created=0;
  const f=await setup(t,{handler:({method,body,response,setState})=>{if(method==='POST'){assert.equal(body.action,'create');created++;assert.equal(body.input.keywords,'roadster 特斯拉');assert.match(body.request_id,/^[a-f0-9-]{36}$/);const r=record('research_A','queued');setState([r]);return response({research:r,replayed:false})}}});
  assert.equal(document.getElementById('research-keywords').value,'');assert.match(document.getElementById('research-keywords').placeholder,/roadster 特斯拉/);assert.equal(f.calls.filter(call=>call.method==='POST').length,0);
  await input('#research-keywords','roadster 特斯拉');await act(async()=>{const form=document.querySelector('form');form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}))});await settle();
- assert.equal(created,1);assert.match(document.querySelector('.research-stage').textContent,/请求已排队/);assert.equal(document.querySelector('.research-article'),null);assert.equal(document.getElementById('research-keywords').value,'');assert.equal(f.timers.size,1);
+ assert.equal(created,1);assert.equal(canFast(),false,'a visit that submitted a request stays conservative');assert.match(document.querySelector('.research-stage').textContent,/请求已排队/);assert.equal(document.querySelector('.research-article'),null);assert.equal(document.getElementById('research-keywords').value,'');assert.equal(f.timers.size,1);
  assert.match(document.querySelector('.research-notice').textContent,/已保存并排队/);f.state=[record('research_A','running')];await f.tick();assert.equal(document.querySelector('.research-notice'),null);assert.match(document.querySelector('.research-stage').textContent,/执行器已领取请求/);assert.equal(created,1);
 });
 
@@ -78,7 +91,7 @@ test('save-to-topic requires explicit use with the displayed version/hash; older
 test('unknown create outcome uses GET readback and an explicit replay of the same request id, never an automatic second create',async t=>{
  const requestIds=[];let attempts=0;
  const f=await setup(t,{handler:({method,body,response,setState})=>{if(method==='POST'){assert.equal(body.action,'create');requestIds.push(body.request_id);const r=record('research_A','queued');setState([r]);if(++attempts===1)throw Error('SYNTHETIC lost receipt after commit');return response({research:r,replayed:true})}}});
- await input('#research-keywords','roadster 特斯拉');await click(document.querySelector('.research-start'));assert(document.querySelector('.research-uncertain'));assert.equal(button('重试同一请求').disabled,true);assert.equal(attempts,1);await f.tick();assert.equal(attempts,1);await click(button('先读回状态'));assert.equal(attempts,1);assert.equal(button('重试同一请求').disabled,false);await click(button('重试同一请求'));assert.deepEqual(requestIds,[requestIds[0],requestIds[0]]);assert.equal(f.state.length,1);assert.equal(document.querySelector('.research-uncertain'),null);
+ await input('#research-keywords','roadster 特斯拉');await click(document.querySelector('.research-start'));assert.equal(canFast(),false,'an unknown request blocks fast navigation');assert(document.querySelector('.research-uncertain'));assert.equal(button('重试同一请求').disabled,true);assert.equal(attempts,1);await f.tick();assert.equal(attempts,1);await click(button('先读回状态'));assert.equal(attempts,1);assert.equal(button('重试同一请求').disabled,false);await click(button('重试同一请求'));assert.deepEqual(requestIds,[requestIds[0],requestIds[0]]);assert.equal(f.state.length,1);assert.equal(document.querySelector('.research-uncertain'),null);
 });
 
 test('an older delayed detail read cannot overwrite the newly selected request',async t=>{
@@ -106,3 +119,4 @@ test('frozen research production source hides the unrelated original-text form a
  const f=await setup(t,{element:React.createElement(SourceInput,{job,onSaved:()=>assert.fail('must not save from frozen research notice')})});
  assert.equal(document.querySelector('textarea'),null);assert.equal(document.querySelector('button'),null);assert.match(document.body.textContent,/冻结研究 v3/);assert.equal(document.querySelector('a').getAttribute('href'),'/research?id=research_A&version=3');assert.equal(f.calls.length,0);
 });
+test('paged research history and selected version load on demand',async t=>{const item=record(),v1=clone(item.versions[0]),v2={...clone(v1),version:2,result:{...v1.result,title:'SYNTHETIC newer result'}};item.version=2;item.versions=[v1,v2];const rows=Array.from({length:21},(_,i)=>({...clone(item),id:'research_'+i,input:{...item.input,keywords:'方向 '+i}}));rows[0]=item;const fixture=await setup(t,{url:'https://SYNTHETIC.test/research?id=research_A&version=1',handler:({url,response})=>{if(url.pathname!=='/api/research')return;if(url.searchParams.has('id')){const selected=Number(url.searchParams.get('version')||2);return response({research:{...item,versions:item.versions.map(v=>v.version===selected?v:{version:v.version,origin:v.origin,created_at:v.created_at})}})}const offset=Number(url.searchParams.get('offset')||0);return response({researches:rows.slice(offset,offset+20),has_more:offset===0})}});assert.match(document.body.textContent,/SYNTHETIC 可读资料文章/);await click(button('查看更多研究'));assert.match(document.body.textContent,/方向 20/);await changeVersion(2);assert.match(document.body.textContent,/SYNTHETIC newer result/);assert(fixture.calls.some(c=>c.url.includes('view=current')&&c.url.includes('version=2')));assert(fixture.calls.some(c=>c.url.includes('offset=20')));});

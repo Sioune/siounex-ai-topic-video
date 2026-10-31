@@ -20,6 +20,19 @@ export function postVideoLocalSources(job,plan,{root=process.cwd()}={}){
  let cloneId=null;try{cloneId=JSON.parse(job.milestones?.find(m=>m.id===plan.base_video.id)?.artifact||'{}').qa?.automatic_clone_request_id||null;}catch{throw Error('POST_VIDEO_CURRENT_LOCAL_RECEIPT_MISSING');}
  const parent=cloneId?path.resolve(root,'.sites-runtime/automatic-clone-renders'):path.resolve(root,'.sites-runtime/authorized-inputs',job.id,'revision-'+job.revision,'private-review');
  if(!fs.existsSync(parent))throw Error('POST_VIDEO_CURRENT_LOCAL_PROJECT_MISSING');
+ // A manually returned clone keeps its actual candidate receipt and files.
+ // Resolve it only by the current video hash and verify the original bindings.
+ if(cloneId&&plan.delivery_mode==='results-only'){
+  const dir=path.join(parent,'manual-cdp-'+plan.base_video.sha256.slice(0,16)),rf=path.join(dir,'candidate-producer-receipt.json');
+  if(fs.existsSync(rf)){
+   const r=JSON.parse(fs.readFileSync(rf,'utf8'));
+   if(r.schema!=='private-review-producer-receipt-v1'||!r.video_generated||r.automatic_clone_request_id!==cloneId||r.owner_voice_used!==true||r.voice_kind!=='owner-cloned'||['revision','script_hash','mode_epoch','contract_hash'].some(k=>r.binding?.[k]!==plan.binding[k])||r.binding?.scope_id!==plan.scope_id)throw Error('POST_VIDEO_CLONE_PROJECT_BINDING_CHANGED');
+   const get=role=>{const list=r.files.filter(f=>f.role===role);if(list.length!==1)throw Error('POST_VIDEO_CLONE_PROJECT_BINDING_CHANGED');return exactFile(list[0],root)},video=get('video'),producer_project=get('project'),render_receipt=get('render_receipt');
+   const p=JSON.parse(producer_project.bytes.toString('utf8'));
+   if(video.sha256!==plan.base_video.sha256||video.size_bytes!==plan.base_video.size_bytes||plan.binding.project_id!=='local:'+producer_project.sha256||plan.binding.timeline_id!=='local:'+render_receipt.sha256||p.job_id!==job.id||p.automatic_clone_request_id!==cloneId||p.owner_voice_used!==true||['revision','script_hash','mode_epoch','contract_hash'].some(k=>p.binding?.[k]!==plan.binding[k])||p.binding?.scope_id!==plan.scope_id)throw Error('POST_VIDEO_CLONE_PROJECT_BINDING_CHANGED');
+   return{video,project_archive:null,producer_project};
+  }
+ }
  for(const entry of fs.readdirSync(parent,{withFileTypes:true}).filter(d=>d.isDirectory()&&/^[a-f0-9]{64}$/.test(d.name))){
   const receipt=path.join(parent,entry.name,'producer-receipt.json');if(!fs.existsSync(receipt))continue;const r=JSON.parse(fs.readFileSync(receipt,'utf8'));
   if(!r.video_generated||r.files?.find(f=>f.role==='video')?.sha256!==plan.base_video.sha256)continue;
@@ -83,7 +96,7 @@ export async function runPostVideoPreparation(selection,{call,root=process.cwd()
  if(plan.package_kind!==undefined&&plan.package_kind!==RELEASE_PACKAGE_V2)throw Error('POST_VIDEO_PACKAGE_KIND_UNSUPPORTED');const release=plan.package_kind===RELEASE_PACKAGE_V2;
  const read=()=>step({action:'post_video_preparation_read',id,plan_id:plan.plan_id});let state=await read();
  if(prepared(state))return{status:'post-video-prepared',job_id:id,plan_id:plan.plan_id,archives:state.archives.map(a=>({id:a.site_archive_id,role:a.file.role,status:a.status})),reused:true,new_paid_calls:0,quality_approved:false,publication_authorized:false};
- const promos=await step({action:'promo_list',id}),promo=promos.packages.find(p=>p.id===plan.promo_package_id);
+ const promos=await step({action:'promo_list',id,package_id:plan.promo_package_id}),promo=promos.packages.find(p=>p.id===plan.promo_package_id);
  if(!promo||promo.status!=='ready')return{status:'post-video-copy-waiting',job_id:id,plan_id:plan.plan_id,package_id:plan.promo_package_id,promo_status:promo?.status||'missing',reason:promo?.error||null,new_paid_calls:0,publication_authorized:false};
  if(!promo.is_current||typeof promo.content!=='string'||sha(promo.content)!==promo.content_hash)throw Error('POST_VIDEO_CURRENT_PROMOTION_CHANGED');
  const currentStage=async()=>{
@@ -91,7 +104,7 @@ export async function runPostVideoPreparation(selection,{call,root=process.cwd()
   const latest=(await step({action:'read',id})).job;
   if(!latest||['id','revision','approved_hash','approved_revision','mode_epoch','contract_hash','review_mode','status'].some(k=>latest[k]!==job[k]))throw Error('POST_VIDEO_STAGE_BINDING_CHANGED');
   const observed=await read();if(observed.is_current===false||['plan_id','binding','base_video','project_archive','promo_package_id','delivery_mode'].some(k=>canonical(observed.plan?.[k])!==canonical(plan[k])))throw Error('POST_VIDEO_STAGE_BINDING_CHANGED');
-  const currentPromo=(await step({action:'promo_list',id})).packages?.find(p=>p.id===promo.id);
+  const currentPromo=(await step({action:'promo_list',id,package_id:promo.id})).packages?.find(p=>p.id===promo.id);
   if(currentPromo?.status!=='ready'||currentPromo.is_current!==true||currentPromo.content_hash!==promo.content_hash||sha(currentPromo.content)!==promo.content_hash)throw Error('POST_VIDEO_CURRENT_PROMOTION_CHANGED');
  };
  // Source buffers stay inside this stage. A job waiting for archive capacity

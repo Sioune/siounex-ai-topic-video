@@ -54,7 +54,7 @@ async function observeInFlightReview(id:string,mid:string,revision:number,artifa
  return getJob(id);
 }
 type Row={id:string;job_id:string;node:string;revision:number;artifact_version:number;artifact_hash:string;artifact:string;status:string;mode_epoch:number;review_token_hash:string|null;review_until:number|null;invocation_id:string|null;report:string|null;updated_at:string};
-export async function milestones(id:string){return (await db().prepare('SELECT id,job_id,node,revision,artifact_version,artifact_hash,artifact,status,mode_epoch,review_until,invocation_id,report,created_at,updated_at FROM production_milestones WHERE job_id=? ORDER BY revision DESC,artifact_version DESC,created_at DESC').bind(id).all<Row>()).results}
+export async function milestones(id:string,currentRevision?:number){return (await db().prepare('SELECT id,job_id,node,revision,artifact_version,artifact_hash,artifact,status,mode_epoch,review_until,invocation_id,report,created_at,updated_at FROM production_milestones WHERE job_id=?'+(currentRevision===undefined?'':' AND revision=?')+' ORDER BY revision DESC,artifact_version DESC,created_at DESC').bind(...(currentRevision===undefined?[id]:[id,currentRevision])).all<Row>()).results}
 export async function recordDraft(id:string,revision:number,contentHash:string,content:string){
  await db().batch(draftStatements(id,revision,contentHash,content));
 }
@@ -132,7 +132,6 @@ export async function decideMilestone(id:string,mid:string,revision:number,artif
   const draft=j.drafts?.find(d=>d.revision===j.revision);if(!draft)throw new ProductionError('当前口播稿不存在，不能排队');
   return requestScriptRework(id,actor,{revision,content_hash:text(draft.content_hash,64),mode_epoch:epoch,note:text(report.reason,4000)},{kind:'milestone',milestone_id:m.id,artifact_hash:artifactHash,node:m.node});
  }
- if(!token&&decision==='approve'&&JSON.parse(m.artifact).qa?.automatic_clone_request_id)throw new ProductionError('本人声音版的第二次人工审核须在新成片完整材料包备齐后，使用二次审核通过并入片仓入口；无需第三次确认');
  const localReviewGuard=!token?await localReviewMilestoneDecisionContext(j,m,actor):null;
  const editorial=decision==='approve'&&m.node==='video'?await assertNativeDemonstration(j,JSON.parse(m.artifact)):null,editorialGuard=editorial?editorialMutationGuard(editorial):null;
  const payload=JSON.stringify({...logical,operation_id:crypto.randomUUID()});if(payload.length>30000)throw new ProductionError('审核报告过大',400);

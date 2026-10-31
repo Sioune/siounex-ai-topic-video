@@ -447,7 +447,8 @@ export function createStudioPreviewVoice({root=process.cwd(),deadline_ms=Infinit
    // The durable claim stays spent even if this attempt loses its acknowledgement.
    scope(root,job,r);resumedOriginal=true;o=await browser('prepare',input,{dir:claimed.dir,deadline_ms});
   }
-  if(recovering&&!resumedOriginal){if(!Number.isSafeInteger(o.found_count)||o.found_count<0)fail('STUDIO_PREVIEW_DRAFT_DISCOVERY_UNKNOWN');if(o.found_count===0)fail('STUDIO_PREVIEW_DRAFT_NOT_FOUND');if(o.found_count!==1)fail('STUDIO_PREVIEW_DRAFT_AMBIGUOUS');}
+  if(recovering&&!resumedOriginal&&o.prepared_new!==true){if(!Number.isSafeInteger(o.found_count)||o.found_count<0)fail('STUDIO_PREVIEW_DRAFT_DISCOVERY_UNKNOWN');if(o.found_count===0)fail('STUDIO_PREVIEW_DRAFT_NOT_FOUND');if(o.found_count!==1)fail('STUDIO_PREVIEW_DRAFT_AMBIGUOUS');}
+  if(o.prepared_new===true&&(o.source!=='playwright-cdp'||o.persisted_draft_verified!==true))fail('STUDIO_PREVIEW_PREPARATION_NOT_SAVED');
   if(!canonicalSpeechCompare(o.text,text)||o.voice_name!=='Siounex口播'||!/^[a-f0-9]{32}$/.test(o.draft_id||'')||input.draft_id&&input.draft_id!==o.draft_id||o.play_clicked!==false||!readonly&&o.url!=null)fail('STUDIO_PREVIEW_PREPARATION_CHANGED');
   if(!readonly&&(phase==='prepare'||resumedOriginal)&&o.persisted_draft_verified!==true)fail('STUDIO_PREVIEW_PREPARATION_NOT_SAVED');
   if(!saved){saved={draft_id:o.draft_id,title:input.title,request_id:r.id};if(fs.existsSync(checkpoint_file)){const actual=JSON.parse(fs.readFileSync(checkpoint_file,'utf8'));if(actual.draft_id!==saved.draft_id||actual.request_id!==r.id)fail('STUDIO_PREVIEW_DRAFT_BINDING_CHANGED');}else save(checkpoint_file,saved);}
@@ -582,7 +583,7 @@ export function createStudioPreviewVoice({root=process.cwd(),deadline_ms=Infinit
   if(!state.policy&&!known_result)return null;
   if(clock()+330000>=deadline_ms)return{request:r,waiting_for:'generation-budget',budget_exhausted:true};
   const nativeRead=await native('read',{voice_id:r.voice_id},{dir:path.join(base,'account-read-'+randomUUID()),deadline_ms});if(!nativeRead.verified)throw Object.assign(Error(nativeRead.diagnostic.code),{code:nativeRead.diagnostic.code});const voice=selectedPrivateVoice(nativeRead.voice.payload,r.voice_id);if(!voice||voice.default_engine!==r.engine||!automaticCloneEngineBound(r))fail('STUDIO_PREVIEW_SAVED_ENGINE_CHANGED');
-  const input=browserInput(job,r,text,draft_id),effectDir=path.join(base,'readiness-'+randomUUID()),o=await browser('generation-effect',input,{dir:effectDir,deadline_ms,root});
+  const input=browserInput(job,r,text,draft_id),effectDir=path.join(base,'readiness-'+randomUUID()),o=await browser('generation-effect',{...input,...(priorDir?{known_audio_observation_file:path.join(priorDir,'preview-loaded-audio.json')}:{})},{dir:effectDir,deadline_ms,root});
   if(!generationStateMatches(o,input)||o.play_clicked!==false||!o.generation_evidence||!Number.isFinite(Date.parse(o.observed_at)))fail('STUDIO_PREVIEW_GENERATION_EFFECT_REQUIRED');
   if(o.generation_evidence.cleanup_confirmed!==true||o.generation_evidence.editor_released!==true)return{request:r,waiting_for:'generation-read-cleanup-unconfirmed'};
   const loaded=generationLoaded(o);let bytes=null;

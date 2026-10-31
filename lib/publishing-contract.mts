@@ -12,6 +12,7 @@ export type PublishingMaterialBinding={role:'cover_3_4'|'cover_4_3'|'promotion';
 export type PublishingBinding = {
  job_id:string;revision:number;script_hash:string;mode_epoch:number;contract_hash:string;
  template_publishing_slot?:import('./template-schedule.mts').TemplatePublishingSlot;
+ cover_replacement?:{candidate_id:string;feedback_id:string;approval_id:string;activated_at:string;manifest_sha256:string;bundle_sha256:string;source_covers:PublishingMaterialBinding[]};
  video_milestone_id:string;video_artifact_version:number;video_artifact_hash:string;
  delivery_milestone_id:string;delivery_artifact_version:number;delivery_artifact_hash:string;
  site_archive_id:string;video_sha256:string;size_bytes:number;file_name:string;materials:PublishingMaterialBinding[];
