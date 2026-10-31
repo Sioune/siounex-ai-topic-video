@@ -9,9 +9,6 @@ const PAIR_PREFIX = 'codex_executor_pairing_v1:';
 const DEVICE_PREFIX = 'codex_executor_device_v1:';
 const APPROVAL_PREFIX = 'codex_executor_approval_v1:';
 const PAIR_TTL_MS = 10 * 60 * 1000;
-// Online presence is transient, not business data. A restart requires a fresh
-// poll; heartbeats must not upload an entire SQLite snapshot every 30 seconds.
-const devicePresence = new Map<string, number>();
 const hash = (value: string) => createHash('sha256').update(value).digest('hex');
 type StatementLike = {
   first(): Promise<unknown>;
@@ -289,7 +286,13 @@ export const pollCodexExecutorJobs: RequestHandler = async (req, res) => {
     return;
   }
   const now = Date.now();
-  devicePresence.set(deviceId, now);
+  if (now - device.last_seen_at >= 30_000) {
+    device.last_seen_at = now;
+    await db().prepare(`UPDATE app_state SET value=? WHERE key=? AND json_valid(value)
+      AND json_extract(value,'$.revoked')=0 AND json_extract(value,'$.token_hash')=?`)
+      .bind(JSON.stringify(device), deviceKey, device.token_hash).run();
+    await persistStudioDatabase();
+  }
   const rows = await allRows<{ key: string; value: string }>(
     db().prepare('SELECT key,value FROM app_state WHERE key LIKE ?').bind(APPROVAL_PREFIX + '%'),
   );
@@ -343,8 +346,8 @@ export const readCodexExecutorDeviceStatus: RequestHandler = async (req, res) =>
     device: device ? {
       device_id: device.device_id,
       device_name: device.device_name,
-      online: Date.now() - (devicePresence.get(device.device_id) || 0) < 90_000,
-      last_seen_at: devicePresence.get(device.device_id) || device.last_seen_at,
+      online: Date.now() - device.last_seen_at < 90_000,
+      last_seen_at: device.last_seen_at,
     } : null,
     approved,
   });
@@ -428,7 +431,6 @@ export const revokeCodexExecutorDevice: RequestHandler = async (req, res) => {
     statements.push(db().prepare('DELETE FROM app_state WHERE key=?').bind(key));
     await db().batch(statements);
     await persistStudioDatabase();
-    devicePresence.delete(deviceId);
   }
   res.status(204).end();
 };

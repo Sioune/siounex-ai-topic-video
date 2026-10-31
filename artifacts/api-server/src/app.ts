@@ -3,6 +3,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { authRouter, requestIdentity, requireStudioOwner } from "./lib/studio-auth";
+import { importedRouter } from "./routes/imported";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
@@ -12,7 +13,6 @@ import {
   pairCodexExecutorDevice, pollCodexExecutorJobs, readCodexExecutorDeviceStatus,
   revokeCodexExecutorDevice, revokeCodexExecutorJobApproval,
 } from "./lib/codex-executor-device";
-import { publicContentRouter, adminContentRouter } from "./routes/content";
 
 const app: Express = express();
 
@@ -38,9 +38,6 @@ app.use(
 app.set("trust proxy", 1);
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(express.raw({ type: () => true, limit: "32mb" }));
-// Public projections and import-only machine requests do not require Clerk.
-// Legacy business APIs remain owner-protected for external compatibility.
-app.use("/api", publicContentRouter);
 
 // Authenticate the narrowly scoped machine credential before Clerk, so it is
 // never forwarded to Clerk or treated as a malformed user session JWT.
@@ -72,12 +69,7 @@ app.post("/api/codex-executor/jobs/revoke", requireStudioOwner, revokeCodexExecu
 app.post("/api/codex-executor/devices/revoke", requireStudioOwner, revokeCodexExecutorDevice);
 app.use("/api", router);
 app.use("/api", authRouter);
-app.use("/api", adminContentRouter);
 app.use(requireStudioOwner);
-// Compatibility routes are loaded only after verified owner/executor access.
-// Public display does not initialize the retired production/publishing modules.
-app.use((req, res, next) => {
-  void import("./routes/imported").then(({ importedRouter }) => importedRouter(req, res, next)).catch(next);
-});
+app.use(importedRouter);
 
 export default app;

@@ -1,0 +1,48 @@
+import {db} from './store';
+import {outroV6Migrations,outroV6Migration,OUTRO_V6_UPGRADE_DECISION,applyV6OutroBinding} from './outro-upgrade-contract.mts';
+import {activeV6Upgrade,upgradeKey,validateV6StagedBytes} from './outro-upgrade-storage';
+import {ProductionError} from './production-contract';
+import {readSiteArchiveFile} from './site-file-archive';
+import {createHash} from 'node:crypto';
+const sha=(b:Uint8Array)=>createHash('sha256').update(b).digest('hex');
+const parsed=(s:string)=>{try{return JSON.parse(s)}catch{return null}};
+export async function readUnpublishedOutroInventory(owner:string){
+ const jobs=(await db().prepare("SELECT id,status,revision,mode_epoch,contract_hash,approved_hash,source_snapshot FROM production_jobs WHERE owner_id=? AND is_test=0 ORDER BY created_at,id").bind(owner).all()).results as any[],items=[];
+ for(const j of jobs){
+  const released=await db().prepare("SELECT id FROM publishing_reserve WHERE owner_id=? AND job_id=? AND status IN ('published','reserved') LIMIT 1").bind(owner,j.id).first();
+  const posted=await db().prepare("SELECT p.id FROM publishing_posts p JOIN publishing_reserve r ON r.id=p.release_id WHERE r.owner_id=? AND r.job_id=? AND p.status IN ('dispatching','submitted','published','unknown') LIMIT 1").bind(owner,j.id).first();
+  const historical=await db().prepare('SELECT id FROM production_data_videos WHERE job_id=? AND published_at IS NOT NULL AND (owner_id=? OR owner_id IS NULL) LIMIT 1').bind(j.id,owner).first();
+  if(released||posted||historical||j.status==='cancelled')continue;
+  const series=await db().prepare('SELECT value FROM app_state WHERE key=?').bind('series_selection_v1:'+j.id).first<{value:string}>(),selection=parsed(series?.value||'null')?.current;
+  const m=await db().prepare("SELECT id,node,status,revision,mode_epoch,artifact_version,artifact_hash,artifact FROM production_milestones WHERE job_id=? AND node='video' AND revision=? AND mode_epoch=? ORDER BY artifact_version DESC LIMIT 1").bind(j.id,j.revision,j.mode_epoch).first<any>(),a=parsed(m?.artifact||'null');
+  items.push({job_id:j.id,title:parsed(j.source_snapshot)?.title||j.id,status:j.status,revision:j.revision,mode_epoch:j.mode_epoch,contract_hash:j.contract_hash,script_hash:j.approved_hash,template:selection?.template?{id:selection.template.id,tone:selection.template.tone}:null,outro_variant:selection?.outro?.variant||null,video:m&&a?{milestone_id:m.id,status:m.status,artifact_hash:m.artifact_hash,artifact_version:m.artifact_version,archive_id:a.site_archive_id,sha256:a.sha256,size_bytes:a.size_bytes||null,qa:a.qa}:null});
+ }
+ for(const item of items){const m=outroV6Migration(item.job_id);if(item.video&&m&&item.revision===m.revision&&item.mode_epoch===m.mode_epoch&&item.contract_hash===m.contract_hash&&item.script_hash===m.script_hash&&item.video.milestone_id===m.source.milestone_id&&item.video.artifact_hash===m.source.artifact_hash&&item.video.artifact_version===m.source.artifact_version&&item.video.sha256===m.source.sha256&&await activeV6Upgrade(owner,m))Object.assign(item.video,{current_outro_version:'v6',current_archive_id:m.file.site_archive_id,current_sha256:m.file.sha256,current_size_bytes:m.file.size_bytes});}
+ return{schema:'unpublished-outro-upgrade-inventory-v1',recorded_at:new Date().toISOString(),items,no_external_action:true};
+}
+export async function readOutroUpgradeSourcePart(owner:string,b:any){
+ const inventory=await readUnpublishedOutroInventory(owner),item=inventory.items.find(x=>x.job_id===b.job_id&&x.video?.milestone_id===b.milestone_id);
+ if(!item?.video?.archive_id||!Number.isSafeInteger(b.part)||b.part<0)throw new ProductionError('仅可读取本人尚未发布的当前成片',409);
+ const partSize=262144,initial=await readSiteArchiveFile(item.job_id,item.video.archive_id,owner,{offset:0,length:1}),size=initial.archive.file.size_bytes;await initial.body.cancel();
+ const offset=b.part*partSize;if(offset>=size)throw new ProductionError('片段越界',400);
+ const result=await readSiteArchiveFile(item.job_id,item.video.archive_id,owner,{offset,length:Math.min(partSize,size-offset)}),bytes=new Uint8Array(await new Response(result.body).arrayBuffer());
+ return{job_id:item.job_id,milestone_id:item.video.milestone_id,source_archive_id:item.video.archive_id,source_sha256:item.video.sha256,part:b.part,part_size:partSize,part_count:Math.ceil(size/partSize),size_bytes:bytes.length,file_size_bytes:size,chunk_sha256:sha(bytes),chunk_base64:Buffer.from(bytes).toString('base64')};
+}
+export async function activateUnpublishedV6Outros(owner:string){
+ const inventory=await readUnpublishedOutroInventory(owner),applied=[],replayed=[],deferred=[];
+ for(const m of outroV6Migrations){
+  if(await activeV6Upgrade(owner,m)){replayed.push(m.job_id);continue;}
+  const item=inventory.items.find(x=>x.job_id===m.job_id),v=item?.video;
+  if(!item||!v||item.revision!==m.revision||item.mode_epoch!==m.mode_epoch||item.contract_hash!==m.contract_hash||item.script_hash!==m.script_hash||v.milestone_id!==m.source.milestone_id||v.artifact_hash!==m.source.artifact_hash||v.artifact_version!==m.source.artifact_version||v.sha256!==m.source.sha256||v.archive_id!==m.source.archive_id){deferred.push({job_id:m.job_id,reason:'当前成片、原稿或发布状态已变化'});continue;}
+  await validateV6StagedBytes(owner,m);
+  const sourceRows=(await db().prepare("SELECT * FROM publishing_reserve WHERE owner_id=? AND job_id=? AND status='ready'").bind(owner,m.job_id).all()).results as any[];
+  const prepared=await db().prepare("SELECT key FROM app_state WHERE key LIKE 'publishing_preparation_v1:%' AND json_extract(value,'$.job_id')=? LIMIT 1").bind(m.job_id).first();if(prepared){deferred.push({job_id:m.job_id,reason:'已有平台准备包，须沿原发布分工先处理原草稿'});continue;}
+  const at=new Date().toISOString(),record={schema:'owner-outro-v6-technical-upgrade-v1',owner_id:owner,job_id:m.job_id,source_milestone_id:m.source.milestone_id,source_sha256:m.source.sha256,video_sha256:m.file.sha256,site_archive_id:m.file.site_archive_id,manifest_sha256:m.manifest_sha256,variant:m.variant,body_frames:m.body_frames,outro_version:'v6',outro_frames:119,body_video_unchanged:true,body_audio_unchanged:true,original_outro_audio_preserved:true,human_review_status_preserved:true,new_speech_calls:0,new_paid_calls:0,no_external_action:true,upgraded_at:at},raw=JSON.stringify(record),key=upgradeKey(owner,m);
+  const sql="EXISTS(SELECT 1 FROM production_jobs j WHERE j.id=? AND j.owner_id=? AND j.is_test=0 AND j.status=? AND j.revision=? AND j.mode_epoch=? AND j.contract_hash=? AND j.approved_hash=? AND EXISTS(SELECT 1 FROM production_milestones v WHERE v.id=? AND v.job_id=j.id AND v.artifact_hash=? AND v.artifact_version=? AND v.status=? AND NOT EXISTS(SELECT 1 FROM production_milestones newer WHERE newer.job_id=j.id AND newer.node='video' AND newer.revision=j.revision AND newer.mode_epoch=j.mode_epoch AND newer.artifact_version>v.artifact_version)) AND NOT EXISTS(SELECT 1 FROM publishing_reserve r WHERE r.owner_id=j.owner_id AND r.job_id=j.id AND r.status IN ('published','reserved')) AND NOT EXISTS(SELECT 1 FROM production_data_videos p WHERE p.job_id=j.id AND p.published_at IS NOT NULL AND(p.owner_id=j.owner_id OR p.owner_id IS NULL)) AND NOT EXISTS(SELECT 1 FROM publishing_posts p JOIN publishing_reserve r ON r.id=p.release_id WHERE r.owner_id=j.owner_id AND r.job_id=j.id AND p.status IN ('dispatching','submitted','published','unknown')) AND NOT EXISTS(SELECT 1 FROM app_state p WHERE p.key LIKE 'publishing_preparation_v1:%' AND json_extract(p.value,'$.job_id')=j.id))";
+  const args=[m.job_id,owner,item.status,m.revision,m.mode_epoch,m.contract_hash,m.script_hash,m.source.milestone_id,m.source.artifact_hash,m.source.artifact_version,v.status];
+  const statements=[db().prepare(`INSERT INTO app_state(key,value) SELECT ?,? WHERE ${sql} ON CONFLICT(key) DO NOTHING`).bind(key,raw,...args),db().prepare(`INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) SELECT ?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM app_state WHERE key=? AND value=?) ON CONFLICT(id) DO NOTHING`).bind('outro_v6_'+m.manifest_sha256,m.job_id,m.revision,m.file.sha256,OUTRO_V6_UPGRADE_DECISION,raw,owner,at,key,raw)];
+  for(const old of sourceRows){const before=JSON.parse(old.binding),next=applyV6OutroBinding(before);if(next===before)continue;const nextRaw=JSON.stringify(next),hash=createHash('sha256').update(owner+'\n'+nextRaw).digest('hex'),id='pr_'+hash;statements.push(db().prepare(`INSERT INTO publishing_reserve(id,owner_id,job_id,binding,binding_hash,title,approved_at,status,created_at,updated_at) SELECT ?,?,?,?,?,?,?,'ready',?,? WHERE EXISTS(SELECT 1 FROM app_state WHERE key=? AND value=?) AND EXISTS(SELECT 1 FROM publishing_reserve WHERE id=? AND binding=? AND status='ready') AND NOT EXISTS(SELECT 1 FROM publishing_slots WHERE release_id=?) AND NOT EXISTS(SELECT 1 FROM publishing_posts WHERE release_id=?) ON CONFLICT(owner_id,binding_hash) DO NOTHING`).bind(id,owner,m.job_id,nextRaw,hash,old.title,old.approved_at,old.created_at,at,key,raw,old.id,old.binding,old.id,old.id),db().prepare("UPDATE publishing_reserve SET status='stale',reason='本人要求未发布作品统一升级V6片尾；原正文、专稿批准及入仓顺序保留',updated_at=? WHERE id=? AND owner_id=? AND status='ready' AND EXISTS(SELECT 1 FROM publishing_reserve WHERE id=? AND binding=? AND status='ready')").bind(at,old.id,owner,id,nextRaw));}
+  const result=await db().batch(statements);if(!result[0].meta.changes)throw new ProductionError('V6回站时原状态已变化；请读回核对，不重复制作',409);applied.push(m.job_id);
+ }
+ return{applied_job_ids:applied,replayed_job_ids:replayed,deferred,human_reviews_preserved:true,no_media_generation:true,no_external_action:true};
+}

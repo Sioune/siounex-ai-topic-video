@@ -5,10 +5,7 @@
     "tsBuildInfoFile": ".tsbuildinfo",
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"],
-    "paths": {
-      "@/*": ["./src/imported/*"]
-    }
+    "types": ["node"]
   },
   "include": ["src"],
   "references": [

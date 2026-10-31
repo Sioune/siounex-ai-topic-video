@@ -1,7 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { initializeStudioDatabase } from "./lib/studio-database";
-import { scheduleSourceRefresh } from "./lib/content-sync";
 
 const rawPort = process.env["PORT"];
 
@@ -18,7 +17,6 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 await initializeStudioDatabase();
-scheduleSourceRefresh(error => logger.error({ errorName: error instanceof Error ? error.name : "Error" }, "Scheduled source refresh failed"));
 app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");

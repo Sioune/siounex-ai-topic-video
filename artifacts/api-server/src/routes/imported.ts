@@ -3,7 +3,6 @@ import { Readable } from 'node:stream';
 import { once } from 'node:events';
 import { authenticatedUser, requestIdentity } from '../lib/studio-auth';
 import { persistStudioDatabase } from '../lib/studio-database';
-import { serializeStudioRequest } from '../lib/studio-queue';
 import * as audioIntake from '../imported/app/api/audio-intake/route';
 import * as catalog from '../imported/app/api/catalog/route';
 import * as dataCenter from '../imported/app/api/data-center/route';
@@ -51,7 +50,12 @@ const routes: Record<string, any> = {
   'voice-replacement': voiceReplacement,
 };
 export const importedRouter = Router();
-export { serializeStudioRequest } from '../lib/studio-queue';
+let queue: Promise<void> = Promise.resolve();
+export function serializeStudioRequest<T>(callback: () => Promise<T>): Promise<T> {
+  const result = queue.then(callback);
+  queue = result.then(() => {}, () => {});
+  return result;
+}
 
 async function dispatch(module: any, req: any, res: any) {
   const handler = module[req.method] ?? (req.method === 'HEAD' ? module.GET : null);
