@@ -23,9 +23,9 @@
 
 还有必填的内部计划参数 `rrule`，只在用户确定频率/一次运行时间后由原生工具设置。此文档不是创建调用；未虚构项目ID或保存计划。
 
-`list_projects` 实际成功，当前目录 `C:\Users\赵元章\Documents\Codex\2026-10-10\task-4` 未列在本机项目中。cron 可以绑定 projectId，不能绑定 threadId；projectId:null 的无项目任务不能声称已经绑定这个 checkout。
+`list_projects` 实际成功，当前目录 `<本机制作目录>` 未列在本机项目中。cron 可以绑定 projectId，不能绑定 threadId；projectId:null 的无项目任务不能声称已经绑定这个 checkout。
 
-`list_threads` 当前委派任务为 `01a12437-c2d2-7183-9870-e9ab5492d011`，hostId 是 durable、projectId 是 null。对旧任务仅调用 mode:view，两次都真实返回 `Automations are only supported for local threads.`。因此工具声明可见不等于此委派线程能够创建本机任务。
+`list_threads` 当前委派任务为 `<历史委派任务 ID>`，hostId 是 durable、projectId 是 null。对旧任务仅调用 mode:view，两次都真实返回 `Automations are only supported for local threads.`。因此工具声明可见不等于此委派线程能够创建本机任务。
 
 浏览器/电脑界面此前初始化报缺少 Windows 平台目录 HRESULT 0x80070003，本次没有用脚本、内部配置或不受支持的私有协议绕过它。
 

@@ -1,4 +1,6 @@
+import {putCoverThumbnail,readCoverSourcePart} from '@/lib/site-cover-thumbnail';
 import {assertProductionNotCancelled} from '@/lib/production-cancel';
+import {startWorkInProgress,putWorkInProgressPart,finishWorkInProgress} from '@/lib/work-in-progress-video';
 import {readStudioPreviewGenerationState,recordStudioPreviewCurrentEffect,claimStudioPreviewGeneration,recordStudioPreviewGenerationEvent} from '@/lib/studio-preview-owner-policy';
 import {ensureAutomaticClone,readAutomaticClone,quoteAutomaticClone,claimAutomaticClone,checkpointAutomaticClone,blockAutomaticClone,recordAutomaticCloneAudio,recordAutomaticCloneTerminalFailure,requestStudioPreviewClone,preflightAutomaticClone,recordAutomaticCloneRenderProgress} from '@/lib/automatic-clone';
 import {ensurePostVideoPreparation,readPostVideoPreparation,beginPostVideoPreparation,completePostVideoPreparation} from '@/lib/post-video-preparation';
@@ -50,7 +52,7 @@ import {db} from '@/lib/store';
 import {planOperation,claimOperation,checkpointOperation,completeOperation,pauseOperation} from '@/lib/media-operations';
 import {nextWork,materializeSource} from '@/lib/dispatch';
 import {recordDelivery} from '@/lib/delivery';
-import {listPromos,claimPromo,recoverPromo,completePromo,failPromo,importPromo} from '@/lib/promo-packages';
+import {listPromos,readPromoForDelivery,claimPromo,recoverPromo,completePromo,failPromo,importPromo} from '@/lib/promo-packages';
 import {claimReview,recoverReview,recoverCompletedReviewOutput,decideMilestone,pauseReview,submitMilestone} from '@/lib/milestones';
 import {identity,json} from '@/lib/api';
 import {recordNativeCandidateVoiceProvenance} from '@/lib/native-candidate-voice';
@@ -64,10 +66,10 @@ import {getResearch,nextResearch,claimResearch,heartbeatResearch,completeResearc
 // No tokens are minted here, no persistent credentials, no fees or publishing.
 export async function POST(req:Request){
  let requestOwner:string|null=null;if(req.headers.has('origin')){requestOwner=await identity(req,true);if(!requestOwner)return json({error:'身份或来源无效'},403)}else if(req.headers.has('sec-fetch-site')||!req.headers.get('content-type')?.includes('application/json'))return json({error:'服务请求来源无效'},403);
- try{const raw=await req.text();if(raw.length>1550000)throw new ProductionError('请求过大',400);const b=JSON.parse(raw);if(raw.length>180000&&!['data_import_evidence','site_archive_part'].includes(b.action)||b.action==='site_archive_part'&&raw.length>720000)throw new ProductionError('请求过大',400);
+ try{const raw=await req.text();if(raw.length>1550000)throw new ProductionError('请求过大',400);const b=JSON.parse(raw);if(raw.length>180000&&!['data_import_evidence','site_archive_part','wip_video_part'].includes(b.action)||['site_archive_part','wip_video_part'].includes(b.action)&&raw.length>720000)throw new ProductionError('请求过大',400);
  // Fence every job-bound write, including stale claims from the current natural round.
  const productionId=typeof b.id==='string'&&b.id.startsWith('job_')?b.id:typeof b.package_id==='string'?(await db().prepare('SELECT job_id FROM production_promo_packages WHERE id=?').bind(b.package_id).first<{job_id:string}>())?.job_id:null;
- if(productionId&&!['read','native_work_packet_read','automatic_clone_read','studio_preview_generation_read','native_preparation_read','post_video_preparation_read','promo_list','promo_delivery_list','site_retention_read','site_archive_read_part','series_read','data_import_read','data_import_evidence_read'].includes(b.action))await assertProductionNotCancelled(productionId);
+ if(productionId&&!['read','native_work_packet_read','automatic_clone_read','studio_preview_generation_read','native_preparation_read','post_video_preparation_read','promo_list','promo_delivery_list','site_retention_read','site_archive_read_part','site_cover_source_part','site_cover_thumbnail_put','series_read','data_import_read','data_import_evidence_read'].includes(b.action))await assertProductionNotCancelled(productionId);
  if(b.action==='automatic_clone_render_progress')return json(await recordAutomaticCloneRenderProgress(text(b.id,100),b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
  if(['studio_preview_generation_read','studio_preview_generation_effect','studio_preview_generation_claim','studio_preview_generation_event'].includes(b.action)){
   const studioId=text(b.id,100),studioActor=requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true as const},{action:_studioAction,id:_studioId,...studioBody}=b;
@@ -100,6 +102,11 @@ export async function POST(req:Request){
  if(b.action==='reported_video_feedback')return json(await recordReportedVideoFeedback(id,b));
  if(b.action==='native_candidate_voice_provenance')return json(await recordNativeCandidateVoiceProvenance(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
  if(b.action==='native_candidate_feedback')return json(await recordNativeCandidateFeedback(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
+ if(b.action==='wip_video_start')return json(await startWorkInProgress(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
+ if(b.action==='wip_video_part')return json(await putWorkInProgressPart(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
+ if(b.action==='wip_video_finish')return json(await finishWorkInProgress(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
+ if(b.action==='site_cover_source_part'){if(requestOwner)throw new ProductionError('原图分片仅供可信本机回填',403);return json(await readCoverSourcePart(id,b));}
+ if(b.action==='site_cover_thumbnail_put'){if(requestOwner)throw new ProductionError('缩略图仅由可信本机生成',403);return json(await putCoverThumbnail(id,b));}
  if(b.action==='site_archive_start')return json(await startSiteArchive(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
  if(b.action==='site_archive_part')return json(await putSiteArchivePart(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
  if(b.action==='site_archive_finalize')return json(await finalizeSiteArchive(id,b,requestOwner?{owner_id:requestOwner}:{trusted_owner_service:true}));
@@ -113,7 +120,7 @@ export async function POST(req:Request){
  if(b.action==='media_revision_promo_requirement')return json(await recordRevisionPromoRequirement(id,b));
  if(b.action==='media_revision_authorize')return json(await authorizeMediaRevision(id,b));if(b.action==='media_revision_submit')return json(await submitAuthorizedMediaRevision(id,b));
  if(['data_import_evidence','data_import_sample','data_import_analysis','data_import_publication','data_import_read','data_import_evidence_read'].includes(b.action)){
-  if(id!=='job_6f01090e-218f-4fc9-bd1c-14984d6c1863')throw new ProductionError('本次已授权的数据导入范围不匹配',403);
+  if(id!=='job_76dc11ec-d55d-4674-abe8-acb3369a6d74')throw new ProductionError('本次已授权的数据导入范围不匹配',403);
   const scope=await db().prepare('SELECT owner_id FROM production_jobs WHERE id=?').bind(id).first<{owner_id:string}>();if(!scope?.owner_id)throw new ProductionError('真实任务所有者不可用',409);
   if(b.action==='data_import_evidence')return json(await saveEvidence(scope.owner_id,b));
   if(b.action==='data_import_sample')return json(await saveSample(scope.owner_id,b));
@@ -133,7 +140,7 @@ export async function POST(req:Request){
  if(b.action==='media_candidates')return json(await recordMediaCandidates(id,b));
  if(b.action==='data_import_relation')return json(await saveRelation('',b));
  if(b.action==='data_import_report')return json(await saveVideo(null,{...b,publication_source:text(b.publication_source,2000)}));
- if(b.action==='promo_list')return json(await listPromos(id));
+ if(b.action==='promo_list')return json(b.package_id?await readPromoForDelivery(id,text(b.package_id,100)):b.view==='history'?await listPromos(id,requestOwner||undefined,{historySummary:true}):await listPromos(id));
  if(b.action==='promo_claim')return json(await claimPromo(text(b.package_id,100),text(b.invocation_id,120)));
  if(b.action==='promo_recover')return json(await recoverPromo(text(b.package_id,100),text(b.invocation_id,120),b.failure_receipt,b.completed_result_receipt,b.legacy_text_continuation_receipt));
  if(b.action==='promo_complete')return json(await completePromo(text(b.package_id,100),text(b.lease_token,200),b.content,b.receipt));

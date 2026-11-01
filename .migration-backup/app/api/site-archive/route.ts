@@ -1,3 +1,4 @@
+import {readCoverThumbnail} from '@/lib/site-cover-thumbnail';
 import {getSiteArchiveMetadata,openSiteArchiveForRead} from '@/lib/site-file-archive';
 import {requirePrivateMediaIdentity,requirePrivateMediaOwner} from '@/lib/private-media-access';
 import {ProductionError,text} from '@/lib/production-contract';
@@ -35,6 +36,7 @@ async function serve(req:Request,head:boolean){
    return new Response(bytes,{headers});
   }
   const opened=await openSiteArchiveForRead(id,sid,owner),archive=opened.archive,file=archive.file,size=file.size_bytes;
+  if(!head&&url.searchParams.get('preview')==='1'&&url.searchParams.get('download')!=='1'&&!req.headers.has('range')){try{const thumb=await readCoverThumbnail(id,archive);if(thumb)return new Response(Uint8Array.from(thumb).buffer,{headers:{...privateHeaders,'Content-Type':'image/webp','Content-Length':String(thumb.length),'X-Source-Asset-SHA256':file.sha256}});}catch{/* Original remains the safe fallback. */}}
   const disposition=file.mime_type==='application/zip'||file.mime_type==='text/plain'||file.mime_type==='image/png'&&url.searchParams.get('download')==='1'?'attachment':'inline';
   const headers={...privateHeaders,'Content-Type':file.mime_type+(file.mime_type==='text/plain'?'; charset=utf-8':''),'Content-Disposition':disposition+"; filename*=UTF-8''"+encodedName(file.file_name),'Content-Length':String(size),'Accept-Ranges':'bytes','X-Asset-SHA256':file.sha256};
   const rangeHeader=req.headers.get('range');let range:{offset:number;length:number}|undefined;
