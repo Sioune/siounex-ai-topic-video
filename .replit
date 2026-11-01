@@ -43,3 +43,7 @@ timeoutMs = 20000
 
 [userenv.development]
 STUDIO_OWNER_ID = "user_3LLouN3fBlzDxcVcX9ICjtfZa0n"
+
+[userenv.production]
+STUDIO_OWNER_ID = "user_3LLouN3fBlzDxcVcX9ICjtfZa0n"
+STUDIO_OWNER_PRODUCTION_AUTH_ID = "user_3LV003GAkalyN2Z5mdG59Gg1Qbd"

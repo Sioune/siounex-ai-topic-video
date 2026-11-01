@@ -5,7 +5,7 @@ import path from 'node:path';
 
 const { outputFiles } = await build({
   stdin: {
-    contents: `export {handleCollectionMcp} from './src/imported/lib/data-collection-mcp.mts'; export {isStudioOwner,resolveStudioOwner} from './src/lib/studio-owner.ts'; export {setUser} from './src/imported/app/chatgpt-auth';`,
+    contents: `export {handleCollectionMcp} from './src/imported/lib/data-collection-mcp.mts'; export {isStudioOwner,resolveStudioOwner,resolveConfiguredStudioOwner} from './src/lib/studio-owner.ts'; export {setUser} from './src/imported/app/chatgpt-auth';`,
     resolveDir: path.resolve(import.meta.dirname, '..'),
   },
   bundle: true, write: false, platform: 'node', format: 'esm',
@@ -14,7 +14,7 @@ const { outputFiles } = await build({
     b.onLoad({ filter: /.*/, namespace: 'fixture' }, () => ({ contents: 'let user=null; export function setUser(value){user=value}; export async function getChatGPTUser(){return user}' }));
   } }],
 });
-const { handleCollectionMcp, isStudioOwner, resolveStudioOwner, setUser } = await import('data:text/javascript;base64,' + Buffer.from(outputFiles[0].text).toString('base64'));
+const { handleCollectionMcp, isStudioOwner, resolveStudioOwner, resolveConfiguredStudioOwner, setUser } = await import('data:text/javascript;base64,' + Buffer.from(outputFiles[0].text).toString('base64'));
 function request(name, args = {}, spoof = false) {
   return new Request('https://studio.invalid/mcp', {
     method: 'POST',
@@ -33,6 +33,15 @@ test('Clerk bridge preserves data ownership ID and derives display fields from c
   assert.equal(resolveStudioOwner({ userId: 'legacy-id', sub: 'user_native', firstName: 'Owner', email: 'owner@example.invalid' }, 'legacy-id').userId, 'legacy-id');
   assert.equal(resolveStudioOwner({ userId: 'attacker', sub: 'legacy-id' }, 'legacy-id'), null);
   assert.equal(resolveStudioOwner({ userId: 'owner' }, undefined), null);
+});
+test('production login identity maps to the existing data owner without changing data ownership', () => {
+  const config = { NODE_ENV: 'production', STUDIO_OWNER_ID: 'existing-data-owner', STUDIO_OWNER_PRODUCTION_AUTH_ID: 'production-clerk-user' };
+  assert.equal(resolveConfiguredStudioOwner({ userId: 'production-clerk-user' }, config).userId, 'existing-data-owner');
+  assert.equal(resolveConfiguredStudioOwner({ userId: 'production-clerk-user' }, { ...config, NODE_ENV: 'development' }), null);
+  assert.equal(resolveConfiguredStudioOwner({ userId: 'existing-data-owner' }, config), null);
+  assert.equal(resolveConfiguredStudioOwner({ userId: 'production-clerk-user' }, { NODE_ENV: 'production', STUDIO_OWNER_ID: 'existing-data-owner' }), null);
+  assert.equal(resolveConfiguredStudioOwner({ userId: 'production-clerk-user' }, { NODE_ENV: 'production', STUDIO_OWNER_PRODUCTION_AUTH_ID: 'production-clerk-user' }), null);
+  assert.equal(resolveConfiguredStudioOwner({ userId: 'attacker', sub: 'production-clerk-user' }, config), null);
 });
 test('MCP reads and mutations derive ownership from the session, not legacy headers', async () => {
   const calls = [];

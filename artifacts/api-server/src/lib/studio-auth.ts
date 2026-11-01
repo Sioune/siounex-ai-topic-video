@@ -1,7 +1,7 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { getAuth } from '@clerk/express';
 import { Router, type Request, type RequestHandler } from 'express';
-import { resolveStudioOwner } from './studio-owner';
+import { resolveConfiguredStudioOwner } from './studio-owner';
 
 export const requestIdentity = new AsyncLocalStorage<any>();
 export const authRouter = Router();
@@ -15,7 +15,7 @@ export function authenticatedUser(req: Request) {
   }
   const auth = getAuth(req);
   if (!auth.userId) return null;
-  return resolveStudioOwner(auth.sessionClaims, process.env.STUDIO_OWNER_ID);
+  return resolveConfiguredStudioOwner(auth.sessionClaims, process.env);
 }
 
 export const requireStudioOwner: RequestHandler = (req, res, next) => {
