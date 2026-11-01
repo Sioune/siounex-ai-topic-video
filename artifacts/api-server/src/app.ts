@@ -7,6 +7,8 @@ import { importedRouter } from "./routes/imported";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
+import { publishingServiceAuth } from "./lib/publishing-service-auth";
+import publishingV1Router from "./routes/publishing-v1";
 import { codexExecutorBridgeMiddleware, issueCodexExecutorGrant, revokeCodexExecutorGrant } from "./lib/codex-executor-bridge";
 import {
   approveCodexExecutorJob, codexExecutorDeviceMiddleware, issueCodexExecutorPairing,
@@ -44,6 +46,8 @@ app.use(express.raw({ type: () => true, limit: "32mb" }));
 app.post("/api/executor", codexExecutorBridgeMiddleware);
 app.post("/api/codex-executor/agent/pair", pairCodexExecutorDevice);
 app.post("/api/codex-executor/agent/poll", codexExecutorDeviceMiddleware, pollCodexExecutorJobs);
+// Independent machine identity; never forward its bearer credential to Clerk.
+app.use("/api/v1/publishing", publishingServiceAuth, publishingV1Router);
 const clerkSession = clerkMiddleware((req) => ({
     publishableKey: publishableKeyFromHost(
       getClerkProxyHost(req) ?? "",

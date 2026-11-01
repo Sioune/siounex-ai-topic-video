@@ -48,6 +48,10 @@ On the Windows machine with the existing Codex CLI and this repository synced an
 
 Do not paste the temporary token into chat, save it in source, or run commands other than the displayed bounded executor. If the local Codex run fails or its result is uncertain, inspect the task and receipts before retrying.
 
+## Publishing service bridge
+
+The initial `/api/v1/publishing` bridge is machine-only and read-only. It accepts a high-entropy `SERVICE_TOKEN` (at least 32 characters) only over HTTPS, rejects browser-origin requests, and derives the sole data owner from the existing database rather than request fields. `GET /tasks?state=ready` lists only queued publishing work for a currently connected, publishing-enabled account; `GET /tasks/:id/package` rereads the exact current approved package and rejects stale work. It does not claim tasks, publish, write events/receipts, or permit metrics writes. Until those operations have an agreed idempotency/lease contract and separate regression tests, all non-read requests return 405. Never expose this token to browser code or forward it to Clerk.
+
 ## Source and implementation
 
 - `.migration-backup/` — original upstream source snapshot and operational instructions; excluded from deployment. Last synchronized from `Sioune/siounex-ai-topic-video` at `8727d4c` (see `.upstream-revision`). Upstream updates must also be reconciled into the active artifact copies; a raw Git pull does not update those copies.
