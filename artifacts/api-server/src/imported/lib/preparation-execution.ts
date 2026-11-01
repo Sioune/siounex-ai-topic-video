@@ -1,6 +1,6 @@
 import{db}from'./store';import{getJob}from'./production';import{scopeBinding}from'./media-continuation-contract';import{hash,text,ProductionError}from'./production-contract';
 export async function recordPreparationExecution(id:string,b:Record<string,unknown>){
- if(id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw new ProductionError('Protected video job excluded',403);
+ if(id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05')throw new ProductionError('Protected video job excluded',403);
  const j=await getJob(id),binding=scopeBinding(j),scope=j.media_continuation?.scope;
  if(j.status!=='approved'||j.approved_revision!==j.revision||JSON.stringify(b.binding)!==JSON.stringify(binding)||!scope||JSON.stringify(scope.binding)!==JSON.stringify(binding))throw new ProductionError('准备执行须绑定当前批准稿和有效准备范围',409);
  const m=b.manifest as Record<string,any>,file=text(b.file,500),digest=text(b.manifest_sha256,64),prefix='.sites-runtime/authorized-inputs/'+id+'/revision-'+j.revision+'/';

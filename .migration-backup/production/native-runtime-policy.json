@@ -1,8 +1,12 @@
 {
   "schema": "owner-private-native-production-runtime-v1",
-  "project_id": "appgprj_6ac65bafa2a48191a4283cb34ebd5e11",
-  "owner_anchor_job_id": "job_b98cdfdf-7c37-438c-890c-3463bd42d7ed",
+  "project_id": "appgprj_8f3ab93a1fb6107ad01eef60d3bb28f2",
+  "owner_anchor_job_id": "job_ea5571a3-1437-4d09-acd1-ad576666b7a6",
   "allowed_actions": [
+    "owner_node_mode_all",
+    "owner_feedback_continue",
+    "owner_video_feedback_continue",
+    "owner_feedback_review_continue",
     "studio_preview_generation_read",
     "studio_preview_generation_effect",
     "studio_preview_generation_claim",
@@ -15,6 +19,7 @@
     "automatic_clone_preflight",
     "automatic_clone_quote",
     "automatic_clone_read",
+    "automatic_clone_render_job_read",
     "automatic_clone_render_progress",
     "automatic_clone_terminal_failure",
     "checkpoint",
@@ -70,6 +75,14 @@
     "review_output_recover",
     "review_recover",
     "review_result",
+    "retry",
+    "owner_text_review_retry",
+    "owner_text_review_output_recover",
+    "wip_video_start",
+    "wip_video_part",
+    "wip_video_finish",
+    "wip_video_read",
+    "wip_video_read_part",
     "series_refresh_legacy_history",
     "site_archive_confirm",
     "site_archive_finalize",
@@ -77,17 +90,31 @@
     "site_archive_read_part",
     "site_archive_start",
     "source_input_block",
-    "submit"
+    "submit",
+    "cover_candidate_start",
+    "cover_candidate_part",
+    "cover_candidate_finish",
+    "cover_candidate_read",
+    "cover_candidate_read_part",
+    "site_cover_source_part",
+    "site_cover_thumbnail_put",
+    "site_cover_worker_claim",
+    "site_cover_worker_next",
+    "site_cover_worker_finish"
   ],
   "global_actions": [
     "dispatch_next",
     "research_next",
     "executor_status",
-    "executor_heartbeat"
+    "executor_heartbeat",
+    "owner_node_mode_all",
+    "site_cover_worker_claim",
+    "site_cover_worker_next",
+    "site_cover_worker_finish"
   ],
   "human_approval_actions": false,
   "publication_actions": false,
   "new_job_creation": false,
   "automatic_mutation_retry": false,
-  "executor_release": "workstation-flow-v24"
+  "executor_release": "workstation-flow-v31"
 }

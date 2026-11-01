@@ -33,7 +33,7 @@ export function readMaterialInputs({job,binding,root=process.cwd()}={}){
   const data=fs.readFileSync(file);if(data.length!==item.size_bytes||sha(data)!==item.sha256)fail('MATERIAL_INPUT_BYTES_CHANGED');
   return {...item,file};
  });
- validateMaterialCoverage(value.material_coverage,{job_id:job.id,binding:expected,storyboard,media});
+ validateMaterialCoverage(value.material_coverage,{job_id:job.id,binding:expected,storyboard,media,human_review:job.review_mode==='node'});
  let alignment=null;if(value.material_caption_alignment){const ref=value.material_caption_alignment,file=path.resolve(base,ref.file),relative=path.relative(scope,file);if(!relative||path.isAbsolute(relative)||relative.startsWith('..'+path.sep)||relative==='..'||fs.lstatSync(file).isSymbolicLink()||sha(fs.readFileSync(file))!==ref.sha256)fail('MATERIAL_INPUT_CAPTION_ALIGNMENT_CHANGED');alignment={file,sha256:ref.sha256};}
  const title=typeof value.short_title==='string'&&value.short_title.trim()&&Array.from(value.short_title).length<=16?value.short_title:null;
  return {media,material_coverage:value.material_coverage,visual_plan:value.visual_plan||null,automatic_editing:value.automatic_editing||null,short_title:title,material_caption_alignment:alignment,material_set_hash:sha(canonical({media:value.media,material_coverage:value.material_coverage,visual_plan:value.visual_plan||null,material_caption_alignment:alignment})),manifest_file:manifest,manifest_sha256:sha(bytes)};

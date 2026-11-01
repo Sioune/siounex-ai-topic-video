@@ -42,8 +42,13 @@ test('a normal catalog reserves ten seconds inside the original two-minute deadl
 });
 
 test('an actual close beyond the old two-second cleanup window is confirmed within the same bounded attempt',async t=>{
- let terminationOptions;const started=Date.now(),f=fixture(t,{onEnd({child,close}){child.emit('exit',0,null);setTimeout(close,2250);},onTerminate(owned,options){assert.equal(owned,f.child);terminationOptions=options;return{...safeTermination,timeout_ms:options.timeout_ms};}}),r=await runNativeSpeechRead({...f.options,deadline_ms:started+7000}),p=receipt(f),s=p.shutdown_facts;
- assert.equal(r.verified,true);assert.equal(r.diagnostic.code,'NATIVE_SPEECH_TOOL_VERIFIED');assert.ok(Date.now()-started>=2200);assert.ok(Date.now()<=started+7000);assert.equal(f.terminated.length,1);assert.ok(terminationOptions.timeout_ms>1500&&terminationOptions.timeout_ms<=3000);assert.equal(s.termination.method,'taskkill-owned-tree');assert.equal(s.termination.helper_exit_code,0);assert.ok(Date.parse(s.child_close_at)-Date.parse(s.child_exit_at)>=2200);assert.equal(s.cleanup_confirmed,true);assert.equal(p.shutdown,'owned-child-stopped');assert.equal(p.result_unknown,false);assert.equal(exactReads(f).length,2);assert.equal(f.spawns.length,1);safeFiles(f,r);
+ let terminationOptions;const started=Date.now(),f=fixture(t,{onEnd({child,close}){child.emit('exit',0,null);setTimeout(close,2500);},onTerminate(owned,options){assert.equal(owned,f.child);terminationOptions=options;return{...safeTermination,timeout_ms:options.timeout_ms};}}),r=await runNativeSpeechRead({...f.options,deadline_ms:started+7000}),p=receipt(f),s=p.shutdown_facts;
+ assert.equal(r.verified,true);assert.equal(r.diagnostic.code,'NATIVE_SPEECH_TOOL_VERIFIED');assert.ok(Date.now()-started>=2450);assert.ok(Date.now()<=started+7000);assert.equal(f.terminated.length,1);assert.ok(terminationOptions.timeout_ms>1500&&terminationOptions.timeout_ms<=3000);assert.equal(s.termination.method,'taskkill-owned-tree');assert.equal(s.termination.helper_exit_code,0);assert.ok(Date.parse(s.child_close_at)-Date.parse(s.child_exit_at)>=2450);assert.equal(s.cleanup_confirmed,true);assert.equal(p.shutdown,'owned-child-stopped');assert.equal(p.result_unknown,false);assert.equal(exactReads(f).length,2);assert.equal(f.spawns.length,1);safeFiles(f,r);
+});
+
+test('a normal delayed EOF close avoids starting the Windows terminator',async t=>{
+ const f=fixture(t,{onEnd({close}){setTimeout(close,1800);}}),r=await runNativeSpeechRead({...f.options,deadline_ms:Date.now()+20000}),p=receipt(f);
+ assert.equal(r.verified,true);assert.equal(f.terminated.length,0);assert.equal(p.shutdown_facts.termination_requested_at,null);assert.equal(p.shutdown_facts.cleanup_confirmed,true);assert.equal(p.result_unknown,false);assert.equal(exactReads(f).length,2);safeFiles(f,r);
 });
 
 test('an exit without close remains unknown despite two successful RPCs and a completed owned-tree terminator',async t=>{

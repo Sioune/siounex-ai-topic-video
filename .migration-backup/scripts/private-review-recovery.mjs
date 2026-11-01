@@ -7,7 +7,7 @@ import fs from 'node:fs';import path from 'node:path';import {createHash} from '
 const sha=b=>createHash('sha256').update(b).digest('hex'),digest=/^[a-f0-9]{64}$/,queue=/^native_prep_[a-f0-9]{64}$/;
 const canonical=v=>JSON.stringify(v,(_,x)=>x&&typeof x==='object'&&!Array.isArray(x)?Object.fromEntries(Object.keys(x).sort().map(k=>[k,x[k]])):x);
 const fail=code=>{throw Object.assign(Error(code),{code})};
-const excluded=new Set(['job_3c14fe6f-44b0-472c-8455-e75040b695bb','job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee','job_9ef39025-d92e-4770-82d0-05881451c5df']);
+const excluded=new Set(['job_3fc559eb-354e-48e3-a718-8a89b2e6e170','job_e13e8b19-aa0a-4840-abc9-333eefc91b05','job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf']);
 const portable=p=>p.split(path.sep).join('/');
 function checkedTree(root,directory){
  const relative=path.relative(root,directory);if(!relative||path.isAbsolute(relative)||relative==='..'||relative.startsWith('..'+path.sep))fail('PRIVATE_RECOVERY_DIRECTORY_OUTSIDE_ROOT');

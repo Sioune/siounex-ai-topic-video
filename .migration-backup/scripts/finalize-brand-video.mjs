@@ -1,7 +1,7 @@
 import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} from 'node:url';
 import policy from '../production/corner-bug-policy.json' with {type:'json'};
 import {command as run,probe as probeFile} from './media-adapter.mjs';
-import {concatPinnedVideoFrames} from '../production/unified-runtime/concat-video.mjs';
+import {concatPinnedVideoFrames} from '../production/unified-runtime/concat-video-resume.mjs';
 import {motionSha as sha} from '../lib/content-motion-contract.mts';
 const base=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),json=f=>JSON.parse(fs.readFileSync(f)),fail=c=>{throw Object.assign(Error(c),{code:c})};
 const hash=f=>sha(fs.readFileSync(f)),esc=s=>String(s).replaceAll('\\','/').replaceAll(':','\\:').replaceAll("'","\\'");

@@ -4,7 +4,7 @@ import type {EmptySlotMakeupGrant} from './publishing-contract.mts';
 // to fill a missed slot. Times use the real clock at the service boundary.
 export const EMPTY_SLOT_MAKEUP_POLICIES=[
  {scheduled_at:'2026-10-22T10:00:00.000Z',last_start:'2026-10-22T15:00:00.000Z',target_at:null,end:null,job_id:null,release_id:null,instruction:'片仓已有库存，现在开始启动本来应该今晚18点的发布'},
- {scheduled_at:'2026-10-23T10:00:00.000Z',last_start:'2026-10-23T12:05:00.000Z',target_at:'2026-10-23T12:00:00.000Z',end:'2026-10-23T12:05:00.000Z',job_id:'job_b98cdfdf-7c37-438c-890c-3463bd42d7ed',release_id:'pr_47e4c78f8070a17fb8989e8e19565d9d2df1f0dc54a27cb9494c0de6ef760ac7',instruction:'2026-10-23黄仁勋人工审核通过后20:00补发'},
+ {scheduled_at:'2026-10-23T10:00:00.000Z',last_start:'2026-10-23T12:05:00.000Z',target_at:'2026-10-23T12:00:00.000Z',end:'2026-10-23T12:05:00.000Z',job_id:'job_ea5571a3-1437-4d09-acd1-ad576666b7a6',release_id:'pr_47e4c78f8070a17fb8989e8e19565d9d2df1f0dc54a27cb9494c0de6ef760ac7',instruction:'2026-10-23黄仁勋人工审核通过后20:00补发'},
 ] as const;
 export const emptyMakeupPolicy=(scheduled:string)=>EMPTY_SLOT_MAKEUP_POLICIES.find(p=>p.scheduled_at===scheduled);
 export const emptyMakeupSubmissionStart=(g:EmptySlotMakeupGrant)=>g.submission_starts_at||g.created_at;

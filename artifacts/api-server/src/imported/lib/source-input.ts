@@ -4,7 +4,7 @@ import {hash,text,ProductionError} from './production-contract';
 
 import {SOURCE_INPUT_REQUIRED,sourceDiagnostic,latestSourceBlock} from './source-input-contract.mts';
 export {SOURCE_INPUT_REQUIRED};
-const protectedJob='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee';
+const protectedJob='job_e13e8b19-aa0a-4840-abc9-333eefc91b05';
 type Job=Awaited<ReturnType<typeof getJob>>;
 function binding(j:Job){return {revision:j.revision,mode_epoch:j.mode_epoch,contract_hash:j.contract_hash,source_snapshot_hash:null as string|null};}
 async function expected(j:Job,b:Record<string,unknown>){

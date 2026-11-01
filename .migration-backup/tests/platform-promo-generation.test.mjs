@@ -25,13 +25,49 @@ function fixture(t){
  sql.prepare("INSERT INTO production_jobs(id,topic_id,owner_id,is_test,status,source_snapshot,skill_snapshot,contract_hash,revision,approved_revision,approved_hash,mode_epoch,created_at,updated_at) VALUES (?,'SYNTHETIC-topic',?,1,'approved','{}','{}','SYNTHETIC',1,1,?,0,?,?)").run(JOB,OWNER,hash,at,at);
  sql.prepare("INSERT INTO production_drafts(job_id,revision,submission_id,content,content_hash,executor,created_at) VALUES (?,1,'SYNTHETIC-draft',?,?,'SYNTHETIC',?)").run(JOB,draft,hash,at);
  const job={id:JOB,status:'approved',revision:1,mode_epoch:0,updated_at:at,source_snapshot:JSON.stringify({facts:['SYNTHETIC official simulation only']}),skill_snapshot:JSON.stringify({sha256:'e'.repeat(64)}),drafts:[{revision:1,content:draft,content_hash:hash}],reviews:[],milestones:[]};
- class Statement{constructor(q,args=[]){this.q=q;this.args=args}bind(...args){return new Statement(this.q,args)}async first(){return sql.prepare(this.q).get(...this.args)||null}async all(){return {results:sql.prepare(this.q).all(...this.args)}}async run(){return {meta:{changes:Number(sql.prepare(this.q).run(...this.args).changes)}}}}
- const f={sql,job,owner:OWNER,db:{prepare:q=>new Statement(q)}};globalThis.__promoGeneration=f;t.after(()=>{sql.close();delete globalThis.__promoGeneration;});
+ const observedReads=[];class Statement{constructor(q,args=[]){this.q=q;this.args=args}bind(...args){return new Statement(this.q,args)}async first(){return sql.prepare(this.q).get(...this.args)||null}async all(){const results=sql.prepare(this.q).all(...this.args);observedReads.push({query:this.q,bytes:Buffer.byteLength(JSON.stringify(results))});return {results}}async run(){return {meta:{changes:Number(sql.prepare(this.q).run(...this.args).changes)}}}}
+ const f={sql,job,owner:OWNER,observedReads,db:{prepare:q=>new Statement(q)}};globalThis.__promoGeneration=f;t.after(()=>{sql.close();delete globalThis.__promoGeneration;});
  f.queue=async(request='SYNTHETIC-request')=>(await api.requestPromo(JOB,OWNER,request)).package;
  f.row=id=>sql.prepare('SELECT * FROM production_promo_packages WHERE id=?').get(id);
  f.receipt=(p,content)=>{const bound=JSON.parse(p.input_snapshot).publishing_policy,c=JSON.stringify(contentApi.validateGeneratedPromoContent(content));return {model:'gpt-5.6-sol',exit_code:0,input_sha256:sha(p.input_snapshot),content_sha256:sha(c),prompt_sha256:'f'.repeat(64),publishing_policy_version:bound.version,publishing_policy_sha256:bound.content_sha256,copy_format:contentApi.GENERATED_PROMO_FORMAT,copy_parser_version:contentApi.PROMO_COPY_PARSER_VERSION,paid_media_calls:0,publication:false};};
  return f;
 }
+
+test('history view omits unused snapshots but preserves versions, owner scope and unknown outcome',async t=>{
+ const f=fixture(t),empty=await api.listPromos(JOB,OWNER,{historySummary:true});assert.deepEqual(empty.packages,[]);assert.ok(empty.current_binding);assert.equal('input_snapshot' in empty.current_binding,false);
+ const p=await f.queue(),snapshot=JSON.parse(p.input_snapshot);snapshot.synthetic_large_context='X'.repeat(300000);f.sql.prepare("UPDATE production_promo_packages SET input_snapshot=?,status='failed',error='SYNTHETIC unknown outcome' WHERE id=?").run(JSON.stringify(snapshot),p.id);
+ f.job.mode_epoch=1;const full=await api.listPromos(JOB,OWNER),summary=await api.listPromos(JOB,OWNER,{historySummary:true});
+ assert.equal(full.packages.length,1);assert.equal(full.packages[0].is_current,false);assert.equal(full.packages[0].retry_state.result_unknown,true);assert.equal(typeof full.packages[0].input_snapshot,'string');assert.ok(full.current_binding.input_snapshot);
+ const {input_snapshot:ignored,...expected}=full.packages[0],{input_snapshot:ignoredBinding,...expectedBinding}=full.current_binding;assert.deepEqual(summary.packages,[expected]);assert.deepEqual(summary.current_binding,expectedBinding);assert.ok(JSON.stringify(summary).length<JSON.stringify(full).length/10);
+ await assert.rejects(()=>api.listPromos(JOB,'SYNTHETIC-other-owner',{historySummary:true}),/owner mismatch/);
+});
+
+test('history SQL omits bulky source fields while preserving status and original archive',async t=>{
+ const f=fixture(t),p=await f.queue(),snapshot=JSON.parse(p.input_snapshot);
+ snapshot.source={facts:['X'.repeat(300000)]};snapshot.draft={script:'Y'.repeat(100000)};snapshot.skill={content:'Z'.repeat(100000)};snapshot.video={note:'W'.repeat(100000)};
+ const saved=JSON.stringify(snapshot);f.sql.prepare("UPDATE production_promo_packages SET input_snapshot=?,status='failed',error='SYNTHETIC unknown outcome' WHERE id=?").run(saved,p.id);
+ f.observedReads.length=0;const full=await api.listPromos(JOB,OWNER);const fullRead=f.observedReads.find(x=>x.query.includes('FROM production_promo_packages WHERE job_id='));
+ f.observedReads.length=0;const summary=await api.listPromos(JOB,OWNER,{historySummary:true});const liteRead=f.observedReads.find(x=>x.query.includes('FROM production_promo_packages WHERE job_id='));
+ const {input_snapshot:ignored,...expected}=full.packages[0];assert.deepEqual(summary.packages,[expected]);assert.equal(f.row(p.id).input_snapshot,saved);assert.ok(fullRead.bytes>600000);assert.ok(liteRead.bytes<fullRead.bytes/10);
+});
+
+test('history projection preserves legacy missing fields and malformed input failures',async t=>{
+ const f=fixture(t),p=await f.queue(),snapshot=JSON.parse(p.input_snapshot);delete snapshot.mode_epoch;delete snapshot.contract_hash;delete snapshot.publishing_policy;
+ f.sql.prepare('UPDATE production_promo_packages SET input_snapshot=? WHERE id=?').run(JSON.stringify(snapshot),p.id);
+ const full=await api.listPromos(JOB,OWNER),lite=await api.listPromos(JOB,OWNER,{historySummary:true});const {input_snapshot:ignored,...expected}=full.packages[0];assert.deepEqual(lite.packages,[expected]);assert.equal(lite.packages[0].generation_policy,'legacy');
+ f.sql.prepare('UPDATE production_promo_packages SET input_snapshot=? WHERE id=?').run('{invalid',p.id);
+ let fullError,liteError;try{await api.listPromos(JOB,OWNER)}catch(e){fullError=e}try{await api.listPromos(JOB,OWNER,{historySummary:true})}catch(e){liteError=e}assert.ok(fullError instanceof SyntaxError);assert.ok(liteError instanceof SyntaxError);assert.equal(liteError.message,fullError.message);
+});
+
+test('multi-version list reuses one binding and current policy while checking every version',async t=>{
+ const f=fixture(t),p=await f.queue(),base=f.row(p.id);f.sql.prepare("UPDATE production_promo_packages SET status='failed',error='SYNTHETIC unknown' WHERE id=?").run(p.id);
+ const cols=Object.keys(base),insert=f.sql.prepare('INSERT INTO production_promo_packages ('+cols.map(c=>'"'+c+'"').join(',')+') VALUES ('+cols.map(()=>'?').join(',')+')');
+ for(let i=2;i<=6;i++){const row={...base,id:'SYNTHETIC-history-'+i,version:i,request_id:'SYNTHETIC-request-'+i,status:'failed',error:'SYNTHETIC unknown'};const snapshot=JSON.parse(row.input_snapshot);if(i===5)delete snapshot.publishing_policy;if(i===6)snapshot.publishing_policy.version='SYNTHETIC-obsolete';if(i===4)snapshot.mode_epoch=999;row.input_snapshot=JSON.stringify(snapshot);insert.run(...cols.map(c=>row[c]));}
+ const subtle=crypto.subtle,original=subtle.digest;let calls=0;subtle.digest=function(...args){calls++;return original.apply(this,args)};let result;try{result=await api.listPromos(JOB,OWNER,{historySummary:true})}finally{subtle.digest=original}
+ assert.equal(result.packages.length,6);assert.equal(calls,6,'one binding hash, one current-policy hash, and one per valid saved policy');
+ const byVersion=new Map(result.packages.map(row=>[row.version,row]));assert.equal(byVersion.get(4).is_current,false);assert.equal(byVersion.get(5).generation_policy,'legacy');assert.equal(byVersion.get(6).generation_policy,'mismatch');for(const row of result.packages)assert.equal(row.retry_state.result_unknown,true);
+ const full=await api.listPromos(JOB,OWNER);for(const row of full.packages){const {input_snapshot:ignored,...expected}=row;assert.deepEqual(byVersion.get(row.version),expected)}
+});
 
 test('new generated content requires five independent platform sections and retains video-channel compatibility',()=>{
  const c=contentApi.validateGeneratedPromoContent(sample());assert.equal(contentApi.promoContentFormat(c),'five-platform-specific-v1');assert.equal(c.description,sample().description);assert.equal(contentApi.promoContentFormat(legacy()),'legacy');assert.doesNotThrow(()=>contentApi.validatePromoContent(legacy()));

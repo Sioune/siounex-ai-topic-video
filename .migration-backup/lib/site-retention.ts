@@ -1,3 +1,4 @@
+import {coverThumbnailKey} from './site-cover-thumbnail';
 import {completedOwnerPostVideoDelivery,ownerPostVideoTarget} from './owner-post-video-approval-contract.mts';
 import {editorialMutationGuard,type EditorialAuthorization} from './owner-editorial-delivery-contract.mts';
 import {nativeScopeContext} from './native-return-context';
@@ -25,7 +26,7 @@ type PostSnapshot={schema:'owner-post-video-retention-snapshot-v1';source:string
 type Snapshot={revision:number;approved_hash:string;mode_epoch:number;contract_hash:string;updated_at:string;nodes_raw:string;post_video?:PostSnapshot};
 type Candidate={site_archive_id:string;sha256:string;size_bytes:number;role:string;current_archive_id:string;raw_hash:string;keys:string[];removed:string[];done:boolean};
 type Plan={schema:'site-retention-plan-v1';plan_id:string;job_id:string;owner_id:string;policy_id:string;policy_raw:string;request_id:string;request_hash:string;status:'pending'|'partial'|'complete'|'failed'|'protected';snapshot:Snapshot;keep:Record<string,string>;candidates:Candidate[];protected:{site_archive_id:string;reason:string}[];created_at:string;updated_at:string;step?:number;last_error?:string;lease_token?:string;lease_until?:number;dependency_proof?:Record<string,unknown>};
-async function ownerOf(id:string,actor:RetentionActor){if(!/^job_[a-f0-9-]{36}$/.test(id)||id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw new ProductionError('此任务不支持旧成果清理',403);const r=await db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?').bind(id).first<{owner_id:string;is_test:number}>();if(!r?.owner_id||r.is_test||!actor||('owner_id'in actor?actor.owner_id!==r.owner_id:actor.trusted_owner_service!==true))throw new ProductionError('仅真实任务本人可管理归档保留',403);return r.owner_id;}
+async function ownerOf(id:string,actor:RetentionActor){if(!/^job_[a-f0-9-]{36}$/.test(id)||id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05')throw new ProductionError('此任务不支持旧成果清理',403);const r=await db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?').bind(id).first<{owner_id:string;is_test:number}>();if(!r?.owner_id||r.is_test||!actor||('owner_id'in actor?actor.owner_id!==r.owner_id:actor.trusted_owner_service!==true))throw new ProductionError('仅真实任务本人可管理归档保留',403);return r.owner_id;}
 async function policyFor(owner:string){const row=await db().prepare('SELECT value FROM app_state WHERE key=?').bind(policyKey(owner)).first<{value:string}>();if(!row)return null;const p=JSON.parse(row.value) as Policy;if(p.owner_id!==owner||p.schema!=='current-final-retention-policy-v1'||p.rule!=='current-final-per-role')throw new ProductionError('保留政策归属无效',409);return{p,raw:row.value};}
 async function audit(id:string,decision:string,note:unknown,key:string){const raw=canonical(note);await db().prepare('INSERT INTO production_reviews(id,job_id,revision,content_hash,decision,note,reviewer,created_at) SELECT ?,id,revision,?,?,?,\'verified-site-retention\',? FROM production_jobs WHERE id=? ON CONFLICT(id) DO NOTHING').bind(key,digest(raw),decision,raw,at(),id).run();}
 async function writePlan(stmt:D1PreparedStatement){try{return await stmt.run()}catch(e){const err=e instanceof Error?e:null,cause=err?.cause;console.error('site-retention-plan-write',{message:err?.message?.slice(0,500),cause:cause instanceof Error?cause.message.slice(0,500):undefined});throw e}}
@@ -119,6 +120,9 @@ export async function applySiteRetention(id:string,b:Record<string,unknown>,acto
    await assertGuard(p);
    if(await sharedReference(id,p.owner_id,item.site_archive_id))throw new ProductionError('删除前发现新的共享输入，已停止清理',409);
    const bucket=siteArchiveBucket(),keys=item.keys.filter(k=>!item.removed.includes(k)).slice(0,max);
+   // Delete previews even for plans created before thumbnail support. A racing
+   // writer rechecks the tombstone after upload and removes its own result.
+   if(item.role==='cover_3_4'||item.role==='cover_4_3'){const preview=coverThumbnailKey(id,item.site_archive_id,item.role,item.sha256);await bucket.delete(preview);if(await bucket.head(preview))throw new ProductionError('封面预览物理删除尚未确认',503);}
    if(keys.length)await bucket.delete(keys);
    for(const key of keys)if(await bucket.head(key))throw new ProductionError('物理删除尚未验证缺失',503);
    item.removed.push(...keys);

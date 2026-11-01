@@ -8,7 +8,7 @@ type AutomaticJob=Parameters<typeof preparationRegistrationBinding>[0]&{review_m
 // An explicit preparation-only owner choice, cancellation or unknown execution
 // is never silently upgraded by this compatibility repair.
 export function automaticPrivatePreparationBinding(j:AutomaticJob,owner:string,nativeRaw:string|null=null){
- if((j.review_mode!=='auto'&&!approvedScriptProductionCandidate(j))||PREPARATION_REGISTRATION_EXCLUSIONS.some(id=>id===j.id)&&!legacyApprovedProductionCandidate(j)||j.id==='job_3c14fe6f-44b0-472c-8455-e75040b695bb')return null;
+ if((j.review_mode!=='auto'&&!approvedScriptProductionCandidate(j))||PREPARATION_REGISTRATION_EXCLUSIONS.some(id=>id===j.id)&&!legacyApprovedProductionCandidate(j)||j.id==='job_3fc559eb-354e-48e3-a718-8a89b2e6e170')return null;
  if(!preparationOnlyNativeState(j,nativeRaw,owner))return null;
  if(preparationRegistrationBinding(j,owner))return scopeBinding(j);
  const s=j.media_continuation?.scope;

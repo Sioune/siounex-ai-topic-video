@@ -18,7 +18,7 @@ export async function runProductionWorkflow(config,{call,review=reviewText,gener
   if(config.reconcile_review_output===true){const budget=workflowStageBudget('reconciliation',deadline,now());if(!budget.can_start)return workflowBudgetDeferred(j,'reconciliation',budget);const ms=reviewOutputRecoveryCandidate(j);if(!ms)throw Error('COMPLETED_REVIEW_CURRENT_RECOVERY_SCOPE_INVALID');const report=await review({milestone:ms,job:j,sources,imageFile:config.cover_file,reconcileOutputOnly:true,foreground_deadline_ms:deadline}),proof=report.completed_output_recovery;const lease=await call({action:'review_output_recover',id:j.id,milestone_id:ms.id,proof});await call({action:'review_result',id:j.id,milestone_id:ms.id,revision:ms.revision,artifact_hash:ms.artifact_hash,mode_epoch:ms.mode_epoch,review_token:lease.review_token,decision:report.decision,report});return {workflow_result:true,status:'completed-review-output-reconciled',job_id:j.id,milestone_id:ms.id,new_model_calls:0};}
   const transport=cliTransportRecoveryCandidate(j,now());if(transport){await call({action:'cli_transport_resume',id:j.id,binding:transport});continue;}
   if(j.status==='waiting_executor'||j.status==='running'&&Number(j.lease_until)<now()){
-   if(!cliContentBudget(j).generation_available||j.reworks>2)return {workflow_result:true,status:'budget-exhausted',job_id:j.id};
+   if(!cliContentBudget(j).generation_available)return {workflow_result:true,status:'budget-exhausted',job_id:j.id};
    const budget=workflowStageBudget('generation',deadline,now());if(!budget.can_start)return workflowBudgetDeferred(j,'generation',budget);
    await generateText({...config,submission_id:`workflow-${j.mode_epoch}-revision-${j.revision+1}`});continue;
   }

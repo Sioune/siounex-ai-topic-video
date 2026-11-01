@@ -13,7 +13,7 @@ const jobId=/^job_[a-f0-9-]{36}$/;
 const digest=/^[a-f0-9]{64}$/;
 const queueId=/^native_prep_[a-f0-9]{64}$/;
 const schema='native-editor-preparation-plan-v1';
-const excluded=new Set(['job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee','job_9ef39025-d92e-4770-82d0-05881451c5df']);
+const excluded=new Set(['job_e13e8b19-aa0a-4840-abc9-333eefc91b05','job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf']);
 const fail=(code)=>{throw Object.assign(Error(code),{code})};
 const parse=value=>typeof value==='string'?JSON.parse(value):value;
 const inside=(root,file)=>{const rel=path.relative(root,file);return rel!==''&&!path.isAbsolute(rel)&&rel!=='..'&&!rel.startsWith('..'+path.sep)};

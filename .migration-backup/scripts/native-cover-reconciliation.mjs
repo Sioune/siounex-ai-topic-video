@@ -25,7 +25,7 @@ export function nativeCoverNoResultEvidence(dir,intent,{generatedRoot,now=Date.n
 // An unknown sibling request is not made safe by a new request/input hash.
 // Completed receipts and exact pre-provider parser rejections are checked by
 // the executor's existing provenance validators, never by model prose.
-export function inspectNativeCoverHistory(historyDir,{generatedRoot,now=Date.now(),completed,argumentRejected,expectedPrompt}={}){
+export function inspectNativeCoverHistory(historyDir,{generatedRoot,now=Date.now(),completed,argumentRejected,expectedPrompt,currentRequest}={}){
  const attempts=[];let visited=0;
  function walk(dir,packet=null){
   if(++visited>512||fs.lstatSync(dir).isSymbolicLink())failure('NATIVE_COVER_PRIOR_RESULT_RECONCILIATION_REQUIRED');
@@ -34,7 +34,7 @@ export function inspectNativeCoverHistory(historyDir,{generatedRoot,now=Date.now
    const intent=JSON.parse(read(f,50000)),r=packet?.value?.request;
    if(!r||intent.request_id!==r.request_id||intent.request_sha256!==packet.sha256||canonical(intent.binding)!==canonical(r.binding)||intent.video_sha256!==r.video_sha256||!['cover_3_4','cover_4_3'].includes(intent.role))failure('NATIVE_COVER_PRIOR_RESULT_RECONCILIATION_REQUIRED');
    if(completed?.(dir,intent))attempts.push({role:intent.role,status:'completed',finished_at:JSON.parse(read(path.join(dir,'generation-receipt.json'))).cover.generated_at});
-   else if(!argumentRejected?.(dir,intent)){const proof=nativeCoverNoResultEvidence(dir,intent,{generatedRoot,now,expectedPrompt});if(!proof)failure('NATIVE_COVER_PRIOR_RESULT_RECONCILIATION_REQUIRED');attempts.push({role:intent.role,status:'rate-limited',finished_at:proof.finished_at,proof,directory:dir});}
+   else if(!argumentRejected?.(dir,intent)){const proof=nativeCoverNoResultEvidence(dir,intent,{generatedRoot,now,expectedPrompt});if(!proof){const c=currentRequest,distinct=c&&typeof c.job_id==='string'&&c.job_id===r.job_id&&Number.isSafeInteger(c.binding?.revision)&&c.binding.revision===r.binding?.revision&&c.binding.script_hash===r.binding?.script_hash&&/^aigc_cover_[a-f0-9]{64}$/.test(c.request_id||'')&&c.request_id!==intent.request_id&&/^[a-f0-9]{64}$/.test(c.video_sha256||'')&&/^[a-f0-9]{64}$/.test(intent.video_sha256||'')&&c.video_sha256!==intent.video_sha256&&c.binding.candidate_sha256===c.video_sha256;if(!distinct)failure('NATIVE_COVER_PRIOR_RESULT_RECONCILIATION_REQUIRED');attempts.push({role:intent.role,status:'prior-video-result-unknown',request_id:intent.request_id,video_sha256:intent.video_sha256,intent_sha256:sha(read(f)),directory:dir});}else attempts.push({role:intent.role,status:'rate-limited',finished_at:proof.finished_at,proof,directory:dir});}
   }
   for(const e of fs.readdirSync(dir,{withFileTypes:true})){if(e.isSymbolicLink())failure('NATIVE_COVER_PRIOR_RESULT_RECONCILIATION_REQUIRED');if(e.isDirectory()&&(/^aigc_cover_[a-f0-9]{64}$/.test(e.name)||['cover_3_4','cover_4_3','correction-1','argument-correction-1','retry-1','retry-2'].includes(e.name)))walk(path.join(dir,e.name),packet);}
  }

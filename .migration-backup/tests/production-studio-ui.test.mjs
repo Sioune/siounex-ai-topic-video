@@ -32,7 +32,7 @@ async function mount(t,{initial=job(),fetcher,query=true,postError=null}={}){
   if(options.method==='POST'){const body=JSON.parse(options.body);writes.push(body);return postError?response({error:postError},403):response({job:current});}
   reads.push(url);if(fetcher){const value=await fetcher(url,options);if(value)return value;}
   if(url==='/api/production')return response({jobs:current?[{kind:'production-job-summary-v1',...productionWorkspacePlacement(current),id:current.id,topic_id:current.topic_id,title:JSON.parse(current.source_snapshot).title,is_test:current.is_test,status:current.status,revision:current.revision,mode_epoch:current.mode_epoch,review_mode:current.review_mode,updated_at:current.updated_at,status_label:'SYNTHETIC 当前列表状态',execution_condition:current.status,current_node:null,current_candidate:null}]:[]});
-  if(url.startsWith('/api/production?')&&(!url.includes('view=')||url.includes('view=desk')))return response({job:current});
+  if(url.startsWith('/api/production?')&&(!url.includes('view=')||url.includes('view=current')))return response({job:current});
   return response({error:'SYNTHETIC optional input is not available'},503);
  };
  const root=createRoot(document.getElementById('root'));t.after(async()=>{await act(async()=>root.unmount());globalThis.fetch=previous;});
@@ -49,7 +49,7 @@ test('current local video never mounts hidden legacy promotion; old copy loads o
  assert.ok(document.querySelector('[data-legacy-promotion-flow]').hidden);assert.equal(document.getElementById('promotion-delivery'),null);
  assert.equal(f.reads.some(url=>url.startsWith('/api/promo-delivery')),false);assert.equal(f.reads.some(url=>url.startsWith('/api/promotion?')),false);
  const summary=[...document.querySelectorAll('summary')].find(x=>x.textContent==='旧宣发文案版本与生成请求');assert.ok(summary);const details=summary.parentElement;
- await act(async()=>{details.open=true;details.dispatchEvent(new Event('toggle'));});await settle();assert.equal(f.reads.filter(url=>url.startsWith('/api/promotion?')).length,1);
+ await act(async()=>{details.open=true;details.dispatchEvent(new Event('toggle'));});await settle();const historyReads=f.reads.filter(url=>url.startsWith('/api/promotion?'));assert.equal(historyReads.length,1);assert.equal(new URL(historyReads[0],'https://synthetic.test').searchParams.get('view'),'history');
 });
 
 test('switching away from visible legacy promotion preserves unsaved edits without hidden focus reads',async t=>{
@@ -74,9 +74,9 @@ test('archived legacy promotion loads only when opened, retains edits when close
 test('compact task only loads full history when opened; stale previous task cannot replace the current history',async t=>{
  const first=job(),second=job();second.id='job_22222222-2222-2222-2222-222222222222';second.source_snapshot=JSON.stringify({title:'SECOND'});
  const snapshot=(j,word)=>({...j,skill_snapshot:JSON.stringify({word}),reviews:[{id:word,decision:'native_preparation_handoff_event',note:word}]});
- const compact=j=>{const v={...j,detail_view:'desk'};delete v.skill_snapshot;return v};let release;
+ const compact=j=>{const v={...j,detail_view:'current'};delete v.skill_snapshot;return v};let release;
  const f=await mount(t,{initial:compact(first),fetcher:url=>{if(url.startsWith('/api/production?id=')&&!url.includes('view=')){if(url.includes(first.id))return new Promise(resolve=>{release=()=>resolve(response({job:snapshot(first,'FIRST_HISTORY')}))});return response({job:snapshot(second,'SECOND_HISTORY')});}}});
- await settle();assert.ok(f.reads.some(url=>url.includes('view=desk')));assert.equal(f.reads.filter(url=>url.startsWith('/api/production?id=')&&!url.includes('view=')).length,0);
+ await settle();assert.ok(f.reads.some(url=>url.includes('view=current')));assert.equal(f.reads.filter(url=>url.startsWith('/api/production?id=')&&!url.includes('view=')).length,0);
  let summary=[...document.querySelectorAll('summary')].find(x=>x.textContent==='历史版本、审核与恢复检查点'),details=summary.parentElement;
  await act(async()=>{details.open=true;details.dispatchEvent(new Event('toggle'))});await settle();assert.match(details.textContent,/正在读取完整历史记录/);assert.ok(release);
  f.setJob(compact(second));await act(async()=>{history.pushState(null,'','/production?job='+second.id);window.dispatchEvent(new Event('popstate'))});await settle();
@@ -105,30 +105,30 @@ test('six-megabyte history uses bounded DOM pages and preserves every saved reco
 
 test('initial deferred read stays loading, then shows an honest empty state without POST',async t=>{
  let release;const fixture=await mount(t,{initial:null,query:false,fetcher:async url=>url==='/api/production'?await new Promise(resolve=>{release=resolve;}):undefined});
- assert.ok(document.querySelector('.production-loading'));assert.doesNotMatch(document.querySelector('.production-result').textContent,/选择一项任务|把一个选题带到这里/);
+ assert.ok(document.querySelector('.production-loading'));const dormant=document.querySelector('.production-empty')?.closest('[hidden]');assert.ok(dormant,'the existing subtree stays hidden while its read is pending');assert.ok(dormant.hasAttribute('inert'),'hidden content cannot receive interaction');assert.equal(document.querySelector('.production-loading').closest('[hidden]'),null);
  await act(async()=>release(response({jobs:[]})));await settle();
- assert.equal(document.querySelector('.production-loading'),null);assert.match(document.querySelector('.production-empty').textContent,/把一个选题带到这里/);assert.deepEqual(fixture.writes,[]);
+ assert.equal(document.querySelector('.production-loading'),null);const empty=document.querySelector('.production-empty');assert.equal(empty.closest('[hidden]'),null);assert.match(empty.textContent,/把一个选题带到这里/);assert.deepEqual(fixture.writes,[]);
 });
 
 test('initial list and detail start together and a slow detail does not hide the already loaded summary list',async t=>{
- const input=job();let release;const fixture=await mount(t,{initial:input,fetcher:async(url)=>url==='/api/production?id='+input.id+'&view=desk'?await new Promise(resolve=>{release=resolve;}):undefined});await settle();
- assert.ok(fixture.reads.includes('/api/production'));assert.ok(fixture.reads.includes('/api/production?id='+input.id+'&view=desk'));
+ const input=job();let release;const fixture=await mount(t,{initial:input,fetcher:async(url)=>url==='/api/production?id='+input.id+'&view=current'?await new Promise(resolve=>{release=resolve;}):undefined});await settle();
+ assert.ok(fixture.reads.includes('/api/production'));assert.ok(fixture.reads.includes('/api/production?id='+input.id+'&view=current'));
  assert.equal(document.querySelector('.production-task-items [data-task-select] strong').textContent,JSON.parse(input.source_snapshot).title);assert.equal(document.querySelector('.production-task-items [data-task-select] span').textContent,'SYNTHETIC 当前列表状态');assert.ok(document.querySelector('.production-loading'));
  await act(async()=>release(response({job:input})));await settle();assert.equal(document.querySelector('.production-loading'),null);assert.deepEqual(fixture.writes,[]);
 });
 
 test('navigation aborts an older detail read, and even a transport ignoring abort cannot overwrite the newer job',async t=>{
  const first=job(),second={...job(),id:'job_22222222-2222-2222-2222-222222222222',source_snapshot:JSON.stringify({title:'SYNTHETIC 最新选题',url:'https://example.org/latest'})};let release,oldSignal;
- const fixture=await mount(t,{initial:first,fetcher:async(url,options)=>{if(url==='/api/production?id='+first.id+'&view=desk'){oldSignal=options.signal;return await new Promise(resolve=>{release=resolve;});}if(url==='/api/production?id='+second.id+'&view=desk')return response({job:second});}});await settle();
+ const fixture=await mount(t,{initial:first,fetcher:async(url,options)=>{if(url==='/api/production?id='+first.id+'&view=current'){oldSignal=options.signal;return await new Promise(resolve=>{release=resolve;});}if(url==='/api/production?id='+second.id+'&view=current')return response({job:second});}});await settle();
  await act(async()=>{history.pushState(null,'','/production?job='+second.id);window.dispatchEvent(new Event('popstate'));});await settle();assert.equal(oldSignal.aborted,true);assert.equal(document.querySelector('.production-current h2').textContent,'SYNTHETIC 最新选题');
  await act(async()=>release(response({job:first})));await settle();assert.equal(document.querySelector('.production-current h2').textContent,'SYNTHETIC 最新选题');assert.deepEqual(fixture.writes,[]);
 });
 
 test('polling shares the active refresh flight and never duplicates its list/detail pair',async t=>{
  const input=job(),originalSet=window.setInterval,originalClear=window.clearInterval;let tick,release;const pending=[];let blocked=false;
- window.setInterval=fn=>{tick=fn;return 123;};window.clearInterval=()=>{};t.after(()=>{window.setInterval=originalSet;window.clearInterval=originalClear;});
+ window.setInterval=(fn,ms)=>{if(ms===25000)tick=fn;return 123;};window.clearInterval=()=>{};t.after(()=>{window.setInterval=originalSet;window.clearInterval=originalClear;});
  const fixture=await mount(t,{initial:input,fetcher:async url=>blocked?await new Promise(resolve=>{pending.push({url,resolve});release=()=>{for(const p of pending)p.resolve(p.url==='/api/production'?response({jobs:[]}):response({job:input}));};}):undefined});await settle();assert.equal(typeof tick,'function');
- blocked=true;const before=fixture.reads.length;await act(async()=>{tick();tick();});assert.equal(fixture.reads.length-before,2,'two timer ticks share one list/detail pair');await act(async()=>release());await settle();assert.deepEqual(fixture.writes,[]);
+ blocked=true;const before=fixture.reads.length;await act(async()=>{tick();tick();});assert.equal(fixture.reads.length-before,1,'two timer ticks share one detail read');await act(async()=>release());await settle();assert.deepEqual(fixture.writes,[]);
 });
 
 test('failed list read remains unknown and a read-only retry clears the error',async t=>{

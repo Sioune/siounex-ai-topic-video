@@ -45,7 +45,7 @@ export async function studioAppServerChild(args,{input,deadline,metadataDir,stdo
  const cuaDiagnostics={schema:'studio-cua-call-diagnostics-v1',limit:256,truncated:false,dropped_events:0,started_events:0,completed_events:0,records:[]},cuaDiagnosticRows=new Map();
  if(directBootstrap&&!['projects','pending-preparation'].includes(transportScope.direct_target_kind))throw coded('STUDIO_DIRECT_TARGET_INVALID');
  const directCodes=directBootstrap?[STUDIO_DIRECT_BROWSER_SELECT_CODE,STUDIO_DIRECT_BROWSER_INVENTORY_CODE,STUDIO_DIRECT_CREATE_CODE,studioDirectInventoryCode(transportScope),studioDirectNavigationCode(transportScope.direct_target_kind),STUDIO_DIRECT_PROJECTS_READ_CODE]:[];
- let child,sequence=0,buffer='',eofFlushed=false,closed=false,closeCode=null,threadId=null,turnId=null,turnStatus=null,terminalMethod=null,terminal=false,expired=false,interruptSent=false,hookCompleted=false,parseErrors=0,serverRequests=0,errorCode=null,inputEchoId=null,inputEchoStarted=false,inputEchoCompleted=false,abortResolve,turnResolve,closeResolve;
+ let child,sequence=0,buffer='',eofFlushed=false,closed=false,closeCode=null,threadId=null,turnId=null,turnStatus=null,terminalMethod=null,terminal=false,expired=false,interruptSent=false,hookCompleted=false,parseErrors=0,serverRequests=0,errorCode=null,inputEchoId=null,inputEchoStarted=false,inputEchoCompleted=false,abortResolve,turnResolve,closeResolve,directPrelude=null;
  const inputSha=createHash('sha256').update(input).digest('hex');
  const aborted=new Promise(resolve=>abortResolve=resolve),turnDone=new Promise(resolve=>turnResolve=resolve),childDone=new Promise(resolve=>closeResolve=resolve);
  const started={...(runId?{periodic_run_id:runId}:{}),started_at:new Date(startedAt).toISOString(),deadline_ms:deadline,soft_deadline_ms:softDeadline,scope:'owned-child-tree',transport:'studio-app-server-stdio',...(safeCliIdentity?{cli_identity:safeCliIdentity}:{})};
@@ -76,6 +76,10 @@ export async function studioAppServerChild(args,{input,deadline,metadataDir,stdo
   if(!directBootstrap)return;
   if(item?.type==='mcpToolCall'&&['cua_repl','mcp__cua_repl'].includes(item.server)&&!isCuaJs(item)){abort('STUDIO_DIRECT_BOOTSTRAP_ORDER_INVALID');return;}
   if(!isCuaJs(item))return;
+  // The documented initial inventory call is a valid entry point. It is read
+  // only and does not select, create or claim any page.
+  if(!directTools.length&&!directPrelude&&item.arguments?.code==='await cua.getState();'){directPrelude={id:item.id,completed:false};return;}
+  if(directPrelude&&!directPrelude.completed){abort('STUDIO_DIRECT_BOOTSTRAP_ORDER_INVALID');return;}
   if(directTools.some(t=>t.id===item.id)){abort('STUDIO_DIRECT_BOOTSTRAP_ORDER_INVALID');return;}
   const index=directTools.length,valid=!errorCode&&!(index>0&&index<=6&&!directTools[index-1].completed||index<6&&(item.arguments?.code!==directCodes[index]||item.arguments?.timeout_ms!==60000)||index===2&&!directBrowser||index===3&&!pendingCreatedPage||index>=4&&registrations.length!==1||index>5&&(!directTarget||/\bcua\.createBrowserTab\s*\(/.test(item.arguments?.code||'')));
   directTools.push({id:item.id,code:item.arguments?.code,timeout_ms:typeof item.arguments?.timeout_ms==='number'&&Number.isFinite(item.arguments.timeout_ms)?item.arguments.timeout_ms:null,completed:false,valid});
@@ -83,6 +87,7 @@ export async function studioAppServerChild(args,{input,deadline,metadataDir,stdo
  }
  function register(item){
   if(!isCuaJs(item))return;
+  if(directBootstrap&&directPrelude?.id===item.id){if(directPrelude.completed||item.arguments?.code!=='await cua.getState();'||item.status!=='completed'||item.result?.isError===true){abort('STUDIO_DIRECT_BOOTSTRAP_FAILED');return;}directPrelude.completed=true;return;}
   const directIndex=directBootstrap?directTools.findIndex(t=>t.id===item.id):-1;
   if(directIndex>=0)directTools[directIndex].completed_timeout_ms=typeof item.arguments?.timeout_ms==='number'&&Number.isFinite(item.arguments.timeout_ms)?item.arguments.timeout_ms:null;
   if(directBootstrap&&directIndex>=0&&directIndex<6){

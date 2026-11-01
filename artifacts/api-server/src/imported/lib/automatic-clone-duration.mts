@@ -7,13 +7,14 @@ const EPS=1e-7;
 function fail(code:string){throw Object.assign(Error(code),{code});}
 function blocked(reason:string,detail:string){throw Object.assign(Error(detail),{code:'AUTOMATIC_CLONE_RENDER_BLOCKED',reason_code:reason,detail});}
 
-type DurationInput={raw_body_seconds:number;outro_frames:number;max_tempo?:number;processed_body_seconds?:number|null;tempo_override?:number|null};
-export function planCloneDuration({raw_body_seconds:raw,outro_frames:tail,max_tempo=1.3,processed_body_seconds=null,tempo_override=null}:DurationInput){
+type DurationInput={raw_body_seconds:number;outro_frames:number;max_tempo?:number;processed_body_seconds?:number|null;tempo_override?:number|null;human_review?:boolean};
+export function planCloneDuration({raw_body_seconds:raw,outro_frames:tail,max_tempo=1.3,processed_body_seconds=null,tempo_override=null,human_review=false}:DurationInput){
  if(!Number.isFinite(raw)||raw<=0||!Number.isSafeInteger(tail)||tail<1||tail>=1800)fail('AUTOMATIC_CLONE_AUDIO_DURATION_INVALID');
  if(!Number.isFinite(max_tempo)||max_tempo<1||max_tempo>1.3||max_tempo<OWNER_BODY_PACE_TEMPO-EPS||tempo_override!==null&&(!Number.isFinite(tempo_override)||Math.abs(tempo_override-OWNER_BODY_PACE_TEMPO)>EPS))fail('AUTOMATIC_CLONE_TEMPO_INVALID');
  const tempo=OWNER_BODY_PACE_TEMPO,processed=processed_body_seconds??raw/tempo,maxFrames=1800-tail;
  if(!Number.isFinite(processed)||processed<=0||Math.abs(processed-raw/tempo)>.12)fail('AUTOMATIC_CLONE_PROCESSED_AUDIO_CHANGED');
  const frames=Math.max(90,Math.ceil(processed*30-EPS));
+ if(human_review)return {schema:'automatic-clone-human-review-duration-v1' as const,policy:'complete-audio-human-review-v1' as const,pace_policy_sha256:OWNER_BODY_PACE_POLICY_SHA256,raw_body_seconds:raw,original_outro_frames:tail,tempo,processed_body_seconds:processed,body_frames:frames,source_audio_complete:true,speech_trimmed:false,preserve_pitch:true,body_only:true};
  if(frames>maxFrames)blocked('OWNER_SCRIPT_REVISION_REQUIRED','正文按本人固定1.15倍保音高语速处理后，加完整原片尾仍超过60秒；请调整稿长并重新审核，不逐条提高语速、不截尾、不重录或自动执行Play。');
  return {schema:'automatic-clone-duration-policy-v2' as const,policy:CLONE_DURATION_POLICY,pace_policy_sha256:OWNER_BODY_PACE_POLICY_SHA256,raw_body_seconds:raw,original_outro_frames:tail,source_total_seconds:raw+tail/30,target_total_frames:1800,tempo,processed_body_seconds:processed,body_frames:frames,duration_control:'script-length-at-fixed-pace' as const,source_audio_complete:true,speech_trimmed:false,preserve_pitch:true,body_only:true};
 }
@@ -37,11 +38,11 @@ function planLegacyCloneDuration({raw_body_seconds:raw,outro_frames:tail,max_tem
 
 // Old frozen synchronization receipts did not have this field. A new field,
 // when present, must agree with the saved recording and actual final duration.
-export function validateCloneDurationPolicy(proof:any,{raw_body_seconds:raw,outro_frames:tail,result_total_seconds:result}:{raw_body_seconds:number;outro_frames:number;result_total_seconds:number}){
+export function validateCloneDurationPolicy(proof:any,{raw_body_seconds:raw,outro_frames:tail,result_total_seconds:result,human_review=false}:{raw_body_seconds:number;outro_frames:number;result_total_seconds:number;human_review?:boolean}){
  try{
   if(!proof||typeof proof!=='object'||Array.isArray(proof)||!Number.isFinite(raw)||!Number.isFinite(proof.raw_body_seconds)||Math.abs(proof.raw_body_seconds-raw)>.25||!Number.isFinite(result))return false;
-  const planner=proof.schema==='automatic-clone-duration-policy-v1'?planLegacyCloneDuration:proof.schema==='automatic-clone-duration-policy-v2'?planCloneDuration:null;if(!planner)return false;
-  const expected=planner({raw_body_seconds:proof.raw_body_seconds,outro_frames:tail,processed_body_seconds:proof.processed_body_seconds,tempo_override:proof.tempo});
+  const human=proof.schema==='automatic-clone-human-review-duration-v1';if(human&&!human_review)return false;const planner=proof.schema==='automatic-clone-duration-policy-v1'?planLegacyCloneDuration:proof.schema==='automatic-clone-duration-policy-v2'||human?planCloneDuration:null;if(!planner)return false;
+  const expected=planner({raw_body_seconds:proof.raw_body_seconds,outro_frames:tail,processed_body_seconds:proof.processed_body_seconds,tempo_override:proof.tempo,...(human?{human_review:true}:{})});
   const keys=Object.keys(expected);if(Object.keys(proof).length!==keys.length||keys.some(k=>proof[k]!==expected[k as keyof typeof expected]))return false;
   return Math.abs(result-(expected.body_frames+tail)/30)<=.08;
  }catch{return false;}

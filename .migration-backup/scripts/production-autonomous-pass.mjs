@@ -2,7 +2,8 @@ import {executorFetch as fetch} from './native-production-transport.mjs';
 import {WORKSTATION_FLOW,waitForFlowActivity} from './production-flow-lifecycle.mjs';
 import {isTitleRuntimeRecoveryCandidate} from '../lib/private-title-recovery-selection.mts';
 import {createNativeVoice} from './native-speech-bridge.mjs';
-import {createStudioPreviewVoice} from './heygen-studio-preview-bridge.mjs';
+import {createStudioPreviewVoice,runStudioPreviewBrowser} from './heygen-studio-preview-bridge.mjs';
+import {createDedicatedStudioBrowser} from './heygen-dedicated-browser.mjs';
 import {runAutomaticClone} from './automatic-clone-consumer.mjs';
 import{runUnattendedMedia}from'./unattended-media-executor.mjs';
 import{writePeriodicResult,writePeriodicJobResult,safeFailure,writePeriodicWorkstationEvent,writePeriodicWorkstationSnapshot,safeWorkstationSnapshot}from'./periodic-diagnostics.mjs';
@@ -17,6 +18,7 @@ import {runNativePreparation} from './native-preparation-consumer.mjs';
 import {runPrivateReviewContinuation} from './private-review-continuation.mjs';
 import {isResourcePreclaimCandidate} from './private-review-preclaim-failure.mjs';
 import {isPreproductionNarrationCandidate} from '../lib/private-preproduction-selection.mts';
+import {isMaterialAcquisitionResumeCandidate} from '../lib/private-material-acquisition-selection.mts';
 import {isCaptionPaginationCandidate} from '../lib/private-caption-recovery-selection.mts';
 import {isFrameBudgetRecoveryCandidate} from '../lib/private-frame-budget-selection.mts';
 import {isWorkstationWaitCandidate} from '../lib/private-workstation-selection.mts';
@@ -34,7 +36,15 @@ function resumableWaitingPrivate(h){
  if(h.status==='claimed'&&!h.base_video&&!h.base_pending_video&&!h.checkpoint?.artifacts?.some(a=>a.kind==='local-file'&&a.file?.endsWith('/producer-receipt.json')))return false;
  const b=h.base_video,base=b&&Object.keys(b).length===3&&/^local_review_video_[a-f0-9]{64}$/.test(b.id||'')&&/^[a-f0-9]{64}$/.test(b.artifact_hash||'')&&Number.isSafeInteger(b.artifact_version)&&b.artifact_version>0;
  const knownVisual=h.status==='blocked'&&h.lease_until==null&&h.missing?.some(m=>String(m.detail||m.code||'').includes('Prepared actual frame count differs; never hand off a truncated plane'))===true;
- return h.status==='claimed'||!!base||knownVisual||isResourcePreclaimCandidate(h)||isPreproductionNarrationCandidate(h)||isTitleRuntimeRecoveryCandidate(h)||isCaptionPaginationCandidate(h)||isFrameBudgetRecoveryCandidate(h)||isWorkstationWaitCandidate(h)||h.status!=='queued'&&h.checkpoint?.artifacts?.some(a=>a.file?.endsWith('/producer-receipt.json'))===true;
+ return h.status==='claimed'||!!base||knownVisual||isMaterialAcquisitionResumeCandidate(h)||isResourcePreclaimCandidate(h)||isPreproductionNarrationCandidate(h)||isTitleRuntimeRecoveryCandidate(h)||isCaptionPaginationCandidate(h)||isFrameBudgetRecoveryCandidate(h)||isWorkstationWaitCandidate(h)||h.status!=='queued'&&h.checkpoint?.artifacts?.some(a=>a.file?.endsWith('/producer-receipt.json'))===true;
+}
+// Completed handoffs can remain in the server's read-only waiting list after
+// a newer video has returned. In node mode that video belongs to the owner for
+// review; do not resume the older producer as an automatic replacement.
+export function completedHandoffAwaitsOwnerReview(job,h){
+ if(job?.review_mode!=='node'||h?.status!=='completed'||h.reconciliation!=null||h.lease_until!=null||!h.base_pending_video)return false;
+ const m=(job.milestones||[]).filter(v=>v.node==='video'&&v.revision===job.revision&&v.mode_epoch===job.mode_epoch).sort((a,b)=>b.artifact_version-a.artifact_version)[0],p=h.base_pending_video;
+ return m?.status==='awaiting_human'&&m.id===p.id&&m.artifact_hash===p.artifact_hash&&m.artifact_version===p.artifact_version;
 }
 function currentNodes(job){const latest=new Map();for(const m of job.milestones||[])if(m.revision===job.revision&&m.mode_epoch===job.mode_epoch&&(!latest.has(m.node)||Number(m.artifact_version||0)>Number(latest.get(m.node).artifact_version||0)))latest.set(m.node,m);return [...latest.values()].sort((a,b)=>a.node.localeCompare(b.node));}
 function currentWorkflowRead(before,after){
@@ -45,6 +55,30 @@ function currentWorkflowRead(before,after){
 const workflowIdentity=job=>JSON.stringify([job.status,job.revision,job.mode_epoch,job.approved_revision,job.approved_hash,job.updated_at,currentNodes(job).map(m=>[m.id,m.node,m.status,m.artifact_hash,m.artifact_version,m.updated_at])]);
 const humanOrStopped=job=>!['waiting_executor','awaiting_review','approved','completed'].includes(job.status)||job.review_mode==='node'&&job.status!=='approved'&&job.status!=='completed'||currentNodes(job).some(m=>['awaiting_human','revise','paused'].includes(m.status));
 function blockedDiagnostic(b){const result={job_id:b.job_id,reason:b.reason};for(const key of ['confirmed_no_result','result_unknown','http_status','next_retry_at','package_id','retry_state'])if(b[key]!==undefined)result[key]=b[key];return result;}
+// Route every current owner-authorized node task through the single dedicated
+// voice station. Re-read before every browser operation, including recovery.
+export async function completedDedicatedDraft({root=process.cwd(),call,draft_id}={}) {
+ if(typeof call!=='function'||!/^[a-f0-9]{32}$/.test(draft_id||''))return false;
+ const base=path.resolve(root,'.sites-runtime','authorized-inputs');let found=[];
+ try { for(const j of fs.readdirSync(base,{withFileTypes:true})) { if(!j.isDirectory()||j.isSymbolicLink()||!/^job_[a-f0-9-]{36}$/.test(j.name))continue;
+  for(const rev of fs.readdirSync(path.join(base,j.name),{withFileTypes:true})) { if(!rev.isDirectory()||rev.isSymbolicLink()||!/^revision-[1-9][0-9]*$/.test(rev.name))continue;const p=path.join(base,j.name,rev.name,'automatic-clone');if(!fs.existsSync(p)||fs.lstatSync(p).isSymbolicLink())continue;
+   for(const req of fs.readdirSync(p,{withFileTypes:true})) {if(!req.isDirectory()||req.isSymbolicLink()||!/^acl_[a-f0-9]{64}$/.test(req.name))continue;const f=path.join(p,req.name,'studio-draft.json');try{const st=fs.lstatSync(f);if(!st.isFile()||st.isSymbolicLink()||st.size>65536)continue;const d=JSON.parse(fs.readFileSync(f,'utf8'));if(d.draft_id===draft_id&&d.request_id===req.name)found.push({job_id:j.name,request_id:req.name,revision:Number(rev.name.slice(9))});}catch{}}
+  }
+ }} catch{return false;}
+ if(found.length!==1)return false;const match=found[0];try{const [{job},state]=await Promise.all([call({action:'read',id:match.job_id}),call({action:'automatic_clone_read',id:match.job_id})]);const r=state?.request,c=state?.clone;return job?.id===match.job_id&&!job.is_test&&job.status==='approved'&&job.revision===match.revision&&r?.id===match.request_id&&r.job_id===job.id&&c?.is_current===true&&['awaiting_second_review','approved','completed'].includes(c.stage)&&/^[a-f0-9]{64}$/.test(c.result_video_sha256||'');}catch{return false;}
+}
+export function createDedicatedCloneRouter({call,createBrowser=createDedicatedStudioBrowser}={}) {
+ if(typeof call!=='function')throw Error('DEDICATED_ROUTER_CALL_REQUIRED');
+ const browser=createBrowser({allowFirstPreparation:()=>true});
+ return async (phase,input,options)=>{
+  const id=input?.job_id,rid=input?.request_id;
+  if(!/^job_[a-f0-9-]{36}$/.test(id||'')||!/^acl_[a-f0-9]{64}$/.test(rid||''))throw Error('DEDICATED_ROUTER_BINDING_INVALID');
+  const [{job},state]=await Promise.all([call({action:'read',id}),call({action:'automatic_clone_read',id})]);
+  const r=state?.request;
+  if(!job||job.id!==id||job.is_test||job.status!=='approved'||job.review_mode!=='node'||!state?.clone?.is_current||r?.id!==rid||r.job_id!==id||r.acquisition_method!=='heygen_studio_audio_preview'||r.new_payment_limit!==0||r.new_clone_allowed!==false||r.api_fallback_allowed!==false||r.publication_authorized!==false||r.binding?.revision!==job.revision||r.binding?.mode_epoch!==job.mode_epoch||r.binding?.contract_hash!==job.contract_hash||r.binding?.script_hash!==job.approved_hash||r.voice_id!==input.voice_id)throw Error('DEDICATED_ROUTER_CURRENT_AUTHORIZATION_REQUIRED');
+  return browser(phase,input,options);
+ };
+}
 export async function autonomousPass(c,{call,execute=dispatch,prepare=runPreparation,consume=runNativePreparation,continuePrivate=runPrivateReviewContinuation,postVideo=runPostVideoPreparation,media=runUnattendedMedia,archiveCapability,postAsset,clone=runAutomaticClone,nativeVoice,studioPreviewVoice,renderClone,workstations,externalPending=()=>false,externalWake=()=>null,waitForActivity=waitForFlowActivity}={}){
  if(c.execute!==true)throw Error('Explicit authorized execute:true required');if(c.foreground_deadline_ms!==undefined&&(!Number.isFinite(c.foreground_deadline_ms)||c.foreground_deadline_ms<0))throw Error('Invalid inherited foreground deadline');if(c.admission_deadline_ms!==undefined&&(!Number.isFinite(c.admission_deadline_ms)||c.admission_deadline_ms<0))throw Error('Invalid production admission deadline');if(c.production_completion_policy!==undefined&&c.production_completion_policy!=='natural')throw Error('Invalid production completion policy');
  if(c.production_lifecycle!==undefined&&c.production_lifecycle!==WORKSTATION_FLOW)throw Error('Invalid production lifecycle');
@@ -60,33 +94,46 @@ export async function autonomousPass(c,{call,execute=dispatch,prepare=runPrepara
  const handoffResult=waiting=>{const all=[...handoffs,...waiting].filter((v,i,a)=>a.findIndex(x=>x.queue_id===v.queue_id)===i),first=all[0];return {status:all.length?'needs-native-handoff':'private-review-production-returned',job_id:first?.job_id||productions[0]?.job_id,queue_id:first?.queue_id,handoff_status:first?.status,waiting_for:first?.waiting_for,missing:first?.missing||[],handoffs:all,preparations,productions,executions,blocked,claimed:consumption.some(v=>v.claimed===true),generation_started:productions.some(v=>v.generation_started===true),automatic_editor_launch:false,new_paid_calls:0,publication_authorized:false};};
  if(!call)call=async b=>executorResponse(await fetch(origin+'/api/executor',{method:'POST',headers:{'Content-Type':'application/json','OAI-Sites-Authorization':'Bearer '+c.token},body:JSON.stringify(b),redirect:'error',signal:AbortSignal.timeout(executorTimeoutMs(b.action,deadline))}));
  if(c.native_voice_bridge===true&&nativeVoice===undefined)nativeVoice=createNativeVoice({root:process.cwd(),deadline_ms:deadline});
- if(c.native_voice_bridge===true&&studioPreviewVoice===undefined)studioPreviewVoice=createStudioPreviewVoice({root:process.cwd(),deadline_ms:deadline,call,readPreparedOwner:async({job_id})=>{
+ if(c.native_voice_bridge===true&&studioPreviewVoice===undefined){
+ const browser=createDedicatedCloneRouter({call});
+ studioPreviewVoice=createStudioPreviewVoice({root:process.cwd(),deadline_ms:deadline,call,...(browser?{browser}:{}),readPreparedOwner:async({job_id})=>{
   if(!/^job_[a-f0-9-]{36}$/.test(job_id||''))throw Error('STUDIO_PREPARED_OWNER_JOB_INVALID');
   if(Date.now()+5000>=deadline)return null;
   // Authenticated identity metadata only; this never starts or retries media.
   const [owned,clone]=await Promise.all([call({action:'read',id:job_id}),call({action:'automatic_clone_read',id:job_id})]);
   if(owned.job?.id!==job_id||clone.request?.job_id!==job_id)throw Error('STUDIO_PREPARED_OWNER_READ_CHANGED');
   return{job:owned.job,request:clone.request,authenticated_owner_scope:true};
- }});
+ }});}
  if(c.native_voice_bridge===true&&renderClone===undefined)renderClone=async input=>{const renderer=await import('./automatic-clone-render.mjs');return renderer.renderClone({...input,call});};
  const recordJob=(selection,result)=>{writePeriodicJobResult(c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,{phase:'job-returned',job_id:selection.job.id,revision:selection.job.revision,mode_epoch:selection.job.mode_epoch,kind:selection.kind||'native-preparation-handoff',queue_id:result.queue_id,package_id:result.package_id,plan_id:result.plan_id,stage:result.stage,status:result.status,confirmed_no_result:result.confirmed_no_result,result_unknown:result.result_unknown,http_status:result.http_status,execution_phase:result.phase,failure:result.failure||(result.error?{...safeFailure({message:result.error}),phase:result.phase}:undefined),claimed:result.claimed,generation_started:result.generation_started,audio_generated:result.audio_generated,video_generated:result.video_generated,retry_without_reconciliation:result.retry_without_reconciliation,claim_state:result.claim_state,generation_state:result.generation_state,next_retry_at:result.next_retry_at});return result;};
+ if(c.exact_clone_job_id||c.exact_clone_request_id){
+  const id=c.exact_clone_job_id,rid=c.exact_clone_request_id;
+  if(!/^job_[a-f0-9-]{36}$/.test(id||'')||!/^acl_[a-f0-9]{64}$/.test(rid||''))throw Error('Exact dedicated clone target required');
+  const [{job},state]=await Promise.all([call({action:'read',id}),call({action:'automatic_clone_read',id})]);
+  if(!job||job.id!==id||job.id==='job_00000000-0000-4000-8000-000000000003'||job.is_test||job.status!=='approved'||job.review_mode!=='node'||state?.request?.id!==rid||state.request.job_id!==id||state.clone?.is_current!==true)throw Error('Exact current dedicated clone binding required');
+  const selection={kind:'automatic-clone',job,automatic_clone:{request_id:rid,status:state.request.status}};
+  const result=await clone(selection,{call,nativeVoice,studioPreviewVoice,renderClone,deadline_ms:deadline,workstations:stations});
+  if(result.job_id!==id||result.request_id!==undefined&&result.request_id!==rid)throw Error('Dedicated clone returned another request');
+  recordJob(selection,result);
+  return {status:result.status,job_id:id,productions:[{...result,stage:'automatic-clone'}],claimed:result.claimed===true,generation_started:result.generation_started===true,quality_approved:false,publication_authorized:false};
+ }
  const isolatedNative=async(selection,fn)=>{try{return await fn(selection,{call,deadline_ms:deadline,workstations:stations});}catch(error){if(['PRODUCTION_CANCELLED','PRODUCTION_STATION_BUDGET_DEFERRED'].includes(error?.code))throw error;recordPrivateStageFailure(error,{run_id:c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,job_id:selection.job.id});const failure={...safeFailure(error),phase:'native-preparation'},h=selection.native_preparation,q=h?.queue_id||h?.handoff?.queue_id;if(!/^native_prep_[a-f0-9]{64}$/.test(q||''))throw error;writePeriodicResult(c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,{phase:'job-failed',job_id:selection.job.id,kind:'native-preparation-handoff',failure,reconciliation_required:true});return{status:h.binding?.scope==='private-video'?'private-review-result-unknown':'native-preparation-result-unknown',...(h.binding?.scope==='private-video'?{}:{generation_started:false}),job_id:selection.job.id,queue_id:q,failure,phase:'native-preparation',claim_state:'unknown',generation_state:'unknown',retry_without_reconciliation:false};}};
  const executeSelected=async selection=>{
-  const j=selection.job;writePeriodicResult(c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,{phase:'selected',job_id:j.id,revision:j.revision,mode_epoch:j.mode_epoch,kind:selection.kind});if(j.id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'||j.is_test)throw Error('Protected/test production exclusion violated');
+  const j=selection.job;writePeriodicResult(c.run_id||process.env.SIOUNEX_PERIODIC_RUN_ID,{phase:'selected',job_id:j.id,revision:j.revision,mode_epoch:j.mode_epoch,kind:selection.kind});if(j.id==='job_00000000-0000-4000-8000-000000000003'||j.is_test)throw Error('Protected/test production exclusion violated');
    if(selection.kind==='cli-failure-reconciliation'){const result=await reconcileLocalCliFailure(selection,{call});recordJob(selection,result);executions.push(result);if(result.status==='cli-failure-reconciled')return{redispatch:true};blocked.push({job_id:j.id,reason:result.status,reconciliation_only:true});return;}
    if(selection.kind==='native-preparation-handoff'){const native=selection.native_preparation;if(!native||native.job_id!==j.id)throw Error('Exact native preparation handoff required');const privateVideo=native.binding?.scope==='private-video',result=await isolatedNative(selection,privateVideo?continuePrivate:consume);if(result.job_id!==j.id||!privateVideo&&result.generation_started!==false)throw Error('Native preparation return must bind its exact allowed scope');recordJob(selection,result);deferNativeFailure(j.id,result.status);consumption.push(result);if(privateVideo)productions.push(result);if(result.budget_exhausted===true&&result.resume_same_archives===true){if(!privateVideo)budgetDeferred=true;if(Date.now()+60000>=deadline){budgetDeferred=true;stopScheduling=true;}return;}if(result.status==='local-review-returned'){blocked.push({job_id:j.id,reason:'actual-private-video-awaiting-human',claimed:result.claimed===true});return {stage_complete:true};}if(result.status==='private-review-upload-rejected'){blocked.push({job_id:j.id,reason:result.status,detail:result.error,claimed:result.claimed===true});handoffs.push({job_id:j.id,queue_id:result.queue_id,status:'blocked',waiting_for:'local-return-contract-fix',missing:[{code:result.status,detail:result.error}],persisted:false});return;}if(['native-preparation-result-unknown','private-review-result-unknown','private-review-upload-result-unknown'].includes(result.status)){if(!/^native_prep_[a-f0-9]{64}$/.test(result.queue_id||''))throw Error('Unknown preparation result lacks its exact queue');blocked.push({job_id:j.id,reason:result.status,claimed:result.claimed===true,...(result.failure?{failure:result.failure}:{})});handoffs.push({job_id:j.id,queue_id:result.queue_id,status:'result-unknown',execution_state:'receipt-reconciliation-required',waiting_for:'original-session-receipt-reconciliation',missing:native.missing||[],persisted:false});return;}const saved=result.handoff?result:await call({action:'native_preparation_read',id:j.id});if(!saved.handoff?.queue_id)throw Error('Native preparation persistence unconfirmed');handoffs.push({job_id:j.id,...saved.handoff});return;}
    if(selection.kind==='automatic-clone'){
-    const result=await clone(selection,{call,nativeVoice,studioPreviewVoice,renderClone,deadline_ms:deadline,workstations:stations});if(result.job_id!==j.id)throw Error('AUTOMATIC_CLONE_RETURNED_OTHER_JOB');recordJob(selection,result);productions.push({...result,stage:'automatic-clone'});blocked.push({job_id:j.id,reason:result.status,claimed:result.claimed===true});
-    // The returned clone remains an owner second-review candidate. Its exact
-    // downstream package can prepare now without another voice/render cycle.
-    // The consumer rereads current job/plan bindings before any preparation.
-    if(result.status==='automatic-clone-awaiting-second-review'){
-     const next={...selection,kind:'post-video-preparation'};let prepared;
-     if(Date.now()+60000>=deadline)prepared={status:'post-video-upload-deferred',job_id:j.id,phase:'after-clone-before-post-video-preparation',budget_exhausted:true,resume_same_archives:true,local_files_retained:true,generation_started:false,new_paid_calls:0,quality_approved:false,publication_authorized:false};
-     else try{prepared=await postVideo(next,{call,deadline_ms:deadline,workstations:stations});if(prepared?.job_id!==j.id)throw Error('POST_VIDEO_RETURNED_OTHER_JOB');}
-     catch(error){prepared={status:'post-video-preparation-failed',job_id:j.id,phase:'post-video-preparation',failure:safeFailure(error),local_files_retained:true,retry_without_reconciliation:false,generation_state:'unknown',new_paid_calls:0,quality_approved:false,publication_authorized:false};}
-     recordJob(next,prepared);productions.push({...prepared,stage:'post-video-preparation',after_clone_request_id:result.request_id});if(prepared.status!=='post-video-prepared')blocked.push({job_id:j.id,reason:prepared.status,phase:prepared.phase,claimed:false,...(prepared.budget_exhausted===true?{budget_exhausted:true}:{}),...(prepared.failure?{failure:prepared.failure}:{})});
-    }
+    // An approved ordinary video can prepare its own materials while the Studio
+    // voice workstation is busy. Each stage independently rereads its plan and
+    // the site guards bind uploads to that exact video; neither stage approves it.
+    const next={...selection,kind:'post-video-preparation'},latest=(j.milestones||[]).filter(m=>m.node==='video'&&m.revision===j.revision).sort((a,b)=>b.artifact_version-a.artifact_version)[0];let ordinary=false;try{ordinary=latest?.status==='approved'&&JSON.parse(latest.artifact).qa?.voice_kind==='ordinary-review';}catch{}
+    const concurrent=j.review_mode==='node'&&j.status==='approved'&&ordinary&&['blocked','queued','cost_check_pending'].includes(selection.automatic_clone?.status)&&selection.automatic_clone?.reconciliation_only!==true;
+    const preparePost=async(parallel=false)=>{if(Date.now()+60000>=deadline)return{status:'post-video-upload-deferred',job_id:j.id,phase:'after-clone-before-post-video-preparation',budget_exhausted:true,resume_same_archives:true,local_files_retained:true,generation_started:false,new_paid_calls:0,quality_approved:false,publication_authorized:false};try{const postStations=parallel?{run:(station,id,fn)=>stations.run(station,id,fn,{lane:'approved-ordinary-post-video'})}:stations;const p=await postVideo(next,{call,deadline_ms:deadline,workstations:postStations});if(p?.job_id!==j.id)throw Error('POST_VIDEO_RETURNED_OTHER_JOB');return p;}catch(error){return{status:'post-video-preparation-failed',job_id:j.id,phase:'post-video-preparation',failure:safeFailure(error),local_files_retained:true,retry_without_reconciliation:false,generation_state:'unknown',new_paid_calls:0,quality_approved:false,publication_authorized:false};}};
+    const early=concurrent?preparePost(true):null;let result;try{result=await clone(selection,{call,nativeVoice,studioPreviewVoice,renderClone,deadline_ms:deadline,workstations:stations});}catch(error){if(early)await early;throw error;}if(result.job_id!==j.id){if(early)await early;throw Error('AUTOMATIC_CLONE_RETURNED_OTHER_JOB');}recordJob(selection,result);productions.push({...result,stage:'automatic-clone'});blocked.push({job_id:j.id,reason:result.status,claimed:result.claimed===true});
+    const recordPost=prepared=>{recordJob(next,prepared);productions.push({...prepared,stage:'post-video-preparation',after_clone_request_id:result.request_id});if(prepared.status!=='post-video-prepared')blocked.push({job_id:j.id,reason:prepared.status,phase:prepared.phase,claimed:false,...(prepared.budget_exhausted===true?{budget_exhausted:true}:{}),...(prepared.failure?{failure:prepared.failure}:{})});};
+    if(early)recordPost(await early);
+    // A newly returned voice version needs its own correctly bound materials.
+    if(result.status==='automatic-clone-awaiting-second-review'||!early&&result.status==='automatic-clone-native-handoff-required'&&result.claimed===false&&result.generation_started===false)recordPost(await preparePost());
     return;
    }
    if(selection.kind==='post-video-preparation'){const result=await postVideo(selection,{call,deadline_ms:deadline,workstations:stations});if(result.job_id!==j.id)throw Error('Post-video preparation returned another job');recordJob(selection,result);productions.push(result);if(result.budget_exhausted===true&&result.resume_same_archives===true){if(Date.now()+60000>=deadline){budgetDeferred=true;stopScheduling=true;return;}blocked.push({job_id:j.id,reason:result.status,phase:result.phase,claimed:false,budget_exhausted:true});return;}blocked.push({job_id:j.id,reason:result.status,claimed:false});return;}
@@ -150,7 +197,7 @@ export async function autonomousPass(c,{call,execute=dispatch,prepare=runPrepara
  const wake=()=>waitForActivity([...active.values()],{external:externalWake()});
  const nextCycle=()=>{processed.clear();waitingStarted=0;};
  const identity=selection=>JSON.stringify([selection.job.id,selection.kind||null,workflowIdentity(selection.job),selection.stage_id,selection.operation_id,selection.package_id,selection.voice_request_id,selection.native_preparation?.queue_id||selection.native_preparation?.handoff?.queue_id,flow?(selection.native_preparation?.handoff||selection.native_preparation)?.version:null,flow?(selection.native_preparation?.handoff||selection.native_preparation)?.reconciliation?.fingerprint:null]);
- const assertAllowed=job=>{if(!job?.id||job.id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'||job.is_test)throw Error('Protected/test production exclusion violated');};
+ const assertAllowed=job=>{if(!job?.id||job.id==='job_00000000-0000-4000-8000-000000000003'||job.is_test)throw Error('Protected/test production exclusion violated');};
  const launch=(selection,waiting=false)=>{
   const id=selection.job.id;admittedJobs.add(id);processed.add(id);seen.add(identity(selection));
   // Keep rejection handlers on every job immediately; no detached production
@@ -182,7 +229,8 @@ export async function autonomousPass(c,{call,execute=dispatch,prepare=runPrepara
      if(waitingStarted>=2||!flow&&admittedJobs.size>=16||stopScheduling||Date.now()+60000>=admissionDeadline)break;
      if(excluded().includes(h.job_id)||!resumableWaitingPrivate(h))continue;
      const {job}=await call({action:'read',id:h.job_id});if(stopScheduling||Date.now()+60000>=admissionDeadline){if(!natural)budgetDeferred=true;break;}if(!job||job.id!==h.job_id)throw Error('Exact waiting native preparation job required');assertAllowed(job);
-     if(job.id==='job_9ef39025-d92e-4770-82d0-05881451c5df'&&!authorizedLegacyPrivateRework(job))throw Error('Protected/test production exclusion violated');
+     if(completedHandoffAwaitsOwnerReview(job,h))continue;
+     if(job.id==='job_00000000-0000-4000-8000-000000000004'&&!authorizedLegacyPrivateRework(job))throw Error('Protected/test production exclusion violated');
      const candidate={job,kind:'native-preparation-handoff',native_preparation:h};if(seen.has(identity(candidate)))continue;
      waitingStarted++;launch(candidate,true);
     }

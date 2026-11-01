@@ -17,6 +17,10 @@ test('the same ended browser observation cannot increase the retry count or post
 test('consecutive no-progress failures back off to a finite thirty-minute cap, without extending the interval on reads',t=>{
  const f=fixture(t);for(let n=0;n<8;n++){f.attempt();const r=f.policy.record(f.request,f.error);assert.equal(r.consecutive_count,n+1);const delay=CLONE_PREPARATION_RETRY_DELAYS_MS[Math.min(n,4)];assert.equal(Date.parse(r.next_retry_at)-f.now(),delay);for(let read=0;read<3;read++)assert.deepEqual(f.policy.pending(f.request),r);f.advance(delay);assert.equal(f.policy.pending(f.request),null);f.advance(1);}
 });
+test('browser unavailable is checked again after three minutes even after repeated failures',t=>{
+ const f=fixture(t),error={code:'STUDIO_PREVIEW_BROWSER_UNAVAILABLE'};
+ for(let n=0;n<8;n++){f.attempt({code:error.code});const r=f.policy.record(f.request,error);assert.equal(r.consecutive_count,n+1);assert.equal(Date.parse(r.next_retry_at)-f.now(),180000);assert.deepEqual(f.policy.pending(f.request),r);f.advance(180000);assert.equal(f.policy.pending(f.request),null);f.advance(1);}
+});
 test('the diagnostic count saturates at the server bound and an upstream future time cannot turn preparation backoff into a permanent hold',t=>{
  const f=fixture(t);f.attempt();f.policy.record(f.request,f.error);const file=path.join(f.dir,'studio-preparation-retry-state.json'),state=JSON.parse(fs.readFileSync(file));state.consecutive_count=1000;fs.writeFileSync(file,JSON.stringify(state));f.advance(1800001);f.attempt();const r=f.policy.record(f.request,{...f.error,code:f.error.code,next_retry_at:new Date(f.now()+86400000).toISOString()});assert.equal(r.consecutive_count,1000);assert.equal(Date.parse(r.next_retry_at)-f.now(),1800000);
 });

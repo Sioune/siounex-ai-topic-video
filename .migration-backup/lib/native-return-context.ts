@@ -7,8 +7,8 @@ import {readCurrentEditorialDelivery,hasOwnerEditorialDeliveryClassification} fr
 import {editorialDeliveryAuthorityRequired} from './owner-editorial-delivery-contract.mts';
 import {OWNER_LOCAL_MEDIA_REWORK_PAUSE} from './owner-media-rework-contract.mts';
 
-export const MINICPM_JOB='job_9ef39025-d92e-4770-82d0-05881451c5df';
-export const PROTECTED_VIDEO_JOB='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee';
+export const MINICPM_JOB='job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf';
+export const PROTECTED_VIDEO_JOB='job_e13e8b19-aa0a-4840-abc9-333eefc91b05';
 export type NativeScopeContext={owner:string;scope_id:string;scope_hash:string;scope_raw:string;scope:Record<string,unknown>};
 type NativeReturnJob=Awaited<ReturnType<typeof getJob>>;
 
@@ -44,6 +44,9 @@ export async function assertNativeDemonstration(j:NativeReturnJob,value:Record<s
  const editorial=await readCurrentEditorialDelivery(j,String(value.sha256||''));
  if(editorial){const qa=value.qa as Record<string,unknown>|undefined;if(qa?.editorial_delivery_authorization_id!==undefined&&qa.editorial_delivery_authorization_id!==editorial.id)throw new ProductionError('成片回执引用的官方演示解读授权已变化',409);return editorial;}
  if(editorialDeliveryAuthorityRequired(j,value,await hasOwnerEditorialDeliveryClassification(j)))throw new ProductionError('本条官方演示解读须保留当前精确视频、来源和私有范围的本人授权；缺失、撤回或变化后不能沿用',409);
+ // In node mode the owner judges the actual video; an automatic demonstration
+ // assessment must not prevent the video from reaching that review.
+ if(j.review_mode==='node')return;
  // Static case explanation remains independent from an explicitly requested
  // recorded tool session; the category alone does not impose one.
  if(!requiresToolDemonstration(JSON.parse(j.source_snapshot))&&value.demonstration_check===undefined)return;

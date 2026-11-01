@@ -1,7 +1,8 @@
 // A rejected transport request is an audited invocation, but not a content decision.
 // This module is client safe. Authoritative writes additionally CAS the exact DB snapshot.
+import {ownerFeedbackContinuation} from './owner-feedback-continuation.mts';
 export const CLI_CONTENT_LIMITS={attempts:6,aiCalls:8,reworks:2} as const;
-export const CLI_TRANSPORT_HELD_JOB_IDS=['job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee','job_3c14fe6f-44b0-472c-8455-e75040b695bb'] as const;
+export const CLI_TRANSPORT_HELD_JOB_IDS=['job_e13e8b19-aa0a-4840-abc9-333eefc91b05','job_3fc559eb-354e-48e3-a718-8a89b2e6e170'] as const;
 const parsed=(v:any)=>{try{return typeof v==='string'?JSON.parse(v):v}catch{return null}};
 const sha=(v:any)=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v);
 const integer=(v:any,min=0)=>Number.isSafeInteger(v)&&v>=min;
@@ -38,7 +39,8 @@ function ledger(job:any,kind:'review'|'generation'){
 export function cliContentBudget(job:any){
  const valid=integer(job?.attempt)&&integer(job?.ai_calls)&&integer(job?.reworks),generation=valid?ledger(job,'generation'):[],reviews=valid?ledger(job,'review'):[];
  const content_attempts=valid?job.attempt-generation.length:Infinity,content_ai_calls=valid?job.ai_calls-reviews.length:Infinity;
- return{schema:'cli-content-budget-v1',raw_attempts:job?.attempt,raw_ai_calls:job?.ai_calls,reworks:job?.reworks,zero_result_generation_attempts:generation.length,zero_result_review_calls:reviews.length,content_attempts,content_ai_calls,generation_available:valid&&content_attempts<CLI_CONTENT_LIMITS.attempts&&job.reworks<=CLI_CONTENT_LIMITS.reworks,review_available:valid&&content_ai_calls<CLI_CONTENT_LIMITS.aiCalls&&job.reworks<=CLI_CONTENT_LIMITS.reworks};
+ const extension=ownerFeedbackContinuation(job),reworks_limit=extension?.reworks??CLI_CONTENT_LIMITS.reworks,attempt_limit=extension?.max_attempts??CLI_CONTENT_LIMITS.attempts,review_limit=extension?.max_ai_calls??CLI_CONTENT_LIMITS.aiCalls;
+ return{schema:'cli-content-budget-v1',raw_attempts:job?.attempt,raw_ai_calls:job?.ai_calls,reworks:job?.reworks,reworks_limit,attempt_limit,review_limit,zero_result_generation_attempts:generation.length,zero_result_review_calls:reviews.length,content_attempts,content_ai_calls,generation_available:valid&&content_attempts<attempt_limit&&job.reworks<=reworks_limit,review_available:valid&&content_ai_calls<review_limit&&job.reworks<=reworks_limit};
 }
 // Mirrors the strict accepted-record ledger for read-only selection and atomic SQL gates.
 // No caller-supplied alias or value enters SQL.

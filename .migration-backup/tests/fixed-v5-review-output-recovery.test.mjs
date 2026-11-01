@@ -14,6 +14,8 @@ import {classifyCliProcess,safeRateLimitFailure} from '../lib/cli-failure-contra
 import {narrationPreflight} from '../scripts/narration-preflight.mjs';
 import {findCompletedReviewOutput,reviewExecutionBinding} from '../scripts/completed-review-output.mjs';
 import {REVIEW_STAGE_POLICY_VERSION,REVIEW_STAGE_POLICY_SHA256} from '../lib/review-stage-policy.mts';
+import {bodyStoryboard} from '../lib/storyboard-segments.mts';
+import {motionClosingTasks} from '../scripts/content-motion-tail-task.mjs';
 
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const ID='job_33333333-3333-4333-8333-333333333333',OWNER='SYNTHETIC-fixed-v5-owner';
@@ -70,7 +72,7 @@ function rejected(claim,ordinal){
   };
   assert.equal(safeRateLimitFailure(value),true);return value;
 }
-async function fixture(t,alias=false){
+async function fixture(t,alias=false,closing=false){
   const engine=await createDepthLimitedSqlite({depth:100}),db=engine.db;
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'SYNTHETIC-fixed-v5-review-'));
   globalThis.__fixedV5Db=db;
@@ -80,6 +82,7 @@ async function fixture(t,alias=false){
   await db.prepare("INSERT INTO topics(id,url,source_id,source,title,original_title,summary,collected_at,category,score,material,highlight,angle,materials,risk,curated) VALUES('SYNTHETIC-fixed-v5','https://example.org/SYNTHETIC-fixed-v5','S','S','S','S','S',?,'S',0,'S','S','S','S','S',0)").bind(at).run();
   await db.prepare("INSERT INTO production_jobs(id,topic_id,owner_id,is_test,status,review_mode,mode_epoch,source_snapshot,skill_snapshot,contract_hash,checkpoint,created_at,updated_at) VALUES(?,'SYNTHETIC-fixed-v5',?,0,'waiting_executor','auto',0,?,?,?,'{}',?,?)").bind(ID,OWNER,SOURCE,SKILL,CONTRACT,at,at).run();
   const content=draft();if(alias)Object.assign(content.storyboard[1],{asset_id:'existing_v5_outro_119f',visual:'完整保留既有原v5片尾119帧，1×原速，不截断、不重设计。',sound:'保留片尾完整原声1×；正文BGM在片尾前结束。'});
+  if(closing){content.storyboard[0].end=55.8;content.storyboard[1].start=56.033333;content.storyboard[1].end=60;content.storyboard.splice(1,0,{start:55.8,end:56.033333,narration:'',visual:'延续上一段真实动态画面完成自然切出，不定格、不循环、不重帧；在56.033333秒硬切入固定片尾。',sound:'保留问句尾部自然余韵；片尾原声开始前不得叠压。',asset_id:'pending_outro_transition_source'});}
   const first=await api.claimJob('SYNTHETIC submit only',ID),submitted=await api.submitDraft(ID,first.lease_token,0,'SYNTHETIC-fixed-v5-draft',content);
   const source=submitted.job.milestones.find(m=>m.node==='source'),sourceClaim=await api.claimReview(ID,source.id,'SYNTHETIC-source-call-1');
   await api.decideMilestone(ID,source.id,1,source.artifact_hash,0,'approve',approval(source,1),'codex-cli',sourceClaim.review_token);
@@ -97,13 +100,13 @@ async function fixture(t,alias=false){
   const frontstage=narrationPreflight(job,JSON.parse(milestone.artifact),{root:path.join(root,'preflight')});
   assert.equal(frontstage.text_preflight,'clear');
   assert.equal(frontstage.production_ready,false);
-  assert.deepEqual(frontstage.deferred_non_narrated_segments.map(s=>({index:s.index,asset_id:s.asset_id})),[{index:1,asset_id:alias?'existing_v5_outro_119f':'existing_v5_outro'}]);
+  assert.deepEqual(frontstage.deferred_non_narrated_segments.map(s=>({index:s.index,asset_id:s.asset_id})),closing?[{index:1,asset_id:'pending_outro_transition_source'},{index:2,asset_id:'existing_v5_outro'}]:[{index:1,asset_id:alias?'existing_v5_outro_119f':'existing_v5_outro'}]);
   assert.equal(frontstage.text_problems.length,0);
   const preflightInput=JSON.parse(fs.readFileSync(path.join(root,'preflight',fs.readdirSync(path.join(root,'preflight'))[0],'input.json'),'utf8'));
   assert.equal(preflightInput.segments.length,1);assert.equal(preflightInput.segments[0].text,draft().script);
   return {engine,db,root,job,milestone,frontstage};
 }
-function cache(f){
+function cache(f,{startup=''}={}){
   const {job,milestone,frontstage}=f;
   const old={...frontstage,text_preflight:'blocked',text_problems:['segments[1] 缺文字或具体可见画面'],problems:[...frontstage.problems,'segments[1] 缺文字或具体可见画面']};
   delete old.deferred_non_narrated_segments;delete old.storyboard_segments_version;
@@ -114,7 +117,7 @@ function cache(f){
   const root=path.join(f.root,'completed-cache'),dir=path.join(root,key),bytes=new Map();
   const rawReport=approval(milestone,13);delete rawReport.receipt;
   const output=JSON.stringify(rawReport);
-  const events=[{type:'thread.started',thread_id:'SYNTHETIC-original-thread'},{type:'turn.started'},{type:'item.completed',item:{type:'agent_message',text:output}},{type:'turn.completed'}].map(JSON.stringify).join('\n')+'\n';
+  const events=startup+[{type:'thread.started',thread_id:'SYNTHETIC-original-thread'},{type:'turn.started'},{type:'item.completed',item:{type:'agent_message',text:output}},{type:'turn.completed'}].map(JSON.stringify).join('\n')+'\n';
   const started_at=new Date(Date.now()-10000).toISOString(),process={
     scope:'owned-cli-child-tree',pid:2147483500,started_at,finished_at:new Date(Date.now()-5000).toISOString(),
     prompt_sha256:sha(oldPrompt),image_sha256:[],model:'gpt-5.6-sol',
@@ -167,6 +170,14 @@ for(const alias of [false,true])test('raw13 with seven accepted429s reconciles t
   assert.equal((await f.db.prepare("SELECT count(*) AS n FROM production_reviews WHERE decision='ai_review_output_reconciliation_v1'").first()).n,1);
   assert.equal(await f.engine.getExpressionDepth(),100);
   await assert.rejects(()=>api.recoverCompletedReviewOutput(ID,m.id,found.proof));
+});
+
+test('silent closing completed approve is recovered through the existing CAS without removing its material timeline or resetting calls',async t=>{
+ const f=await fixture(t,false,true),before=await immutable(f.db),artifact=JSON.parse(f.milestone.artifact),body=bodyStoryboard(artifact.storyboard),task=motionClosingTasks(body.map((_,index)=>({index})),body)[1];
+ assert.equal(body.length,2);assert.equal(task.silent_closing,true);assert.equal(task.requires_existing_video,true);assert.equal(body[1].start,55.8);assert.equal(body[1].end,56.033333);assert.equal(f.frontstage.production_ready,false);assert.equal(f.frontstage.deferred_non_narrated_segments[0].material_status,'pending');assert.equal(f.frontstage.deferred_non_narrated_segments[0].requires_existing_video,true);
+ const startup='2026-10-29T01:07:25.175104Z ERROR codex_skills_extension::host_service: failed to install system skills: io error while remove existing system skills dir: 拒绝访问。 (os error 5)\n2026-10-29T01:07:32.340700Z ERROR codex_skills_extension::host_service: failed to install system skills: io error while remove existing system skills dir: 目录不是空的。 (os error 145)\n';
+ const c=cache(f,{startup}),found=c.find();assert.equal(reviewOutputRecoveryCandidate(f.job)?.id,f.milestone.id);assert.equal(found.proof.new_model_calls,0);assert.equal(found.proof.event_log_sha256,sha(fs.readFileSync(path.join(c.dir,'cli-process/cli-events.log'))));const lease=await api.recoverCompletedReviewOutput(ID,f.milestone.id,found.proof),result=await api.decideMilestone(ID,f.milestone.id,f.milestone.revision,f.milestone.artifact_hash,f.milestone.mode_epoch,'approve',{...found.output,receipt:{...found.receipt,review_stage_policy_version:REVIEW_STAGE_POLICY_VERSION,review_stage_policy_sha256:REVIEW_STAGE_POLICY_SHA256}},'codex-cli',lease.review_token);
+ assert.equal(result.status,'approved');budget(result);assert.deepEqual(await immutable(f.db),before);for(const [file,bytes]of c.bytes)assert.deepEqual(fs.readFileSync(file),bytes);
 });
 
 test('an explicit later owner stop cannot be turned into a fixed-v5 output recovery',async t=>{

@@ -50,7 +50,7 @@ Do not paste the temporary token into chat, save it in source, or run commands o
 
 ## Source and implementation
 
-- `.migration-backup/` — untouched imported source and operational instructions; excluded from deployment.
+- `.migration-backup/` — original upstream source snapshot and operational instructions; excluded from deployment. Last synchronized from `Sioune/siounex-ai-topic-video` at `8727d4c` (see `.upstream-revision`). Upstream updates must also be reconciled into the active artifact copies; a raw Git pull does not update those copies.
 - `artifacts/ai-studio/src/` — original client components, styles, policy files and route mapping.
 - `artifacts/api-server/src/imported/` — original backend business rules, SQL migrations and production policy files.
 - `artifacts/api-server/src/lib/studio-*` — SQLite persistence, App Storage and replacement identity boundary.

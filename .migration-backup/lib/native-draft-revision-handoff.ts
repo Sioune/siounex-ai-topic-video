@@ -4,7 +4,7 @@ import {hash,text,ProductionError} from './production-contract';
 import {assertFinalDuration,type FinalDurationProof} from './final-media-contract';
 import {requiresToolDemonstration,toolDemonstrationProblems} from './tool-demonstration.mjs';
 
-const TARGET='job_9ef39025-d92e-4770-82d0-05881451c5df';
+const TARGET='job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf';
 const FEEDBACK_THREAD='01a119fc-87ed-7316-b59f-cf4ba175a015';
 const RECEIPT_DECISION='native_draft_revision_return_v1';
 const DELEGATED_PAUSE='聊天返工已登记，保留原视频；等待具备原生ChatCut工具的会话，先交付真实预览帧再合成新草稿';

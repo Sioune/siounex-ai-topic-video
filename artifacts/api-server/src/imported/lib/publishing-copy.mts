@@ -82,6 +82,10 @@ function fieldsIn(text:string,lines:Line[],start:number,end:number,section:strin
  const markers:Marker[]=[];let fence:string|null=null;
  for(let i=start;i<end;i++){
   const edge=/^\s*(`{3,}|~{3,})/u.exec(lines[i].text);if(edge){if(!fence)fence=edge[1][0];else if(edge[1][0]===fence)fence=null;continue;}if(fence)continue;
+  // A numbered list inside a description can contain a field label as text.
+  const numbered=/^\s*(\d+)[.．、)）]\s+([^:：]+)\s*$/u.exec(lines[i].text);
+  const nextNumbered=i+1<end?/^\s*(\d+)[.．、)）]\s+\S/u.exec(lines[i+1].text):null;
+  if(markers.at(-1)?.key==='description'&&numbered&&nextNumbered&&Number(nextNumbered[1])===Number(numbered[1])+1&&!markerAt(lines[i+1],i+1))continue;
   const marker=markerAt(lines[i],i);if(!marker)continue;
   if(marker.tag_line&&markers.at(-1)?.key==='tags')continue;
   markers.push(marker);

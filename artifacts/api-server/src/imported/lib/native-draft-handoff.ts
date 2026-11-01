@@ -10,7 +10,7 @@ import {nativeSelectionSnapshot,nativeInputSnapshot,NATIVE_INPUT_RECORDS_SQL} fr
 import {confirmedSiteVideoForReturn,siteArchiveMutationGuard,type SiteArchiveActor} from './site-file-archive';
 // Return an already completed, verified draft. This does not grant a production scope.
 export async function returnNativeDraft(id:string,b:Record<string,unknown>,siteActor:SiteArchiveActor={trusted_owner_service:true}){
- if(id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw new ProductionError('Protected job excluded',403);
+ if(id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05')throw new ProductionError('Protected job excluded',403);
  const j=await getJob(id),sha=text(b.sha256,64),script=text(b.script_hash,64),epoch=Number(b.mode_epoch),revision=Number(b.revision),qa=b.qa as Record<string,unknown>;
  if(!/^[a-f0-9]{64}$/.test(sha)||!Number.isInteger(b.size_bytes)||Number(b.size_bytes)<=0||!Number.isFinite(b.duration)||Number(b.duration)<=0||b.quality_approved!==false||b.publication_authorized!==false||b.new_paid_calls!==0||qa?.semantic_listening_passed!==false||!/^[a-f0-9]{64}$/.test(String(qa?.recovery_receipt_sha256)))throw new ProductionError('Verified existing draft metadata required; no quality approval',400);
  assertFinalDuration(qa.final_duration,sha);

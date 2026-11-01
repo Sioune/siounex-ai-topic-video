@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // programmatic Clerk browser test, never by inserting legacy SQLite sessions.
 if (process.env.NODE_ENV === 'production') throw new Error('Development smoke test only');
 const origin = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : 'http://localhost:80';
-for (const route of ['/api/library', '/api/data-center', '/api/production', '/api/publishing-service', '/api/studio/access', '/mcp']) {
+for (const route of ['/api/library', '/api/data-center', '/api/production', '/api/publishing-service', '/api/cover-candidate', '/api/work-in-progress-video', '/api/owner-feedback', '/api/studio/access', '/mcp']) {
   for (const headers of [
     {},
     { 'oai-authenticated-user-id': 'owner', 'oai-authenticated-user-email': 'owner@example.invalid' },

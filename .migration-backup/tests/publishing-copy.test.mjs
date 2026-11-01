@@ -5,6 +5,16 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {PUBLISHING_COPY_PARSER_VERSION,resolvePublishingCopy} from '../lib/publishing-copy.mts';
+test('numbered body list remains intact and explicit duplicates remain blocked',()=>{
+ const text='## 小红书\n标题：合成示例\n简介：列表：\n1. 标题\n2. 时间\n3. 地点\n标签：#示例';
+ const result=resolvePublishingCopy(text,'xiaohongshu');
+ assert.equal(result.ok,true,JSON.stringify(result));
+ assert.equal(result.title,'合成示例');
+ assert.equal(result.description,'列表：\n1. 标题\n2. 时间\n3. 地点');
+ const ambiguous='## 小红书\n标题：示例\n简介：正文\n1. 标题：另一标题\n2. 简介：另一个正文\n标签：#示例';
+ assert.equal(resolvePublishingCopy(ambiguous,'xiaohongshu').ok,false);
+});
+
 
 const fixture=name=>readFileSync(new URL('./fixtures/publishing-copy/'+name,import.meta.url),'utf8');
 const examples={refund:fixture('refund-promotion.md'),glm:fixture('glm-promotion.md'),japanese:fixture('japanese-promotion.txt')};

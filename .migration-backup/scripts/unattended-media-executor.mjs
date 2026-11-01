@@ -21,7 +21,7 @@ function saveLocalReady(job,op,dir,receipt){
 }
 
 export async function runUnattendedMedia({job,operation,inputRoot,qualityManifestFile,deadline=Date.now()+480000,outputRoot='.sites-runtime/media-operations'},{call,render=renderOperation,qa=technicalQa,archive=archiveNativeFile,afterArchive=()=>{},postAsset,workstations}={}){
- if(job.id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee'||job.is_test&&archive===archiveNativeFile)throw Error('Protected/test production excluded');
+ if(job.id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05'||job.is_test&&archive===archiveNativeFile)throw Error('Protected/test production excluded');
  requireQualityInput(job,operation,{required:false});const op=operation,plan=JSON.parse(op.plan),dir=path.resolve(outputRoot,op.id),handoff=path.join(dir,'library-handoff.json');
  if(op.status==='completed')return{status:'media-completed',operation_id:op.id,reused:true,quality_approved:false};
  if(plan.cost!==0||plan.publication!==false&&plan.publication!==undefined||op.revision!==job.revision||op.script_hash!==job.approved_hash||op.mode_epoch!==job.mode_epoch||!['queued','running','prepared'].includes(op.status))throw Error('Media scope/version/status changed');

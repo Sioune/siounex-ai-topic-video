@@ -1,6 +1,15 @@
+import {claimCoverThumbnailWorker,nextCoverThumbnail,finishCoverThumbnailWorker} from './site-cover-thumbnail-worker';
+import {startCoverCandidate,putCoverCandidatePart,finishCoverCandidate,getCoverCandidate,getCoverCandidatePartDigest} from './cover-candidate';
+import {enableOwnerNodePolicy,applyOwnerNodePolicy} from './owner-node-policy';
+import {continueSavedOwnerFeedback,continueOwnerFeedbackAfterAiReview} from './owner-feedback-continuation';
 import {db} from './store';
 import {ProductionError} from './production-contract';
 import {getResearch} from './research';
+import {retryJob,getJob} from './production';
+import {continueMediaRework} from './milestones';
+import {retryOwnerTextReview,recoverOwnerTerminalTextReview} from './owner-text-review-retry';
+import {getLatestWorkInProgress,getWorkInProgressPartDigest} from './work-in-progress-video';
+import {readAutomaticClone} from './automatic-clone';
 import {POST as executePrivateProduction} from '../app/api/executor/route';
 import policy from '../production/native-runtime-policy.json';
 
@@ -23,6 +32,36 @@ export async function nativeProductionRequest(owner:string,args:Record<string,un
   if(job?.owner_id!==owner||job.is_test)throw new ProductionError('宣发任务归属不符',403);bound=true;
  }
  if(!bound&&!policy.global_actions.includes(b.action))throw new ProductionError('正常制作动作必须绑定原任务',403);
+ if(['site_cover_worker_claim','site_cover_worker_next','site_cover_worker_finish'].includes(b.action)){if(Object.keys(b).some(k=>!['action','token','cursor','done','failed'].includes(k)))throw new ProductionError('缩略图后台请求无效',400);return {status:200,body:await (b.action==='site_cover_worker_claim'?claimCoverThumbnailWorker(owner):b.action==='site_cover_worker_next'?nextCoverThumbnail(owner,b.token):finishCoverThumbnailWorker(owner,b.token,b))};}
+ if(b.action==='owner_node_mode_all'){if(Object.keys(b).some(k=>k!=='action'))throw new ProductionError('人工模式请求无效',400);return {status:200,body:await enableOwnerNodePolicy(owner)};}
+ if(['dispatch_next','executor_heartbeat'].includes(b.action))await applyOwnerNodePolicy(owner);
+ // The owner's request to continue failed work can use the same checkpoint-
+ // preserving retry as the production page. This grants no content approval.
+ if(b.action==='retry')return {status:200,body:{job:await retryJob(b.id,owner)}};
+ if(b.action==='owner_feedback_review_continue'){if(Object.keys(b).some(k=>!['action','id','review_id','revision','content_hash','mode_epoch'].includes(k))||typeof b.review_id!=='string'||!Number.isSafeInteger(b.revision)||!Number.isSafeInteger(b.mode_epoch)||typeof b.content_hash!=='string')throw new ProductionError('审核纠错请求无效',400);return {status:200,body:await continueOwnerFeedbackAfterAiReview(b.id,owner,b)};}
+ if(b.action==='owner_video_feedback_continue'){
+  if(Object.keys(b).some(k=>!['action','id','milestone_id','revision','artifact_hash','mode_epoch'].includes(k))||typeof b.milestone_id!=='string'||!Number.isSafeInteger(b.revision)||!Number.isSafeInteger(b.mode_epoch)||typeof b.artifact_hash!=='string')throw new ProductionError('视频反馈接续请求无效',400);
+  const j=await getJob(b.id,owner),m=j.milestones?.find(x=>x.id===b.milestone_id);if(!m||m.node!=='video'||m.status!=='revise'||typeof j.review_note!=='string'||!j.review_note.trim())throw new ProductionError('当前本人视频修改意见已变化',409);
+  const resumed=await continueMediaRework(b.id,owner,b.milestone_id,b.revision,b.artifact_hash,b.mode_epoch,j.review_note);return {status:200,body:{job_id:resumed.id,status:resumed.status,feedback_saved:true,quality_approved:false,publication_authorized:false}};
+ }
+ if(b.action==='owner_feedback_continue'){if(Object.keys(b).some(k=>!['action','id','feedback_id','revision','content_hash','mode_epoch'].includes(k))||typeof b.feedback_id!=='string'||!Number.isSafeInteger(b.revision)||!Number.isSafeInteger(b.mode_epoch)||typeof b.content_hash!=='string')throw new ProductionError('意见接续请求无效',400);return {status:200,body:await continueSavedOwnerFeedback(b.id,owner,b)};}
+ if(b.action==='owner_text_review_retry')return {status:200,body:await retryOwnerTextReview(b.id,owner,b)};
+ if(b.action==='owner_text_review_output_recover')return {status:200,body:await recoverOwnerTerminalTextReview(b.id,owner,b)};
+ if(b.action==='cover_candidate_start')return {status:200,body:await startCoverCandidate(b.id,b,{owner_id:owner})};
+ if(b.action==='cover_candidate_part')return {status:200,body:await putCoverCandidatePart(b.id,b,{owner_id:owner})};
+ if(b.action==='cover_candidate_finish')return {status:200,body:await finishCoverCandidate(b.id,b,{owner_id:owner})};
+ if(b.action==='cover_candidate_read_part')return {status:200,body:await getCoverCandidatePartDigest(b.id,b.candidate_id,b.role,b.part,owner)};
+ if(b.action==='cover_candidate_read')return {status:200,body:{candidate:await getCoverCandidate(b.id,owner)}};
+ if(b.action==='automatic_clone_render_job_read'){
+  if(Object.keys(b).some(k=>!['action','id','request_id'].includes(k))||typeof b.request_id!=='string')throw new ProductionError('本人声制作读取请求无效',400);
+  const state=await readAutomaticClone(b.id,{owner_id:owner});
+  const request=state.request;if(!state.clone?.is_current||!request||request.id!==b.request_id||request.status!=='audio_ready')throw new ProductionError('当前本人声音轨或请求已变化',409);
+  const job=await getJob(b.id,owner,{desk:true});
+  if(job.status!=='approved'||job.revision!==request.binding.revision||job.approved_hash!==request.binding.script_hash||job.mode_epoch!==request.binding.mode_epoch||job.contract_hash!==request.binding.contract_hash)throw new ProductionError('当前本人声制作绑定已变化',409);
+  return {status:200,body:{job}};
+ }
+ if(b.action==='wip_video_read'){if(Object.keys(b).some(k=>!['action','id'].includes(k)))throw new ProductionError('预览读取请求无效',400);return {status:200,body:{preview:await getLatestWorkInProgress(b.id,owner)}};}
+ if(b.action==='wip_video_read_part'){if(Object.keys(b).some(k=>!['action','id','preview_id','part'].includes(k))||typeof b.preview_id!=='string'||!Number.isSafeInteger(b.part))throw new ProductionError('预览分片读取请求无效',400);return {status:200,body:await getWorkInProgressPartDigest(b.id,b.preview_id,owner,b.part)};}
  // Drain old processes without interrupting their existing claims or exports.
  // The unchanged scheduled task then starts the synchronized normal executor.
  if(args.runtime_protocol!==2&&['dispatch_next','research_next'].includes(b.action))return {status:200,body:{kind:'idle',job:null,research:null,no_work:true,executor_reload_required:true,content_motion_policy:'content-motion@1'}};
@@ -35,6 +74,7 @@ export async function nativeProductionRequest(owner:string,args:Record<string,un
  }
  const response=await executePrivateProduction(new Request('https://siounex-ai-topic-library.siounexzhao.chatgpt.site/api/executor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}));
  const body=await response.json() as any;
+ if(response.ok&&b.action==='native_preparation_progress'&&['completed','blocked'].includes(b.status)&&typeof b.id==='string'){const {tryReconcileHumanPreviewFeedback}=await import('./human-preview-feedback');body.formal_feedback=await tryReconcileHumanPreviewFeedback(b.id,owner);}
  if(body?.job?.id){const j=await db().prepare('SELECT owner_id,is_test FROM production_jobs WHERE id=?').bind(body.job.id).first<{owner_id:string;is_test:number}>();if(j?.owner_id!==owner||j.is_test)throw new ProductionError('返回制作任务归属不符',403);}
  if(body?.research?.id)await getResearch(body.research.id,owner);
  return {status:response.status,body};

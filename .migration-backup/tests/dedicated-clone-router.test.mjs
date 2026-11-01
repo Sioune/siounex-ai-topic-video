@@ -1,0 +1,8 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createDedicatedCloneRouter} from '../scripts/production-autonomous-pass.mjs';
+const id='job_11111111-1111-4111-8111-111111111111',rid='acl_'+'a'.repeat(64),voice='v',hash='b'.repeat(64),contract='c'.repeat(64);
+const job={id,status:'approved',review_mode:'node',revision:1,mode_epoch:0,approved_hash:hash,contract_hash:contract};
+const request={id:rid,job_id:id,voice_id:voice,acquisition_method:'heygen_studio_audio_preview',new_payment_limit:0,new_clone_allowed:false,api_fallback_allowed:false,publication_authorized:false,binding:{revision:1,mode_epoch:0,script_hash:hash,contract_hash:contract}};
+function setup(j=job,r=request){const seen=[];const call=async b=>b.action==='read'?{job:j}:{clone:{is_current:true},request:r};return {seen,router:createDedicatedCloneRouter({call,createBrowser:()=>async(...x)=>{seen.push(x);return 'ok';}})};}
+test('routes different current owner-approved node requests through dedicated browser without hardcoded ids',async()=>{const {router,seen}=setup();assert.equal(await router('recover-preparation',{job_id:id,request_id:rid,voice_id:voice},{dir:'x'}),'ok');assert.equal(seen.length,1);});
+test('paused, cancelled, non-node, stale or paid requests never reach browser',async()=>{for(const [j,r] of [[{...job,status:'paused'},request],[{...job,status:'cancelled'},request],[{...job,review_mode:'auto'},request],[job,{...request,voice_id:'other'}],[job,{...request,new_payment_limit:1}],[job,{...request,binding:{...request.binding,script_hash:'d'.repeat(64)}}]]){const {router,seen}=setup(j,r);await assert.rejects(router('preview',{job_id:id,request_id:rid,voice_id:voice},{}));assert.equal(seen.length,0);}});

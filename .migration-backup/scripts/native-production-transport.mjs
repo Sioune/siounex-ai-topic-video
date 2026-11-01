@@ -4,7 +4,7 @@ import {StringDecoder} from 'node:string_decoder';
 import fs from 'node:fs';
 import path from 'node:path';
 import {spawn} from 'node:child_process';
-const PROJECT='appgprj_6ac65bafa2a48191a4283cb34ebd5e11',TOOL='ai.production_runtime_request';
+const PROJECT='appgprj_8f3ab93a1fb6107ad01eef60d3bb28f2',TOOL='ai.production_runtime_request';
 const coded=(code)=>Object.assign(Error(code),{code});
 const DIAGNOSTIC_ACTIONS=new Set(['read','dispatch_next','native_preparation_read','native_preparation_ensure','native_preparation_claim','native_preparation_progress','local_review_draft_read','local_review_draft_begin','local_review_draft_return','site_archive_read_part','site_archive_start','site_archive_part','site_archive_finalize','site_archive_confirm','promo_list','post_video_preparation_read','post_video_preparation_begin','post_video_preparation_complete']);
 // Never retain upstream text, which may contain credentials, request payloads or private content.

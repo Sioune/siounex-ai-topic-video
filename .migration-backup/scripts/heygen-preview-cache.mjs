@@ -11,9 +11,11 @@ const safeId=v=>typeof v==='string'&&/^[A-Za-z0-9_.:-]{1,200}$/.test(v);
 const fail=code=>{throw Object.assign(Error(code),{code});};
 export const previewCanonical=v=>Array.isArray(v)?'['+v.map(previewCanonical).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+previewCanonical(v[k])).join(',')+'}':JSON.stringify(v);
 export const previewSha=v=>createHash('sha256').update(Buffer.isBuffer(v)?v:typeof v==='string'?v:previewCanonical(v)).digest('hex');
-const canonicalSpeech=text=>text.replace(/\r\n/g,'\n').replace(/\n+$/u,'');
+// Studio stores narration as a single paragraph; line breaks do not change
+// the spoken characters. All other characters remain significant.
+const canonicalSpeech=text=>text.replace(/\r?\n/g,'');
 export const canonicalSpeechCompare=(actual,expected)=>typeof actual==='string'&&typeof expected==='string'&&canonicalSpeech(actual)===canonicalSpeech(expected);
-export function speechComparisonEvidence(actual,expected){const a=typeof actual==='string',e=typeof expected==='string';return{normalization:'crlf-to-lf-and-trailing-lf-v1',actual_text_sha256:a?previewSha(actual):null,expected_text_sha256:e?previewSha(expected):null,actual_text_length:a?actual.length:null,expected_text_length:e?expected.length:null,actual_canonical_sha256:a?previewSha(canonicalSpeech(actual)):null,expected_canonical_sha256:e?previewSha(canonicalSpeech(expected)):null,raw_equal:a&&e&&actual===expected,canonical_equal:canonicalSpeechCompare(actual,expected)};}
+export function speechComparisonEvidence(actual,expected){const a=typeof actual==='string',e=typeof expected==='string';return{normalization:'remove-line-breaks-v1',actual_text_sha256:a?previewSha(actual):null,expected_text_sha256:e?previewSha(expected):null,actual_text_length:a?actual.length:null,expected_text_length:e?expected.length:null,actual_canonical_sha256:a?previewSha(canonicalSpeech(actual)):null,expected_canonical_sha256:e?previewSha(canonicalSpeech(expected)):null,raw_equal:a&&e&&actual===expected,canonical_equal:canonicalSpeechCompare(actual,expected)};}
 const same=(a,b)=>previewCanonical(a)===previewCanonical(b);
 const safeFile=(root,file)=>{let at=root;for(const part of path.relative(root,file).split(path.sep)){at=path.join(at,part);if(fs.existsSync(at)&&fs.lstatSync(at).isSymbolicLink())fail('HEYGEN_PREVIEW_SYMLINK');}return file;};
 function immutable(root,file,value){safeFile(root,file);const bytes=Buffer.isBuffer(value)?value:Buffer.from(previewCanonical(value));if(fs.existsSync(file)){if(!fs.lstatSync(file).isFile()||previewSha(fs.readFileSync(file))!==previewSha(bytes))fail('HEYGEN_PREVIEW_IMMUTABLE_CHANGED');return;}fs.writeFileSync(file,bytes,{flag:'wx'});}

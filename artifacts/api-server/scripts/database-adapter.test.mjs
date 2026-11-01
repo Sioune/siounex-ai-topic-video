@@ -5,6 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { build } from 'esbuild';
+import { readOwnerFeedback } from '../src/imported/lib/owner-feedback-records.mts';
 
 test('SQLite adapter preserves atomic batches, concurrent reads, and affected-row counts', async () => {
   const root = await mkdtemp(path.join(os.tmpdir(), 'studio-adapter-'));
@@ -29,6 +30,9 @@ test('SQLite adapter preserves atomic batches, concurrent reads, and affected-ro
     });
     const { initializeStudioDatabase, studioDatabase: db, persistStudioDatabase } = await import(pathToFileURL(output).href);
     await initializeStudioDatabase();
+    // The full schema has overlapping joined-column names that simplified
+    // upstream fixtures omit; exercise compound-query column resolution here.
+    assert.deepEqual(await readOwnerFeedback(db, 'synthetic-feedback-no-records'), []);
     await db.exec('CREATE TABLE adapter_test(id TEXT PRIMARY KEY, value TEXT)');
     const results = await Promise.all(Array.from({ length: 8 }, (_, i) => db.batch([
       db.prepare('INSERT INTO adapter_test VALUES (?,?)').bind(String(i), 'value'),

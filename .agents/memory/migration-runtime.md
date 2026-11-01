@@ -32,3 +32,15 @@ Development Clerk cookie authentication also depends on its development-browser 
 **Why:** Sending only a session cookie from a shell can produce `dev-browser-missing` and a 401 despite a valid, correctly authorized account.
 
 **How to apply:** Distinguish authentication-context failures from owner-authorization failures. Use a real browser context for cookie-flow verification or server-side token requests strictly for programmatic authorization checks; never change the web client to bearer-token authentication to work around a shell-only failure.
+
+Normalize exported source line endings before three-way merging upstream updates into the Replit-adapted copies.
+
+**Why:** The imported snapshot uses CRLF in files where later upstream versions use LF; merging those raw files can report whole-file conflicts and hide otherwise compatible updates. Git merge-file can return the number of conflict regions, not only status 1.
+
+**How to apply:** Compare normalized text, inspect every remaining overlapping region, and retain Replit identity/runtime adapters while integrating upstream behavior. Do not silently keep an entire old file merely because the raw merge conflicted.
+
+Validate imported compound SQLite queries against the full migrated schema, not only simplified upstream fixtures.
+
+**Why:** A feedback UNION query passed minimal fixture tests but failed output-column resolution against the actual joined schema. An explicit output alias resolved it.
+
+**How to apply:** Keep a full-migration adapter regression for newly imported read models, and use explicit output aliases for compound-query ordering.

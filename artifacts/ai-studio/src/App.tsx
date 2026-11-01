@@ -10,6 +10,7 @@ import Workspace from '@/app/workspace';
 import DataCenter from '@/components/data-center';
 import MobileDataUpload from '@/components/mobile-data-upload';
 import ProductionDesk from '@/components/production-desk';
+import OwnerStandards from '@/components/owner-standards';
 import ResearchDesk from '@/components/research-desk';
 import OriginalDesk from '@/components/original-desk';
 import PublishingCenter from '@/components/publishing-center';
@@ -50,6 +51,7 @@ function Routes() {
     <Route path="/"><Workspace initial={null} deferInitialLoad /></Route>
     <Route path="/data/upload" component={UploadRoute} />
     <Route path="/data" component={DataCenter} />
+    <Route path="/production/standards" component={OwnerStandards} />
     <Route path="/production" component={ProductionDesk} />
     <Route path="/research" component={ResearchDesk} />
     <Route path="/originals" component={OriginalDesk} />

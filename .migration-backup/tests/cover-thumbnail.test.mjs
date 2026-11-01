@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import {createHash} from 'node:crypto';import {makeCoverThumbnail} from '../scripts/cover-thumbnail.mjs';
+const image=readFileSync(new URL('../public/brand-covers/print-cover_3_4-c7673320d52a.png',import.meta.url));const sha=b=>createHash('sha256').update(b).digest('hex');
+test('generates a small local preview bound to the unchanged exact source bytes',()=>{const original=Buffer.from(image),v=makeCoverThumbnail(image,sha(image));assert.deepEqual(image,original);assert.equal(v.source_sha256,sha(image));assert.equal(v.thumbnail_sha256,sha(v.bytes));assert.ok(v.bytes.length<image.length);assert.equal(v.mime_type,'image/webp')});
+test('rejects wrong source hash and failed processor',()=>{assert.throws(()=>makeCoverThumbnail(image,'0'.repeat(64)),/SOURCE_MISMATCH/);assert.throws(()=>makeCoverThumbnail(image,sha(image),{run:()=>({status:1})}),/GENERATION_FAILED/)});

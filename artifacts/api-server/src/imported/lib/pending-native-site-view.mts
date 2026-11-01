@@ -1,7 +1,7 @@
 import {validSiteArchive,type SiteFileArchive} from './site-file-archive-contract.mts';
 type Job={id?:string;owner_id?:string|null;revision:number;approved_revision:number|null;approved_hash:string|null;mode_epoch?:number;contract_hash?:string;media_continuation?:{scope?:{id?:string}|null};milestones?:{id?:string;node:string;revision:number;artifact_version?:number;artifact:string;status?:string;mode_epoch?:number}[];reviews?:Record<string,unknown>[]};
 export function pendingNativeSiteArchives(j:Job):SiteFileArchive[]{
- if(j.id!=='job_9ef39025-d92e-4770-82d0-05881451c5df'||j.revision!==2||j.approved_revision!==2||!j.approved_hash||!j.owner_id)return[];
+ if(j.id!=='job_d3fcbbde-fb72-46b9-a64d-e3315c0a20cf'||j.revision!==2||j.approved_revision!==2||!j.approved_hash||!j.owner_id)return[];
  const m=(j.milestones||[]).filter(m=>m.node==='video'&&m.revision===2&&m.mode_epoch===j.mode_epoch&&!['invalidated','superseded'].includes(m.status||'')).sort((a,b)=>(b.artifact_version||0)-(a.artifact_version||0))[0];if(!m)return[];
  try{const video=JSON.parse(m.artifact),pending=video.qa?.pending_native_site_id;if(!/^nsd_[a-f0-9]{64}$/.test(pending||'')||!/^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/.test(video.qa?.render_id||'')||video.qa?.native_render_id!==video.qa?.render_id||video.qa?.quality_approved!==false)return[];
  const receipt=(j.reviews||[]).find(r=>r.decision==='native_site_draft_return_v1'&&r.revision===2&&(()=>{try{const v=JSON.parse(String(r.note));return v.pending_id===pending&&v.milestone_ids?.video===m.id&&v.video_sha256===video.sha256&&v.quality_approved===false&&v.owner_button_clicked===false}catch{return false}})());if(!receipt)return[];

@@ -177,12 +177,18 @@ test('whole automatic pass selects exact pending layout upgrade before its alrea
 });
 
 
-async function technicalNoopFixture(t){
- const f=await fixture(t,'auto'),selection=await api.nextNativePreparationHandoff(),q=(await api.ensureNativePreparationHandoff(ID,{binding:selection.binding},actor)).handoff,c=await api.claimNativePreparationHandoff(ID,{queue_id:q.queue_id,version:q.version,executor:'finite-local-private-review-v1',invocation_id:'SYNTHETIC-original-noop-producer'},actor),artifact={kind:'local-file',file:'.sites-runtime/authorized-inputs/'+ID+'/revision-1/private-review/'+'1'.repeat(64)+'/producer-receipt.json',sha256:'2'.repeat(64),size_bytes:18,purpose:'render-receipt',verified_at:AT,verification:'executor-reported-local-bytes'};
+async function technicalNoopFixture(t,mode='auto'){
+ const f=await fixture(t,mode),selection=await api.nextNativePreparationHandoff(),q=(await api.ensureNativePreparationHandoff(ID,{binding:selection.binding},actor)).handoff,c=await api.claimNativePreparationHandoff(ID,{queue_id:q.queue_id,version:q.version,executor:'finite-local-private-review-v1',invocation_id:'SYNTHETIC-original-noop-producer'},actor),artifact={kind:'local-file',file:'.sites-runtime/authorized-inputs/'+ID+'/revision-1/private-review/'+'1'.repeat(64)+'/producer-receipt.json',sha256:'2'.repeat(64),size_bytes:18,purpose:'render-receipt',verified_at:AT,verification:'executor-reported-local-bytes'};
  await api.progressNativePreparationHandoff(ID,{queue_id:q.queue_id,version:c.handoff.version,invocation_id:c.handoff.invocation_id,lease_token:c.lease_token,status:'completed',artifacts:[artifact],note:'SYNTHETIC completed exact existing producer',missing:[]},actor);
  const r=await returned(f),m=latest(r.job),a=JSON.parse(m.artifact),h=(await api.readNativePreparationHandoff(ID,actor)).handoff,n={schema:'native-technical-noop-v1',binding:h.binding,base_pending_video:base(m),local_draft_id:r.draft.local_draft_id,video_sha256:a.sha256,original_project_sha256:a.qa.project_sha256,audio_sha256:a.qa.audio_sha256,script_text_sha256:a.qa.voice_script_text_sha256,completed_project_sha256:'3'.repeat(64),completed_zip_sha256:'4'.repeat(64),proof_sha256:'5'.repeat(64),producer_receipt:{file:artifact.file,sha256:artifact.sha256,size_bytes:artifact.size_bytes},render_target:{schema:'private-render-identity-v1',...CURRENT_PRIVATE_RENDER_TARGET,body_frames:1230,body_visual_sha256:'6'.repeat(64)}},body={queue_id:h.queue_id,version:h.version,status:'completed',artifacts:[artifact,{...artifact,verified_at:'2026-10-21T00:00:00Z'}],technical_noop:n,note:'SYNTHETIC neutral local byte reconciliation; keep original returned candidate'};
  return{...f,r,m,a,h,n,body,artifact};
 }
+
+test('node review keeps the returned video for the owner instead of scheduling an automatic technical replacement',async t=>{
+ const f=await technicalNoopFixture(t,'node'),before=f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all();
+ const next=await api.nextWork();assert.notEqual(next.kind,'native-preparation-handoff');
+ assert.equal(latest(await api.getJob(ID)).status,'awaiting_human');assert.deepEqual(f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all(),before);
+});
 
 test('atomic completed-idle technical no-op preserves the original candidate and archives, replays once, then dispatches same-job post-video work',async t=>{
  const f=await technicalNoopFixture(t),before=f.protectedRows(),nodes=f.sql.prepare('SELECT * FROM production_milestones ORDER BY id').all(),drafts=f.sql.prepare("SELECT key,value FROM app_state WHERE key LIKE 'local_review_draft_v1:%' OR key LIKE 'site_archive_v1:%' ORDER BY key").all(),claimCount=f.sql.prepare("SELECT count(*) n FROM production_reviews WHERE decision='native_preparation_handoff_event' AND json_extract(note,'$.event')='claim'").get().n;

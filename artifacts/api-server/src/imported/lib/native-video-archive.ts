@@ -2,7 +2,7 @@ import{db}from'./store';import{getJob}from'./production';import{promoBinding}fro
 // Service callback records an actually finalized and re-materialized Library file.
 // It grants neither video quality approval nor permission to publish externally.
 export async function recordNativeVideoArchive(id:string,b:Record<string,unknown>){
- if(id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw new ProductionError('Protected video job excluded',403);
+ if(id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05')throw new ProductionError('Protected video job excluded',403);
  const j=await getJob(id),binding=promoBinding(j),sha=text(b.sha256,64),libraryId=text(b.library_file_id,100),fileId=text(b.file_id,100),version=Number(b.version),size=Number(b.size_bytes),verified=text(b.verified_at,50);
  if(JSON.stringify(binding)!==JSON.stringify(b.binding))throw new ProductionError('视频或脚本绑定已变化，先重新核验',409);
  const candidate=j.reviews.find(r=>r.id===binding.video_reference&&r.decision==='native_video_candidate'),native=candidate?JSON.parse(String(candidate.note)):null;

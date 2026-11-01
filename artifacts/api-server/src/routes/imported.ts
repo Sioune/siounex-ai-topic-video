@@ -5,6 +5,9 @@ import { authenticatedUser, requestIdentity } from '../lib/studio-auth';
 import { persistStudioDatabase } from '../lib/studio-database';
 import * as audioIntake from '../imported/app/api/audio-intake/route';
 import * as catalog from '../imported/app/api/catalog/route';
+import * as coverCandidate from '../imported/app/api/cover-candidate/route';
+import * as workInProgressVideo from '../imported/app/api/work-in-progress-video/route';
+import * as ownerFeedback from '../imported/app/api/owner-feedback/route';
 import * as dataCenter from '../imported/app/api/data-center/route';
 import * as dataCollections from '../imported/app/api/data-collections/route';
 import * as dataEvidence from '../imported/app/api/data-evidence/route';
@@ -38,6 +41,8 @@ import * as voiceReplacement from '../imported/app/api/voice-replacement/route';
 import * as mcp from '../imported/app/mcp/route';
 
 const routes: Record<string, any> = {
+  'cover-candidate': coverCandidate, 'work-in-progress-video': workInProgressVideo,
+  'owner-feedback': ownerFeedback,
   'audio-intake': audioIntake, catalog, 'data-center': dataCenter,
   'data-collections': dataCollections, 'data-evidence': dataEvidence, disposition,
   executor, favorites, ingest, library, maintenance, 'media-plan': mediaPlan, originals,

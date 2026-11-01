@@ -82,3 +82,15 @@ test('compatibility wrapper calls the original function directly without a manag
 test('invalid input never reserves a job or station',async()=>{
  for(const options of [{deadline_ms:NaN},{deadline_ms:-1},{onEvent:3},{now:null}])assert.throws(()=>createProductionWorkstations(options),code('PRODUCTION_STATION_INPUT_INVALID'));assert.throws(()=>createProductionWorkstations({now:()=>NaN}),code('PRODUCTION_STATION_CLOCK_INVALID'));const stations=createProductionWorkstations();for(const args of [['unknown','A',()=>{}],['render','',()=>{}],['render',' A',()=>{}],['render','A\n',()=>{}],['render','A',null]])await assert.rejects(stations.run(...args),code('PRODUCTION_STATION_INPUT_INVALID'));await assert.rejects(withProductionStation({},'render','A',()=>{}),code('PRODUCTION_STATION_INPUT_INVALID'));await assert.rejects(withProductionStation(null,'render','A',null),code('PRODUCTION_STATION_INPUT_INVALID'));const snapshot=await stations.drain();assert.equal(snapshot.active_count,0);assert.equal(snapshot.waiting_count,0);assert.equal(snapshot.max_active,0);
 });
+
+test('explicit ordinary post-video lane overlaps voice while retaining per-lane and per-station exclusion',async()=>{
+ const s=createProductionWorkstations(),voice=gate(),assets=gate(),archive=gate(),started=[];
+ const v=s.run('voice','A',async()=>{started.push('voice');await voice.promise});
+ const a=s.run('assets','A',async()=>{started.push('assets');await assets.promise},{lane:'approved-ordinary-post-video'});
+ await turn();assert.deepEqual(started,['voice','assets']);
+ await assert.rejects(s.run('assets','A',async()=>{}, {lane:'approved-ordinary-post-video'}),code('PRODUCTION_STATION_JOB_ACTIVE'));
+ await assert.rejects(s.run('render','A',async()=>{}),code('PRODUCTION_STATION_JOB_ACTIVE'));
+ await assert.rejects(s.run('voice','A',async()=>{}, {lane:'approved-ordinary-post-video'}),code('PRODUCTION_STATION_INPUT_INVALID'));
+ const busy=s.run('archive','B',async()=>{started.push('other-archive');await archive.promise});await turn();assets.resolve();await a;
+ const next=s.run('archive','A',async()=>{started.push('post-archive')},{lane:'approved-ordinary-post-video'});await turn();assert.deepEqual(started,['voice','assets','other-archive']);archive.resolve();await busy;await next;assert.equal(started.at(-1),'post-archive');voice.resolve();await v;await s.drain();
+});

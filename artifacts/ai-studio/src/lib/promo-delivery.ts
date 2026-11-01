@@ -10,7 +10,7 @@ type Binding={revision:number;script_hash:string;mode_epoch:number;video_sha256:
 type Package={schema:'promo-delivery-v1';version:number;parent_id:string|null;binding:Binding;content:PromoContent;source_notes:string;assets:PrivateAsset[];source:string;video_quality_approved:false;publication_authorized:false;cost:0};
 type Row={id:string;note:string;content_hash:string;created_at:string};
 const decision='promo_delivery_v1',now=()=>new Date().toISOString(),reviewKey=(pid:string)=>'promo_delivery_review_v1:'+pid;
-async function job(id:string,owner?:string){if(id==='job_bf4b0b5a-3adc-4bb7-8560-25f20c3eeaee')throw new ProductionError('独立视频任务不在本次范围',403);if(owner&&!await db().prepare('SELECT id FROM production_jobs WHERE id=? AND owner_id=?').bind(id,owner).first())throw new ProductionError('宣发包所有者不匹配',403);return getJob(id,owner);}
+async function job(id:string,owner?:string){if(id==='job_e13e8b19-aa0a-4840-abc9-333eefc91b05')throw new ProductionError('独立视频任务不在本次范围',403);if(owner&&!await db().prepare('SELECT id FROM production_jobs WHERE id=? AND owner_id=?').bind(id,owner).first())throw new ProductionError('宣发包所有者不匹配',403);return getJob(id,owner);}
 export function promoVideoBinding(j:Job){
  const latest=latestVideoMilestone(j);if(latest&&latest.status!=='invalidated'){try{const artifact=JSON.parse(latest.artifact);if(artifact.qa?.native_candidate_id){const candidate=boundNativeCandidate(j,artifact);return {sha256:artifact.sha256,reference:candidate?.id||latest.id,at:(latest as unknown as {created_at?:string}).created_at||''};}}catch{}}
  const candidates:{sha256:string;reference:string;at:string}[]=[];

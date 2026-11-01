@@ -16,7 +16,7 @@ async function mount(t,{initialPending=false}={}){
 async function check(){assert.equal(checkbox().disabled,false);await act(async()=>checkbox().click());assert.equal(checkbox().checked,true);assert.equal(approve().disabled,false);}
 
 test('initial read blocks confirmation, while an in-flight background refresh does not prevent one exact approval',async t=>{
- const f=await mount(t,{initialPending:true});assert.equal(checkbox().disabled,true);assert.equal(approve().disabled,true);
+ const f=await mount(t,{initialPending:true});assert.equal(checkbox().disabled,false);assert.equal(approve().disabled,true);
  await act(async()=>f.first.resolve(Response.json(f.input.preparation)));await check();
  const refresh=defer(),approval=defer();f.queue.push(refresh.promise,approval.promise);await f.tick();assert.equal(checkbox().disabled,false);assert.equal(approve().disabled,false);
  await act(async()=>approve().click());assert.equal(f.writes.length,1);assert.deepEqual(f.writes[0],{action:'post_video_preparation_approve',id:ID,plan_id:f.input.preparation.plan.plan_id,expected_version:3,confirmation:true});assert.equal(approve().disabled,true);assert.equal(checkbox().disabled,true);
@@ -26,20 +26,20 @@ test('initial read blocks confirmation, while an in-flight background refresh do
 test('temporary read failure preserves the reviewed materials and shows a useful error; explicit access failure invalidates them',async t=>{
  const f=await mount(t);await check();f.queue.push(Promise.resolve(Response.json({error:'SYNTHETIC 暂时无法读取'},{status:503})));await f.tick();await settle();assert.match(document.querySelector('[role=alert]').textContent,/暂时无法读取/);assert.equal(checkbox().checked,true);assert.equal(approve().disabled,false);
  f.queue.push(Promise.reject(Error('SYNTHETIC 网络中断')));await f.tick();await settle();assert.match(document.querySelector('[role=alert]').textContent,/网络中断/);assert.equal(approve().disabled,false);
- f.queue.push(Promise.resolve(Response.json({error:'SYNTHETIC 身份失效'},{status:403})));await f.tick();await settle();assert.match(document.querySelector('[role=alert]').textContent,/身份失效/);assert.equal(checkbox().disabled,true);assert.equal(approve().disabled,true);
+ f.queue.push(Promise.resolve(Response.json({error:'SYNTHETIC 身份失效'},{status:403})));await f.tick();await settle();assert.match(document.querySelector('[role=alert]').textContent,/身份失效/);assert.equal(checkbox().disabled,false);assert.equal(approve().disabled,true);
 });
 
-test('an explicit stale result or a changed plan version requires a new confirmation',async t=>{
- const f=await mount(t);await check();const stale=copy(f.input.preparation);stale.is_current=false;f.setCurrent(stale);await f.tick();await settle();assert.equal(checkbox().disabled,true);assert.equal(approve().disabled,true);
- f.setCurrent(f.input.preparation);await f.tick();await settle();assert.equal(checkbox().checked,false);await check();
- const newer=copy(f.input.preparation);newer.plan.version++;f.setCurrent(newer);await f.tick();await settle();assert.equal(checkbox().disabled,false);assert.equal(checkbox().checked,false);assert.equal(approve().disabled,true);
+test('a stale or changed plan preserves listening confirmation but blocks until current materials return',async t=>{
+ const f=await mount(t);await check();const stale=copy(f.input.preparation);stale.is_current=false;f.setCurrent(stale);await f.tick();await settle();assert.equal(checkbox().disabled,false);assert.equal(approve().disabled,true);
+ f.setCurrent(f.input.preparation);await f.tick();await settle();assert.equal(checkbox().checked,true);assert.equal(approve().disabled,false);
+ const newer=copy(f.input.preparation);newer.plan.version++;f.setCurrent(newer);await f.tick();await settle();assert.equal(checkbox().disabled,false);assert.equal(checkbox().checked,true);assert.equal(approve().disabled,false);
 });
 
 test('a new video version discards the old confirmation and ignores the old in-flight response',async t=>{
  const f=await mount(t);await check();const old=defer(),next=defer();f.queue.push(old.promise,next.promise);await f.tick();
  const newerJob=copy(f.input.job),newer=copy(f.input.preparation);newerJob.milestones[0].artifact_hash='f'.repeat(64);newer.plan.base_video.artifact_hash='f'.repeat(64);
- await act(async()=>f.root.render(React.createElement(Component,{job:newerJob})));assert.equal(checkbox().disabled,true);assert.equal(approve().disabled,true);
- await act(async()=>old.resolve(Response.json(f.input.preparation)));assert.equal(checkbox().disabled,true);assert.equal(approve().disabled,true);
+ await act(async()=>f.root.render(React.createElement(Component,{job:newerJob})));assert.equal(checkbox().disabled,false);assert.equal(approve().disabled,true);
+ await act(async()=>old.resolve(Response.json(f.input.preparation)));assert.equal(checkbox().disabled,false);assert.equal(approve().disabled,true);
  await act(async()=>next.resolve(Response.json(newer)));await settle();assert.equal(checkbox().disabled,false);assert.equal(checkbox().checked,false);assert.equal(approve().disabled,true);
 });
 

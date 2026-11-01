@@ -162,39 +162,20 @@ test('SYNTHETIC keyword research is available from the shared command palette wi
   const f = await setup(t);
   await click(document.querySelector('.studio-quick-open'));
   await click([...document.querySelectorAll('[cmdk-item]')].find(e => e.textContent.includes('关键词研究')));
-  assert.deepEqual(f.navigation, ['/research']);
+  assert.deepEqual(f.reloads, ['/research']);
+  assert.deepEqual(f.navigation, []);
   assert.equal(f.calls.length, 0);
 });
 
-test('SYNTHETIC sidebar and home brand use client navigation without prefetching or replacing the page shell', async t => {
-  const f = await setup(t), child = document.getElementById('SYNTHETIC-child');
-  const research = document.querySelector('.studio-sidebar nav a[href="/research"]');
-  assert.equal(research.getAttribute('href'), '/research');
-  await click(research);
-  assert.deepEqual(f.navigation, ['/research']);
-  assert.match(document.querySelector('[role="status"]').textContent,/正在打开关键词研究/);
-  assert.equal(document.querySelector('[role="status"] a').getAttribute('href'),'/research');
-  assert.equal(document.getElementById('SYNTHETIC-child'), child);
-  let modifiedPrevented;
-  const preventJSDOMNavigation=e=>{modifiedPrevented=e.defaultPrevented;e.preventDefault();};
-  document.addEventListener('click',preventJSDOMNavigation,{once:true});
-  await act(async()=>research.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0,ctrlKey:true})));
-  assert.equal(modifiedPrevented,false,'Ctrl-click remains native for opening another tab');
-  assert.deepEqual(f.navigation, ['/research']);
-  await f.renderPath('/research');
-  assert.equal(document.querySelector('[role="status"]'),null,'arrival clears the pending message');
-  assert.equal(document.querySelector('a[aria-current="page"]').getAttribute('href'), '/research');
-  await click(document.querySelector('.studio-brand'));
-  assert.deepEqual(f.navigation, ['/research', '/']);
-  assert.equal(document.getElementById('SYNTHETIC-child'), child);
-  assert.equal(f.calls.length, 0, 'visible navigation must not prefetch unrelated pages');
+test('SYNTHETIC all sidebar and brand destinations use native links without pending client routes', async t => {
+ const f=await setup(t);for(const href of ['/','/research','/originals','/production','/publishing','/data']){const link=document.querySelector('.studio-sidebar nav a[href="'+href+'"]');assert.ok(link);let native=false;const prevent=e=>{native=!e.defaultPrevented;e.preventDefault()};document.addEventListener('click',prevent,{once:true});await act(async()=>link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0})));assert.equal(native,true,'native navigation for '+href);assert.equal(document.querySelector('[role="status"]'),null)}const brand=document.querySelector('.studio-brand');assert.equal(brand.getAttribute('href'),'/');let native=false;document.addEventListener('click',e=>{native=!e.defaultPrevented;e.preventDefault()},{once:true});await act(async()=>brand.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0})));assert.equal(native,true);assert.deepEqual(f.navigation,[]);assert.equal(f.calls.length,0);
 });
 
 test('SYNTHETIC production opens as a normal document navigation from the sidebar and command palette',async t=>{
   const f=await setup(t),link=document.querySelector('.studio-sidebar nav a[href="/production"]');let native=false;
   const prevent=e=>{native=!e.defaultPrevented;e.preventDefault()};document.addEventListener('click',prevent,{once:true});
   await act(async()=>link.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,button:0})));await settle();
-  assert.equal(native,true);assert.deepEqual(f.navigation,[]);assert.match(document.querySelector('[role="status"]').textContent,/正在打开制作与审稿/);
+  assert.equal(native,true);assert.deepEqual(f.navigation,[]);assert.equal(document.querySelector('[role="status"]'),null);
   await click(document.querySelector('.studio-quick-open'));await click([...document.querySelectorAll('[cmdk-item]')].find(e=>e.textContent.includes('制作与审稿')));
   assert.deepEqual(f.reloads,['/production']);assert.deepEqual(f.navigation,[]);
 });
@@ -295,3 +276,4 @@ test('SYNTHETIC light and dark token pairs preserve readable text and accent but
     }
   }
 });
+test('native unload protects edited form and review fields while ignoring search and confirmed saves',async t=>{const f=await setup(t),main=document.getElementById('studio-main'),form=document.createElement('form'),text=document.createElement('input'),query=document.createElement('input'),review=document.createElement('textarea');text.type='text';query.type='search';form.append(text,query);main.append(form,review);const leave=()=>{const event=new Event('beforeunload',{cancelable:true});window.dispatchEvent(event);return event.defaultPrevented};const change=(el,value)=>{el.focus();el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}))};assert.equal(leave(),false);change(query,'a search');assert.equal(leave(),false);change(text,'unsaved form');assert.equal(leave(),true);document.dispatchEvent(new window.CustomEvent('studio:form-saved',{detail:form}));assert.equal(leave(),false);change(review,'unsaved review');assert.equal(leave(),true);review.value='';assert.equal(leave(),false);change(text,'another edit');assert.equal(leave(),true);form.remove();assert.equal(leave(),false);await f.close();assert.equal(leave(),false);});

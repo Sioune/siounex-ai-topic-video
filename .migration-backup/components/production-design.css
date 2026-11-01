@@ -132,3 +132,7 @@
 .production-page .production-task-item>.production-task-cancel:hover{background:#fff0f0}
 .production-page .production-saved-script{white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:960px){.production-page .production-task-item{flex:0 0 260px;max-width:280px}.production-page .production-list .production-task-item>[data-task-select]{flex:1 1 auto;max-width:none}}
+
+.production-page .preview-review-saved{margin:1rem 0;padding:1rem;border:1px solid #96b76b;border-radius:.6rem;background:#ecf6df;color:#294b1b}
+.production-page .preview-review-saved p{margin:.4rem 0 0}
+.production-page .production-list .production-preview-review-status{display:block;color:#365a20;font-weight:700}

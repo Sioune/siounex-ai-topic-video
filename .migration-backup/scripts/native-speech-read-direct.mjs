@@ -73,7 +73,10 @@ export async function runNativeSpeechRead({dir,deadline_ms=Date.now()+120000,cwd
   if(child&&!closed){
    shutdownFacts.cleanup_started_at=stamp();const cleanupDeadline=Math.min(processReceipt.deadline_ms,clock()+10000);shutdownFacts.cleanup_deadline_ms=cleanupDeadline;
    shutdownFacts.stdin_eof_requested_at=stamp();try{child.stdin.end();}catch(error){shutdownFacts.stdin_eof_error_code=shutdownError(error);}
-   await waitWithin(closedPromise,Math.min(cleanupDeadline,clock()+Math.min(1000,Math.max(1,Math.floor((cleanupDeadline-clock())/5)))));
+   // A normal app-server EOF can take nearly two seconds on Windows. Give it
+   // time to close before starting the owned-tree terminator, while retaining
+   // most of the bounded cleanup budget for an actual stalled process.
+   await waitWithin(closedPromise,Math.min(cleanupDeadline,clock()+Math.min(3000,Math.max(1,Math.floor((cleanupDeadline-clock())/3)))));
    let terminationSettled=true;
    if(!closed&&clock()<cleanupDeadline){
     shutdownFacts.termination_requested_at=stamp();terminationSettled=false;
